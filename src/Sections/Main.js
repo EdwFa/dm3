@@ -76,7 +76,7 @@ export class Main extends Component {
             }
         }
 
-        if (query !== "/" & !this.state.queryText) {
+        if (query === "/") {
             throw "Not query text"
         }
 
