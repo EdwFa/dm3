@@ -264,7 +264,7 @@ def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 
     handle.close()
 
 
-def get_uniq_info_for_graph(articles, author_on_article=10):
+def get_uniq_info_for_graph(articles, author_on_article=10, count_of_rel=0):
     authors = []
     print('Get authors...')
     for article in articles:
@@ -299,7 +299,7 @@ def get_uniq_info_for_graph(articles, author_on_article=10):
         j = i
         while (j < size):
             if i != j:
-                if edges[i][j] != 0:
+                if edges[i][j] > count_of_rel:
                     new_edges.append({'from': i, 'to': j})
             j += 1
         if (i % 1000) == 0:

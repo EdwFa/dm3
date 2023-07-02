@@ -128,7 +128,7 @@ class GetGraphData(APIView):
 
             start_time = time.time()
             print('Start get graph data...')
-            nodes, edges = get_uniq_info_for_graph(articles[:100], 5)
+            nodes, edges = get_uniq_info_for_graph(articles[:50], 5, 0)
             print("Time for create graph data = ", time.time() - start_time)
             start_time = time.time()
             data = {
