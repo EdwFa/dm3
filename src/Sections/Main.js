@@ -50,7 +50,7 @@ export class Main extends Component {
     }
 
     createQuery() {
-        let query = "/"
+        let query = "/api/"
         if (this.state.queryText) {
             query = `${query}?search_field=${this.state.queryText}`
         }
@@ -76,7 +76,7 @@ export class Main extends Component {
             }
         }
 
-        if (query === "/") {
+        if (query === "api/") {
             throw "Not query text"
         }
 
@@ -84,7 +84,7 @@ export class Main extends Component {
     }
 
     getArticles = (url, interval = 10000) => {
-      fetch(variables.API_URL + '/articles',
+      fetch(variables.API_URL + '/api/articles',
             {
                 headers: {
                     'Content-Type': 'application/json;charset=utf-8',
@@ -154,7 +154,7 @@ export class Main extends Component {
     }
 
     getGraphData() {
-        fetch(variables.API_URL + '/graphs',
+        fetch(variables.API_URL + '/api/graphs',
             {
                 headers: {
                     'Content-Type': 'application/json;charset=utf-8',
