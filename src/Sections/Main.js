@@ -50,7 +50,7 @@ export class Main extends Component {
     }
 
     createQuery() {
-        let query = "/api/search/"
+        let query = "/api"
         if (this.state.queryText) {
             query = `${query}?search_field=${this.state.queryText}`
         }
@@ -76,7 +76,7 @@ export class Main extends Component {
             }
         }
 
-        if (query === "api/search/") {
+        if (query === "/api") {
             throw "Not query text"
         }
 
