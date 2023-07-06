@@ -12,11 +12,10 @@ import 'ag-grid-enterprise';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 
-import { variables } from './Variables.js';
-import { TematicReview } from './TematicReview.js';
+import { variables } from '../Variables.js';
 
 
-export class Main extends Component {
+export class TematicReview extends Component {
 
     constructor(props) {
         super(props);

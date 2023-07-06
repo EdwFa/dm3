@@ -12,11 +12,10 @@ import 'ag-grid-enterprise';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 
-import { variables } from './Variables.js';
-import { TematicReview } from './TematicReview.js';
+import { variables } from '../Variables.js';
 
 
-export class Main extends Component {
+export class Search extends Component {
 
     constructor(props) {
         super(props);
@@ -122,7 +121,7 @@ export class Main extends Component {
           })
           .catch(error => {
             console.log(error);
-                this.setState({ articles: [], articlesInfo: [], loading: false });
+            this.setState({ articles: [], articlesInfo: [], loading: false });
           })
     }
 
@@ -164,42 +163,9 @@ export class Main extends Component {
         )
     }
 
-    getGraphData() {
-        fetch(variables.API_URL + '/api/graphs/',
-            {
-                headers: {
-                    'Content-Type': 'application/json;charset=utf-8',
-                    'Authorization': `Token ${variables.token}`,
-                },
-            }
-          )
-          .then(response => {
-                console.log(response.status);
-                if (response.status == 200) {
-                    return response.json()
-                } else {
-                    throw Error(response.statusText)
-                }
-          })
-          .then(data => {
-            this.setState({
-                graph: data.graph
-            });
-          })
-          .catch(error => {
-            console.log(error);
-                this.setState({ graph: null});
-          })
-    }
-
     componentDidMount() {
         this.getArticles();
-        console.log('start');
-    }
-
-    onSelectionChanged = () => {
-        const selectedRows = this.gridRef.current.api.getSelectedRows();
-        this.setState({DetailArticle: (selectedRows.length === 1 ? selectedRows[0] : null)})
+        console.log('start search');
     }
 
     onSelectionAnalise = () => {
@@ -278,7 +244,7 @@ export class Main extends Component {
             })
         })
             .then((res) => {
-                if (res.status == 201) { return res.json() }
+                if (res.status == 200) { return res.json() }
                 else { throw Error(res.statusText) }
             })
             .then((result) => {
@@ -287,28 +253,6 @@ export class Main extends Component {
             .catch((error) => {
                 alert('Ошибка')
             })
-    }
-
-    getAnalise() {
-        fetch(variables.API_URL + "/api/analise/",
-          {
-            headers: {
-                'Content-Type': 'application/json;charset=utf-8',
-                'Authorization': `Token ${variables.token}`,
-            },
-          }
-        )
-        .then((res) => {
-                if (res.status == 200) { return res.json() }
-                else { throw Error(res.statusText) }
-            })
-        .then((data) => {
-          this.setState({analise_articles: data.data, analise_info: data.columns});
-        })
-        .catch((err) => {
-          console.log(err);
-          this.setState({data: [], dataInfo: []});
-        });
     }
 
     render() {
@@ -340,62 +284,67 @@ export class Main extends Component {
         } else {
             return (
             <>
-                <div className="container-fluid">
-                    <div className="row">
-                      <header className="navbar navbar-dark sticky-top bg-primary flex-md-nowrap p-0 shadow-sm">
-                      <div className="col-md-2">
-                        <div className="row g-0">
-                          <div className="col-md-2">
-                            <button className="mt-1 navbar-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">
-                              <span className="icon-bar top-bar"></span>
-                              <span className="icon-bar middle-bar"></span>
-                              <span className="icon-bar bottom-bar"></span>
-                            </button>
-                          </div>
-                          <div className="col-md-10">
-                            <a className="navbar-brand" href="#">SECHENOV AI-DATAMED</a>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="col-md-8">
-                        <input
-                            className="form-control w-100"
-                            id="search"
-                            type="text"
-                            name="search_field"
-                            placeholder="Поисковый запрос"
-                            value={queryText}
-                            onChange={this.changeQueryText}
-                            aria-label="Search" />
-                      </div>
-                      <div className="col-md-2">
-                        <div className="row g-0">
-                          <div className="col-md-10">
-                            <ul className="navbar-nav px-3">
-                              <li className="nav-item text-nowrap">
-                                <input className="btn btn-primary" type="submit" value="Найти" onClick={() => this.createTask()}/>
-                              </li>
-                            </ul>
-                          </div>
-                          <div className="col-md-2">
-                            <button className="mt-2 navbar-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar2" aria-controls="sidebar2" aria-expanded="false" aria-label="Toggle navigation">
-                              <span className="icon-bar top-bar"></span>
-                              <span className="icon-bar middle-bar"></span>
-                              <span className="icon-bar bottom-bar"></span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      </header>
-                    </div>
-                </div>
-                <main>
-                    <div>
-                        <div className="container-fluid">
-                            <div className="row align-items-stretch b-height">
+                <section class="col shadow p-4" style={{backgroundColor: "#fff"}}>
+                              <div class="accordion accordion-flush" id="accordion">
+                                <div class="accordion-item">
+                                  <h2 class="accordion-header" id="">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseSeven" aria-expanded="false" aria-controls="flush-collapseSeven">
+                                      По запросу найдено { count } источников. {count != 0?  loading? "В процессе" : "Все обработано": null}
+                                    </button>
+                                  </h2>
+                                  <div id="flush-collapseSeven" class="collapse multi-collapse" aria-labelledby="flush-headingSeven" data-bs-target="#accordionFlushExample">
+                                    <div class="accordion-body">
+                                      <p class="pb-2 mb-3 border-bottom"> Запрос {short_query} .</p>
+                                      <p class="pb-2 mb-3 border-bottom"> Запрос автоматически расширен до следующего вида - {full_query}.</p>
+                                      <p class="pb-2 mb-3 border-bottom"> Служебная информация для анализа : {translation_stack}.</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div class="bd-example">
+                                        <div className="ag-theme-alpine" style={{height: 700}}>
+                                            <AgGridReact
+                                                ref={this.gridRef}
+                                                rowData={articles}
+                                                columnDefs={articlesInfo}
+                                                pagination={true}
+                                                onSelectionChanged={this.onSelectionAnalise}
+                                                suppressRowClickSelection={true}
+                                                rowSelection={'multiple'}
+                                            >
+                                            </AgGridReact>
+                                        </div>
+                                        <div>
+                                            <p class="pb-2 mb-3 "> Выбрано {current_count} .</p>
+                                            <input className="btn btn-primary" type="submit" value="Начать обработку" onClick={() => this.startAnalise()}/>
+                                        </div>
+                              </div>
+                            </section>
 
-                            <aside id="sidebar" className="col-md-2 bg-light collapse show width mb-5 shadow-sm g-0">
+                            <aside id="sidebar2" class="col-md-4 bg-light collapse show width mb-5 shadow">
                                 <div className="accordion accordion-flush" id="accordionFlushExample">
+                                  <div className="accordion-item">
+                                    <h2 className="accordion-header" id="flush-headingOne">
+                                      <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseZero" aria-expanded="false" aria-controls="flush-collapseOne">
+                                        Текст поиска
+                                      </button>
+                                    </h2>
+                                    <div id="flush-collapseZero" className="collapse show multi-collapse" aria-labelledby="flush-headingOne" data-bs-target="#accordionFlushExample">
+                                      <div className="accordion-body">
+                                        <div className="col-md-8">
+                                            <input
+                                                className="form-control w-100"
+                                                id="search"
+                                                type="text"
+                                                name="search_field"
+                                                placeholder="Поисковый запрос"
+                                                value={queryText}
+                                                onChange={this.changeQueryText}
+                                                aria-label="Search" />
+                                          </div>
+                                      </div>
+                                    </div>
+                                  </div>
                                   <div className="accordion-item">
                                     <h2 className="accordion-header" id="flush-headingOne">
                                       <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseOne" aria-expanded="false" aria-controls="flush-collapseOne">
@@ -689,129 +638,15 @@ export class Main extends Component {
                                       </div>
                                     </div>
                                   </div>
+                                  <div className="col-md-10">
+                                    <ul className="navbar-nav px-3">
+                                      <li className="nav-item text-nowrap">
+                                        <input className="btn btn-primary" type="submit" value="Найти" onClick={() => this.createTask()}/>
+                                      </li>
+                                    </ul>
+                                  </div>
                                 </div>
                             </aside>
-
-                            <section class="col shadow p-4" style={{backgroundColor: "#fff"}}>
-                              <div class="accordion accordion-flush" id="accordion">
-                                <div class="accordion-item">
-                                  <h2 class="accordion-header" id="">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseSeven" aria-expanded="false" aria-controls="flush-collapseSeven">
-                                      По запросу найдено { count } источников. {count != 0?  loading? "В процессе" : "Все обработано": null}
-                                    </button>
-                                  </h2>
-                                  <div id="flush-collapseSeven" class="collapse multi-collapse" aria-labelledby="flush-headingSeven" data-bs-target="#accordionFlushExample">
-                                    <div class="accordion-body">
-                                      <p class="pb-2 mb-3 border-bottom"> Запрос {short_query} .</p>
-                                      <p class="pb-2 mb-3 border-bottom"> Запрос автоматически расширен до следующего вида - {full_query}.</p>
-                                      <p class="pb-2 mb-3 border-bottom"> Служебная информация для анализа : {translation_stack}.</p>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                              <div>
-                              <div class="bd-example">
-                                <ul class="nav nav-pills mb-3" id="myTab" role="tablist">
-                                  <li class="nav-item" role="presentation">
-                                    <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab" aria-controls="home" aria-selected="false">Результаты поиска</button>
-                                  </li>
-                                  <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="true" onClick={() => this.getAnalise()}>Тематическое описание коллекции</button>
-                                  </li>
-                                  <li class="nav-item" role="presentation">
-                                    <button class="nav-link" id="contact-tab" data-bs-toggle="tab" data-bs-target="#contact" type="button" role="tab" aria-controls="contact" aria-selected="false" onClick={() => this.getGraphData()}>Схема</button>
-                                  </li>
-                                </ul>
-                                <div class="tab-content" id="myTabContent">
-                                  <div class="tab-pane fade active show" id="home" role="tabpanel" aria-labelledby="home-tab">
-                                    <div class="container-fluid g-0">
-                                        <div className="ag-theme-alpine" style={{height: 700}}>
-                                            <AgGridReact
-                                                ref={this.gridRef}
-                                                rowData={articles}
-                                                columnDefs={articlesInfo}
-                                                pagination={true}
-                                                onSelectionChanged={this.onSelectionAnalise}
-                                                suppressRowClickSelection={true}
-                                                rowSelection={'multiple'}
-                                            >
-                                            </AgGridReact>
-                                        </div>
-                                        <div>
-                                            <p class="pb-2 mb-3 "> Выбрано {current_count} .</p>
-                                            <input className="btn btn-primary" type="submit" value="Начать обработку" onClick={() => this.startAnalise()}/>
-                                        </div>
-                                    </div>
-                                  </div>
-                                  <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
-                                    <div className="ag-theme-alpine" style={{height: 700}}>
-                                        <AgGridReact
-                                            ref={this.gridAnaliseRef}
-                                            rowData={analise_articles}
-                                            columnDefs={analise_info}
-                                            pagination={true}
-                                        >
-                                        </AgGridReact>
-                                    </div>
-                                  </div>
-                                  <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">
-                                    <div class="container-fluid g-0">
-                                      <div id="mynetwork" style={{width: "100%", height: "600px"}}>
-                                      {graph?
-                                        <Graph
-                                          graph={graph}
-                                          zoomView={true}
-//                                          events={this.selectEvent}
-                                          key={uuidv4()}
-                                          options={{
-                                            layout: {
-                                                hierarchical: false,
-                                            },
-                                            edges: {
-                                              color: "#000000"
-                                            }
-                                          }}
-//                                          getNetwork={network => {
-//                                            setNetwork(network);
-//                                          }}
-                                        />
-                                        :null}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                              </div>
-                            </section>
-
-                            <aside id="sidebar2" class="col-md-4 bg-light collapse show width mb-5 shadow">
-                              <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">Подробности</h1>
-                              <nav class="small" id="toc">
-                                {DetailArticle?
-                                    <div class="card mb-3">
-                                        <div class="card-body">
-                                          <a href= { DetailArticle.url } class="card-title link-primary text-decoration-none h5"> { DetailArticle.titl } </a>
-                                          <p class="card-text">---------------------------------- </p>
-                                          <p class="card-text">Авторы :  { DetailArticle.auth } </p>
-                                          <p class="card-text">---------------------------------- </p>
-                                          <p class="card-text">Аннотация :  </p>
-                                          <p class="card-text"> { DetailArticle.tiab } </p>
-                                          <p class="card-text">---------------------------------- </p>
-                                          <p class="card-text"><small class="text-success">Дата публикации : { DetailArticle.pdat } </small></p>
-                                          <p class="card-text"><small class="text-success">Издание : { DetailArticle.jour }</small></p>
-                                          <p class="card-text"><small class="text-success">Вид публикации : { DetailArticle.pt }</small></p>
-                                          <p class="card-text"><small class="text-success">Страна : { DetailArticle.pl } </small></p>
-                                          <p class="card-text"><small class="text-success">{ DetailArticle.mesh } </small></p>
-                                        </div>
-                                      </div>
-                                :null}
-                              </nav>
-                            </aside>
-
-                            </div>
-                        </div>
-                    </div>
-                </main>
             </>
             )
         }
