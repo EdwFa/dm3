@@ -1,82 +1,20 @@
-from django.core.exceptions import ObjectDoesNotExist
-
 from Bio import Entrez
 from Bio import Medline
-from datetime import date
 from celery import shared_task
-import numpy
 import time
+import json
+import oneai
 
-from .models import Article, Task
+
+from .serializers import *
 from dm.settings import PARSER_EMAIL, MEDIA_URL
+from Funcs import *
 
-
-# Запрос для начального запуска как пример
-default_query = "{0} and {1}:{2}[dp] and Clinical Trial[pt]".format('covid-19', '2000/01/01',
-                                                                    date.today().strftime("%Y/%m/%d"))
-
-def create_query(request):
-    # Преобразуем наши ключи в запрос pubmed
-    print([i for i in request.GET.items()])
-
-    if len([i for i in request.GET.items()]) == 0:
-        return default_query
-
-    # Содаем запрос с текстом запроса
-    query = ""
-    text = request.GET.get('search_field', None)
-    if text:
-        query = f'{text}'
-
-    # Добавляем даты
-    start_date = request.GET.get('dateStart', "1900-01-01")
-    end_date = request.GET.get('dateStop', date.today().strftime("%Y-%m-%d"))
-    query = f"{query} and {start_date.replace('-', '/')}:{end_date.replace('-', '/')}[dp]"
-
-    # Добавляем гендеры
-    genders = request.GET.getlist('Gender', None)
-    if genders:
-        query_genders = " OR ".join([f'{i}[mh]' for i in genders])
-        query = f"{query} AND ({query_genders})"
-
-    # Добавляем типы документов
-    types = request.GET.getlist('Type', None)
-    if types:
-        query_types = " OR ".join([f'{i}[pt]' for i in types])
-        query = f"{query} AND ({query_types})"
-
-    # Добавляем Возрастные группы
-    olds = request.GET.getlist('Old', None)
-    if olds:
-        query_olds = " OR ".join(olds)
-        query = f"{query} AND ({query_olds})"
-
-    return query
-
-def get_records(query: str):
-    # Получаем наши записи
-    Entrez.email = "e.p@d_health.pro"  # Говорю NCBI кто я есть
-    handle = Entrez.esearch(db="pubmed", sort='relevance', term=query)
-    record = Entrez.read(handle)
-
-    handle.close()
-
-    str_query = record['QueryTranslation']
-
-    try:
-        translation_stack = record['TranslationStack']
-    except:
-        translation_stack = 'null/null/null'
-
-    records_count = int(record['Count'])
-
-    print(f"All records: {records_count}")
-
-    return str_query, translation_stack, records_count
 
 def create_task(**kwargs):
     task = Task.objects.create(**kwargs)
     return task
+
 
 def check_working_task(request):
     tasks = Task.objects.filter(status=0, user=request.user)
@@ -85,157 +23,6 @@ def check_working_task(request):
 
     return False
 
-def parse_record(record):
-    # Парсим полученный словарь записи
-    if not ('PMID' in record): # Проверяем на наличие pmid если его нет не сохраняем данные
-        return
-
-    try:
-        return Article.objects.get(uid=record['PMID'])
-    except ObjectDoesNotExist:
-        pass
-
-    data = Article()
-    data.uid = record['PMID']
-    data.url = 'https://pubmed.ncbi.nlm.nih.gov/' + record['PMID'] + '/'
-    if 'TI' in record:
-        data.titl = record['TI']
-    else:
-        data.titl = "без title"
-
-    if 'AID' in record:
-        data.aid = ' '.join([''.join(i.split(' ')[:-1]) for i in record['AID']])
-        data.urlaid = ' '.join([f'https://sci-hub.do/{aid}' for aid in data.aid.split(' ')])
-    else:
-        data.aid = "Без AID"
-        data.urlaid = "Без url AID"
-
-    if 'JT' in record:
-        data.jour = record['JT']
-    else:
-        data.jour = "без JT"
-    if 'DP' in record:
-        data.pdat = record['DP']
-    else:
-        data.pdat = "без DP"
-    if 'FAU' in record:
-        data.auth = '; '.join(record['FAU'])
-    else:
-        data.auth = "не указаны"
-
-    if 'AD' in record:
-        data.affl = ';;; '.join(record['AD'])
-    else:
-        data.affl = "без AD"
-
-    if 'PT' in record:
-        data.pt = '; '.join(record['PT'])
-    else:
-        data.pt = "без PT"
-
-    if 'PL' in record:
-        data.pl = record['PL']
-    else:
-        data.pl = "без PL"
-
-    if 'MH' in record:
-        data.mesh = ';;; '.join(record['MH'])
-    else:
-        data.mesh = "без MH"
-
-    if 'AB' in record:
-        data.tiab = record['AB']
-    else:
-        data.tiab = "без AB"
-
-    if 'OT' in record:
-        data.ot = ';;; '.join(record['OT'])
-    else:
-        data.ot = "без OT"
-
-    if 'RN' in record:
-        data.rn = ';;; '.join(record['RN'])
-    else:
-        data.rn = "без RN"
-
-    data.save()
-    return data
-
-# def parse_record(record):
-#     # Парсим полученный словарь записи
-#     if not ('PMID' in record): # Проверяем на наличие pmid если его нет не сохраняем данные
-#         return
-#
-#     try:
-#         return Article.objects.get(uid=record['PMID'])
-#     except ObjectDoesNotExist:
-#         pass
-#
-#     data = Article()
-#     data.uid = record['PMID']
-#     data.url = 'https://pubmed.ncbi.nlm.nih.gov/' + record['PMID'] + '/'
-#     try:
-#         data.titl = record['TI']
-#     except:
-#         data.titl = "без title"
-#
-#     try:
-#         data.aid = ' '.join([''.join(i.split(' ')[:-1]) for i in record['AID']])
-#         data.urlaid = ' '.join([f'https://sci-hub.do/{aid}' for aid in data.aid.split(' ')])
-#     except:
-#         data.aid = "Без AID"
-#         data.urlaid = "Без url AID"
-#
-#     try:
-#         data.jour = record['JT']
-#     except:
-#         data.jour = "без JT"
-#     try:
-#         data.pdat = record['DP']
-#     except:
-#         data.pdat = "без DP"
-#     try:
-#         data.auth = '; '.join(record['FAU'])
-#     except:
-#         data.auth = "не указаны"
-#
-#     try:
-#         data.affl = ';;; '.join(record['AD'])
-#     except:
-#         data.affl = "без AD"
-#
-#     try:
-#         data.pt = '; '.join(record['PT'])
-#     except:
-#         data.pt = "без PT"
-#
-#     try:
-#         data.pl = record['PL']
-#     except:
-#         data.pl = "без PL"
-#
-#     try:
-#         data.mesh = ';;; '.join(record['MH'])
-#     except:
-#         data.mesh = "без MH"
-#
-#     try:
-#         data.tiab = record['AB']
-#     except:
-#         data.tiab = "без AB"
-#
-#     try:
-#         data.ot = ';;; '.join(record['OT'])
-#     except:
-#         data.ot = "без OT"
-#
-#     try:
-#         data.rn = ';;; '.join(record['RN'])
-#     except:
-#         data.rn = "без RN"
-#
-#     data.save()
-#     return data
 
 @shared_task(bind=True)
 def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 10000):
@@ -253,61 +40,85 @@ def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 
     handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
 
     records = []
+
     for record in Medline.parse(handle):
         data = parse_record(record)
         if data:
             records.append(data)
+            new_task.save()
 
     print(len(records))
-    new_task.articles.add(*records)
 
     handle.close()
+    data = {
+        'data': ArticleSerializer(records, many=True).data,
+        'columns': [
+            {
+                'field': 'uid',
+                'headerCheckboxSelection': True,
+                'headerCheckboxSelectionFilteredOnly': True,
+                'checkboxSelection': True,
+                'cellRendererParams': {
+                    'checkbox': True,
+                },
+            },
+            {'field': 'titl', 'filter': 'agTextColumnFilter'},
+            {'field': 'pdat', 'filter': 'agTextColumnFilter'},
+            {'field': 'auth', 'filter': 'agTextColumnFilter'},
+            {'field': 'jour', 'filter': 'agTextColumnFilter'},
+            {'field': 'pt', 'filter': 'agTextColumnFilter'}
+        ],
+        'message': 'no one task in progress'
+    }
+    return data
+
+def create_analise_task(**kwargs):
+    task = TaskAnalise.objects.create(**kwargs)
+    return task
 
 
-def get_uniq_info_for_graph(articles, author_on_article=10, count_of_rel=0):
-    authors = []
-    print('Get authors...')
-    for article in articles:
-        article_authors = article.auth.split('; ')
-        if len(article_authors) > author_on_article:
-            article_authors = article_authors[:author_on_article]
-        for aa in article_authors:
-            authors.append(aa)
+def check_working_analise_task(request):
+    tasks = TaskAnalise.objects.filter(status=0, user=request.user, type_analise=0)
+    if tasks.count() != 0:
+        return True
 
-    authors = set(authors)
-    size = len(authors)
-    print('Count of authors = ', size)
-    print('Create nodes...')
-    nodes = {k: i for i, k in enumerate(authors)}
+    return False
 
-    print('Getting info of edges...')
-    edges = numpy.zeros((size, size), dtype='uint8')
-    for article in articles:
-        authors = article.auth.split('; ')
-        if len(authors) > author_on_article:
-            authors = authors[:author_on_article]
-        for author in authors:
-            for a in authors:
-                edges[nodes[author]][nodes[a]] += 1
+@shared_task(bind=True)
+def analise_records(self, records):
+    articles = create_clear_articles(records)
+    topics, props, embeddings = analise_articles(articles)
+    records = return_results(records, topics, props)
+    graph = return_clust_graph([rec['titl'] for rec in records], embeddings)
+    count_topics = len(set(topics))
+    n_clusters = 10
+    if n_clusters > count_topics:
+        n_clusters = count_topics / 2
+    heapmap = return_heapmap(n_clusters=n_clusters)
+    heirarchy = return_heirarchy()
 
-    print('Conver numpy massive to list of dicts...')
+    with open('test_analise_json.json', 'w') as f:
+        json.dump(records, f)
+    with open('test_clust_graph.json', 'w') as f:
+        f.write(graph)
+    with open('test_heapmap.json', 'w') as f:
+        f.write(heapmap)
+    with open('test_heirarchy.json', 'w') as f:
+        f.write(heirarchy)
+    return None
 
-    new_edges = []
-    nodes = [{'id': i, 'label': k, 'shape': 'image', 'size': 20, 'image': f'http://localhost:8000/{MEDIA_URL}icon.PNG'} for k, i in nodes.items()]
-    for i in range(size):
-        start_time = time.time()
-        j = i
-        while (j < size):
-            if i != j:
-                if edges[i][j] > count_of_rel:
-                    new_edges.append({'from': i, 'to': j})
-            j += 1
-        if (i % 1000) == 0:
-            print(f'Pass {i} row after {time.time() - start_time }')
+@shared_task(bind=True)
+def summarise_text(self, records):
+    text = ' '.join([rec['titl'] + rec['tiab'] for rec in records])
+    print(len(text), text)
+    api_key = "0f4f9d19-644d-4577-94af-48abb689be60"
+    oneai.api_key = api_key
+    pipeline = oneai.Pipeline(steps=[
+        oneai.skills.Summarize(min_length=20),
+    ])
 
-    print('Done!')
-
-    return nodes, new_edges
+    output = pipeline.run(text)
+    return output.summary.text
 
 
 

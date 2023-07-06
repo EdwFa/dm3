@@ -8,6 +8,11 @@ task_statuses = (
     (2, 'error'),
 )
 
+task_analise = (
+    (0, 'tematic'),
+    (1, 'other'),
+)
+
 # Create your models here.
 class Article(models.Model):
     uid = models.IntegerField('PMID', primary_key=True)
@@ -88,12 +93,20 @@ COIS, Conflict of Interest Statements, Conflict of Interest Statements
 
 class Task(models.Model):
     task_id = models.CharField(max_length=150, null=True)
-    user = models.ForeignKey(User, on_delete=models.DO_NOTHING, null=True, related_name='user')
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING, null=True, related_name='task_search')
     query = models.TextField()
     full_query = models.TextField()
     translation_stack = models.TextField()
     start_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField(null=True, blank=True)
     status = models.IntegerField(choices=task_statuses, default=0)
-    articles = models.ManyToManyField(Article, null=True, blank=True)
     count = models.IntegerField()
+
+
+class TaskAnalise(models.Model):
+    task_id = models.CharField(max_length=150, null=True)
+    user = models.ForeignKey(User, on_delete=models.DO_NOTHING, null=True, related_name='task_analise')
+    start_date = models.DateTimeField(auto_now_add=True)
+    end_date = models.DateTimeField(null=True, blank=True)
+    status = models.IntegerField(choices=task_statuses, default=0)
+    type_analise = models.IntegerField(choices=task_statuses, default=0)

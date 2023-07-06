@@ -13,6 +13,11 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv, dotenv_values
+import nltk
+
+
+nltk.download('stopwords')
+nltk.download('punkt')
 
 
 bool_env = lambda key: True if key == 'True' else False  # Ф-я для превращения данных в булевые значения из .env файла конфигурации
