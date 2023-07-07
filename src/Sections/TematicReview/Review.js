@@ -132,7 +132,7 @@ export class Review extends Component {
     }
 
     externalFilterChanged = (newValue) => {
-        this.setState({current_topic: newValue.x});
+        this.setState({current_topic: newValue.x, summarise: null});
         this.gridAnaliseRef.current.api.onFilterChanged();
     }
 
