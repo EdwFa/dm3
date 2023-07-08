@@ -110,7 +110,7 @@ export class Login extends Component {
             </div>
           );
         } else {
-          return <Navigate push to="/tematic_review" />
+          return <Navigate push to="/" />
         }
     }
 }

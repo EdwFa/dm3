@@ -4,7 +4,8 @@ import { useEffect } from 'react';
 // Импорт страниц
 import { Main } from './Sections/Main.js';
 import { Login } from './Sections/Login.js';
-import { TematicReview } from './Sections/TematicReview.js';
+import { TematicReview } from './Sections/TematicReview/TematicReview.js';
+import { DDIReview } from './Sections/DDI/DDI.js';
 
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
@@ -23,6 +24,7 @@ function App() {
         <Route path='/' element={<Main />} />
         <Route path='/login' element={<Login />} />
         <Route path='/tematic_review' element={<TematicReview />} />
+        <Route path='/ddi_review' element={<DDIReview />} />
       </Routes>
     </Router>
   );

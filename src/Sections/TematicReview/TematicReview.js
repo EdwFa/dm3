@@ -12,10 +12,29 @@ import 'ag-grid-enterprise';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 
+import Plot from 'react-plotly.js';
+
+import Slider from 'react-input-slider';
+
 import { variables } from '../Variables.js';
 
 
-export class Search extends Component {
+var topicFilterParams = {
+  comparator: (TopicParam, cellValue) => {
+    if (TopicParam === cellValue) {
+      return 0;
+    }
+    if (cellValue < TopicParam) {
+      return -1;
+    }
+    if (cellValue > TopicParam) {
+      return -1;
+    }
+    return 0;
+  },
+};
+
+export class TematicReview extends Component {
 
     constructor(props) {
         super(props);
@@ -26,18 +45,30 @@ export class Search extends Component {
             updateOr: false,
             loading: false,
             useAll: true,
-
-            articles: [],
             token: variables.token,
+
+        // Search
+            articles: [],
             DetailArticle: null,
-            articlesInfo: [],
+            articlesInfo: [
+                {
+                    field: 'uid',
+
+                },
+                {field: 'titl', filter: 'agTextColumnFilter'},
+                {field: 'pdat', filter: 'agTextColumnFilter'},
+                {field: 'auth', filter: 'agTextColumnFilter'},
+                {field: 'jour', filter: 'agTextColumnFilter'},
+                {field: 'pt', filter: 'agTextColumnFilter'},
+                {field: 'topic', filter: 'agNumberColumnFilter', sortable: true, filterParams: topicFilterParams},
+                {field: 'prop', filter: 'agNumberColumnFilter'},
+            ],
             translation_stack: null,
             full_query: null,
             short_query: null,
             task: null,
             message: null,
             count: 0,
-            current_count: 0,
             analiseRows: [],
 
             // Filters
@@ -47,8 +78,44 @@ export class Search extends Component {
             queryTypes: new Set(),
             queryOlds: new Set(),
             queryGenders: new Set(),
+
+        // Analise
+            // Analise table
+            analise_articles: [],
+            analise_info: [
+                {field: 'uid'},
+                {field: 'titl', filter: 'agTextColumnFilter'},
+                {field: 'pdat', filter: 'agTextColumnFilter'},
+                {field: 'auth', filter: 'agTextColumnFilter'},
+                {field: 'jour', filter: 'agTextColumnFilter'},
+                {field: 'pt', filter: 'agTextColumnFilter'},
+            ],
+            DetailArticle: null,
+
+            // Analise clust graph
+            clust_graph: null,
+            heapmap: null,
+            heirarchy: null,
+
+            // Filter topic
+            current_topic: -2,
+            topics: new Set(),
+
+            //Summirise
+            summarise: null,
+
+        //Other
+            graph: null,
         }
     }
+
+
+    componentDidMount() {
+        this.getArticles();
+        console.log('start');
+    }
+
+    // Search
 
     createQuery() {
         let query = "/api"
@@ -109,7 +176,7 @@ export class Search extends Component {
           })
           .then(data => {
             this.setState({
-                articles: data.data, DetailArticle: data.data[0], articlesInfo: data.columns, message: data.message, loading: false
+                articles: data.data, DetailArticle: data.data[0], message: data.message, loading: false
             });
           })
           .catch(error => {
@@ -158,13 +225,13 @@ export class Search extends Component {
 
     componentDidMount() {
         this.getArticles();
+        this.getAnalise();
         console.log('start search');
     }
 
     onSelectionAnalise = () => {
         const selectedRows = this.gridRef.current.api.getSelectedRows();
-        this.setState({current_count: selectedRows.length, analiseRows: selectedRows})
-        console.log(selectedRows);
+        this.setState({DetailArticle: (selectedRows.length === 1 ? selectedRows[0] : null)})
     }
 
     changeQueryText = (e) => {
@@ -225,6 +292,8 @@ export class Search extends Component {
     }
 
     startAnalise() {
+        let analise_data = [];
+        this.gridRef.current.api.forEachNodeAfterFilter((rowNode) => analise_data.push(rowNode.data));
         fetch(variables.API_URL + '/api/analise/', {
             method: 'POST',
             headers: {
@@ -233,7 +302,7 @@ export class Search extends Component {
                 'Authorization': `Token ${variables.token}`,
             },
             body: JSON.stringify({
-                articles: this.state.analiseRows
+                articles: analise_data
             })
         })
             .then((res) => {
@@ -241,7 +310,160 @@ export class Search extends Component {
                 else { throw Error(res.statusText) }
             })
             .then((result) => {
-                return
+                this.getAnalise();
+            })
+            .catch((error) => {
+                alert('Ошибка')
+            })
+    }
+
+    // Analise
+
+    onSelectionChanged = (gridApi) => {
+        const selectedRows = this.gridAnaliseRef.current.api.getSelectedRows();
+        this.setState({DetailArticle: (selectedRows.length === 1 ? selectedRows[0] : null)})
+    }
+
+    getAnalise = (url, interval = 1000) => {
+        fetch(variables.API_URL + "/api/analise/",
+          {
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8',
+                'Authorization': `Token ${variables.token}`,
+            },
+          }
+        )
+        .then((res) => {
+                if (res.status == 202) {
+                    this.setState({loading: true})
+                    setTimeout(() => {
+                      return this.getAnalise(url, interval)
+                    }, interval);
+                }
+                if (res.status == 200) {
+                    return res.json()
+                } else {
+                    throw Error(res.statusText)
+                }
+            })
+        .then((data) => {
+          delete data.graph.layout.width;
+          delete data.heapmap.layout.width;
+          delete data.heirarchy.layout.width;
+          var topics = new Set()
+          for (let record of data.data) {
+            topics.add(record.topic)
+          }
+          this.setState({
+            analise_articles: data.data,
+            DetailArticle: data.data[0],
+            clust_graph: data.graph,
+            heapmap: data.heapmap,
+            heirarchy: data.heirarchy,
+            loading: false,
+            topics: [...topics],
+          });
+        })
+        .catch((err) => {
+          console.log(err);
+          this.setState({data: [], dataInfo: [], DetailArticle: null, loading: false});
+        });
+    }
+
+    externalFilterChanged = (newValue) => {
+        this.setState({current_topic: newValue.x, summarise: null});
+        this.gridAnaliseRef.current.api.onFilterChanged();
+    }
+
+    isExternalFilterPresent = () => {
+        // if ageType is not everyone, then we are filtering
+        return this.state.current_topic !== -2;
+    }
+
+    doesExternalFilterPass = (node) => {
+      if (node.data) {
+        if (node.data.topic === this.state.current_topic) {
+            return true
+        }
+      }
+      return false;
+    }
+
+    getGraphData = () => {
+        var current_topic = this.state.current_topic.toString();
+        console.log(current_topic)
+        if (current_topic === '-2') {
+            return this.state.clust_graph.data
+        }
+
+        var data = []
+        for (let topic of this.state.clust_graph.data) {
+            var topic_id = topic.name.split('_')[0];
+            if (current_topic === topic_id) {
+                data.push(topic);
+            }
+        }
+        return data
+    }
+
+    getSummarise = (task_id, interval = 1000) => {
+        fetch(variables.API_URL + `/api/summarise?task_id=${task_id}`,
+          {
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8',
+                'Authorization': `Token ${variables.token}`,
+            },
+          }
+        )
+        .then((res) => {
+                if (res.status == 202) {
+                    this.setState({loading: true})
+                    setTimeout(() => {
+                      return this.getSummarise(task_id, interval)
+                    }, interval);
+                }
+                if (res.status == 200) {
+                    return res.json()
+                } else {
+                    throw Error(res.statusText)
+                }
+            })
+        .then((data) => {
+          this.setState({
+            summarise: data.data
+          });
+        })
+        .catch((err) => {
+          console.log(err);
+          this.setState({summarise: null});
+        });
+    }
+
+    createSummariseQuery() {
+        var data = []
+        for (let article of this.state.analise_articles) {
+            if (this.state.current_topic === article.topic) {
+                data.push(article);
+            }
+        }
+        fetch(variables.API_URL + '/api/summarise', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json;charset=utf-8',
+                'Authorization': `Token ${variables.token}`,
+            },
+            body: JSON.stringify({
+                articles: data
+            })
+        })
+            .then((res) => {
+                if (res.status == 200) { return res.json() }
+                else { throw Error(res.statusText) }
+            })
+            .then((result) => {
+                var task_id = result.data;
+                this.getSummarise(task_id);
             })
             .catch((error) => {
                 alert('Ошибка')
@@ -252,7 +474,6 @@ export class Search extends Component {
         const {
             token,
             count,
-            current_count,
             articles,
             DetailArticle,
             articlesInfo,
@@ -266,10 +487,16 @@ export class Search extends Component {
             queryEndDate,
             queryStartDate,
 
-            graph,
-
             analise_articles,
             analise_info,
+            clust_graph,
+            heapmap,
+            heirarchy,
+            current_topic,
+            topics,
+            summarise,
+
+            graph
         } = this.state;
 
         if (!token){
@@ -277,67 +504,62 @@ export class Search extends Component {
         } else {
             return (
             <>
-                <section class="col shadow p-4" style={{backgroundColor: "#fff"}}>
-                              <div class="accordion accordion-flush" id="accordion">
-                                <div class="accordion-item">
-                                  <h2 class="accordion-header" id="">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseSeven" aria-expanded="false" aria-controls="flush-collapseSeven">
-                                      По запросу найдено { count } источников. {count != 0?  loading? "В процессе" : "Все обработано": null}
-                                    </button>
-                                  </h2>
-                                  <div id="flush-collapseSeven" class="collapse multi-collapse" aria-labelledby="flush-headingSeven" data-bs-target="#accordionFlushExample">
-                                    <div class="accordion-body">
-                                      <p class="pb-2 mb-3 border-bottom"> Запрос {short_query} .</p>
-                                      <p class="pb-2 mb-3 border-bottom"> Запрос автоматически расширен до следующего вида - {full_query}.</p>
-                                      <p class="pb-2 mb-3 border-bottom"> Служебная информация для анализа : {translation_stack}.</p>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                              <div class="bd-example">
-                                        <div className="ag-theme-alpine" style={{height: 700}}>
-                                            <AgGridReact
-                                                ref={this.gridRef}
-                                                rowData={articles}
-                                                columnDefs={articlesInfo}
-                                                pagination={true}
-                                                onSelectionChanged={this.onSelectionAnalise}
-                                                suppressRowClickSelection={true}
-                                                rowSelection={'multiple'}
-                                            >
-                                            </AgGridReact>
-                                        </div>
-                                        <div>
-                                            <p class="pb-2 mb-3 "> Выбрано {current_count} .</p>
-                                            <input className="btn btn-primary" type="submit" value="Начать обработку" onClick={() => this.startAnalise()}/>
-                                        </div>
-                              </div>
-                            </section>
+                <div className="container-fluid">
+                    <div className="row">
+                      <header className="navbar navbar-dark sticky-top bg-primary flex-md-nowrap p-0 shadow-sm">
+                      <div className="col-md-2">
+                        <div className="row g-0">
+                          <div className="col-md-2">
+                            <button className="mt-1 navbar-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">
+                              <span className="icon-bar top-bar"></span>
+                              <span className="icon-bar middle-bar"></span>
+                              <span className="icon-bar bottom-bar"></span>
+                            </button>
+                          </div>
+                          <div className="col-md-10">
+                            <a className="navbar-brand" href="#">SECHENOV AI-DATAMED</a>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-md-8">
+                        <input
+                            className="form-control w-100"
+                            id="search"
+                            type="text"
+                            name="search_field"
+                            placeholder="Поисковый запрос"
+                            value={queryText}
+                            onChange={this.changeQueryText}
+                            aria-label="Search" />
+                      </div>
+                      <div className="col-md-2">
+                        <div className="row g-0">
+                          <div className="col-md-10">
+                            <ul className="navbar-nav px-3">
+                              <li className="nav-item text-nowrap">
+                                <input className="btn btn-primary" type="submit" value="Найти" onClick={() => this.createTask()}/>
+                              </li>
+                            </ul>
+                          </div>
+                          <div className="col-md-2">
+                            <button className="mt-2 navbar-toggler collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar2" aria-controls="sidebar2" aria-expanded="false" aria-label="Toggle navigation">
+                              <span className="icon-bar top-bar"></span>
+                              <span className="icon-bar middle-bar"></span>
+                              <span className="icon-bar bottom-bar"></span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      </header>
+                    </div>
+                </div>
+                <main>
+                    <div>
+                        <div className="container-fluid">
+                            <div className="row align-items-stretch b-height">
 
-                            <aside id="sidebar2" class="col-md-4 bg-light collapse show width mb-5 shadow">
+                            <aside id="sidebar" className="col-md-2 bg-light collapse show width mb-5 shadow-sm g-0">
                                 <div className="accordion accordion-flush" id="accordionFlushExample">
-                                  <div className="accordion-item">
-                                    <h2 className="accordion-header" id="flush-headingOne">
-                                      <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseZero" aria-expanded="false" aria-controls="flush-collapseOne">
-                                        Текст поиска
-                                      </button>
-                                    </h2>
-                                    <div id="flush-collapseZero" className="collapse show multi-collapse" aria-labelledby="flush-headingOne" data-bs-target="#accordionFlushExample">
-                                      <div className="accordion-body">
-                                        <div className="col-md-8">
-                                            <input
-                                                className="form-control w-100"
-                                                id="search"
-                                                type="text"
-                                                name="search_field"
-                                                placeholder="Поисковый запрос"
-                                                value={queryText}
-                                                onChange={this.changeQueryText}
-                                                aria-label="Search" />
-                                          </div>
-                                      </div>
-                                    </div>
-                                  </div>
                                   <div className="accordion-item">
                                     <h2 className="accordion-header" id="flush-headingOne">
                                       <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseOne" aria-expanded="false" aria-controls="flush-collapseOne">
@@ -631,15 +853,177 @@ export class Search extends Component {
                                       </div>
                                     </div>
                                   </div>
-                                  <div className="col-md-10">
-                                    <ul className="navbar-nav px-3">
-                                      <li className="nav-item text-nowrap">
-                                        <input className="btn btn-primary" type="submit" value="Найти" onClick={() => this.createTask()}/>
-                                      </li>
-                                    </ul>
-                                  </div>
                                 </div>
                             </aside>
+
+                            <section class="col shadow p-4" style={{backgroundColor: "#fff"}}>
+                              <div class="accordion accordion-flush" id="accordion">
+                                <div class="accordion-item">
+                                  <h2 class="accordion-header" id="">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseSeven" aria-expanded="false" aria-controls="flush-collapseSeven">
+                                      По запросу найдено { count } источников. {count != 0?  loading? "В процессе" : "Все обработано": null}
+                                    </button>
+                                  </h2>
+                                  <div id="flush-collapseSeven" class="collapse multi-collapse" aria-labelledby="flush-headingSeven" data-bs-target="#accordionFlushExample">
+                                    <div class="accordion-body">
+                                      <p class="pb-2 mb-3 border-bottom"> Запрос {short_query} .</p>
+                                      <p class="pb-2 mb-3 border-bottom"> Запрос автоматически расширен до следующего вида - {full_query}.</p>
+                                      <p class="pb-2 mb-3 border-bottom"> Служебная информация для анализа : {translation_stack}.</p>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div>
+                              <div class="bd-example">
+                                <ul class="nav nav-pills mb-3" id="myTab" role="tablist">
+                                  <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab" aria-controls="home" aria-selected="false">Результаты поиска</button>
+                                  </li>
+                                  <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="true">Тематическое описание коллекции</button>
+                                  </li>
+                                  <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="contact-tab" data-bs-toggle="tab" data-bs-target="#contact" type="button" role="tab" aria-controls="contact" aria-selected="false" >Схема</button>
+                                  </li>
+                                </ul>
+                                <div class="tab-content" id="myTabContent">
+                                  <div class="tab-pane fade active show" id="home" role="tabpanel" aria-labelledby="home-tab">
+                                    <div class="container-fluid g-0">
+                                        <div className="ag-theme-alpine" style={{height: 700}}>
+                                            <AgGridReact
+                                                ref={this.gridRef}
+                                                rowData={articles}
+                                                columnDefs={articlesInfo}
+                                                pagination={true}
+                                                onSelectionChanged={this.onSelectionAnalise}
+                                                rowSelection={'single'}
+                                            >
+                                            </AgGridReact>
+                                        </div>
+                                        <div>
+                                            <input className="btn btn-primary" type="submit" value="Начать обработку" onClick={() => this.startAnalise()}/>
+                                        </div>
+                                    </div>
+                                  </div>
+                                  <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+                                    <div>
+                                        <p>Topic {current_topic === -2? "Выбраны все": `№ ${current_topic}`}</p>
+                                        <Slider
+                                            axis="x"
+                                            x={current_topic}
+                                            xmax={topics.length - 1}
+                                            xmin={-2}
+                                            onChange={this.externalFilterChanged}
+                                        />
+                                    </div>
+                                    <div className="ag-theme-alpine" style={{height: 700}}>
+                                        <AgGridReact
+                                            ref={this.gridAnaliseRef}
+                                            rowData={analise_articles}
+                                            columnDefs={analise_info}
+                                            pagination={true}
+                                            rowSelection={'single'}
+                                            onSelectionChanged={this.onSelectionChanged}
+                                            animateRows={true}
+                                            isExternalFilterPresent={this.isExternalFilterPresent}
+                                            doesExternalFilterPass={this.doesExternalFilterPass}
+                                        >
+                                        </AgGridReact>
+                                    </div>
+                                    <div>
+                                        {clust_graph?
+                                        <Plot
+                                            data={this.getGraphData()}
+                                            layout={clust_graph.layout}
+                                          />
+                                        :null
+                                        }
+                                    </div>
+                                    <div>
+                                        {heapmap?
+                                        <Plot
+                                            data={heapmap.data}
+                                            layout={heapmap.layout}
+                                          />
+                                        :null
+                                        }
+                                    </div>
+                                    <div>
+                                        {heirarchy?
+                                        <Plot
+                                            data={heirarchy.data}
+                                            layout={heirarchy.layout}
+                                          />
+                                        :null
+                                        }
+                                    </div>
+                                    <div>
+                                        {summarise?
+                                        <>
+                                            <p>Summarise</p>
+                                            <p>{summarise}</p>
+                                        </>
+                                        :<input className="btn btn-primary" type="submit" value="Суммаризовать" onClick={() => this.createSummariseQuery()}/>}
+                                    </div>
+                                  </div>
+                                  <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">
+                                    <div class="container-fluid g-0">
+                                      <div id="mynetwork" style={{width: "100%", height: "600px"}}>
+                                      {graph?
+                                        <Graph
+                                          graph={graph}
+                                          zoomView={true}
+//                                          events={this.selectEvent}
+                                          key={uuidv4()}
+                                          options={{
+                                            layout: {
+                                                hierarchical: false,
+                                            },
+                                            edges: {
+                                              color: "#000000"
+                                            }
+                                          }}
+//                                          getNetwork={network => {
+//                                            setNetwork(network);
+//                                          }}
+                                        />
+                                        :null}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              </div>
+                            </section>
+
+                            <aside id="sidebar2" class="col-md-4 bg-light collapse show width mb-5 shadow">
+                              <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">Подробности</h1>
+                              <nav class="small" id="toc">
+                                {DetailArticle?
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                          <a href= { DetailArticle.url } class="card-title link-primary text-decoration-none h5"> { DetailArticle.titl } </a>
+                                          <p class="card-text">---------------------------------- </p>
+                                          <p class="card-text">Авторы :  { DetailArticle.auth } </p>
+                                          <p class="card-text">---------------------------------- </p>
+                                          <p class="card-text">Аннотация :  </p>
+                                          <p class="card-text"> { DetailArticle.tiab } </p>
+                                          <p class="card-text">---------------------------------- </p>
+                                          <p class="card-text"><small class="text-success">Дата публикации : { DetailArticle.pdat } </small></p>
+                                          <p class="card-text"><small class="text-success">Издание : { DetailArticle.jour }</small></p>
+                                          <p class="card-text"><small class="text-success">Вид публикации : { DetailArticle.pt }</small></p>
+                                          <p class="card-text"><small class="text-success">Страна : { DetailArticle.pl } </small></p>
+                                          <p class="card-text"><small class="text-success">{ DetailArticle.mesh } </small></p>
+                                        </div>
+                                      </div>
+                                :null}
+                              </nav>
+                            </aside>
+
+                            </div>
+                        </div>
+                    </div>
+                </main>
             </>
             )
         }
