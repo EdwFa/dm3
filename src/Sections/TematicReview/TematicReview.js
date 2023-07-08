@@ -293,7 +293,7 @@ export class TematicReview extends Component {
 
     startAnalise() {
         let analise_data = [];
-        this.gridRef.current.api.forEachNodeAfterFilter((rowNode) => analise_data.push(rowNode.data));
+        this.gridRef.current.api.forEachNodeAfterFilter((rowNode) => analise_data.push(rowNode.data.uid));
         fetch(variables.API_URL + '/api/analise/', {
             method: 'POST',
             headers: {
