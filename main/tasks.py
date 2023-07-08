@@ -4,6 +4,7 @@ from celery import shared_task
 import time
 import json
 import oneai
+import requests
 
 
 from .serializers import *
@@ -52,27 +53,13 @@ def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 
     handle.close()
     data = {
         'data': ArticleSerializer(records, many=True).data,
-        'columns': [
-            {
-                'field': 'uid',
-                'headerCheckboxSelection': True,
-                'headerCheckboxSelectionFilteredOnly': True,
-                'checkboxSelection': True,
-                'cellRendererParams': {
-                    'checkbox': True,
-                },
-            },
-            {'field': 'titl', 'filter': 'agTextColumnFilter'},
-            {'field': 'pdat', 'filter': 'agTextColumnFilter'},
-            {'field': 'auth', 'filter': 'agTextColumnFilter'},
-            {'field': 'jour', 'filter': 'agTextColumnFilter'},
-            {'field': 'pt', 'filter': 'agTextColumnFilter'}
-        ],
         'message': 'no one task in progress'
     }
     return data
 
 def create_analise_task(**kwargs):
+    if TaskAnalise.objects.filter(user=kwargs['user'], status=0).count() != 0:
+        return None
     task = TaskAnalise.objects.create(**kwargs)
     return task
 
@@ -119,6 +106,13 @@ def summarise_text(self, records):
 
     output = pipeline.run(text)
     return output.summary.text
+
+@shared_task(bind=True)
+def get_ddi_articles(self, query):
+    url = f'https://www.ncbi.nlm.nih.gov/research/litsense-api/api/?query={query}&rerank=true'
+    r = requests.get(url)
+    jsn = json.loads(r.text)
+    return jsn
 
 
 

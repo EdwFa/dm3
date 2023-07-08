@@ -1,3 +1,5 @@
+import json
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -98,6 +100,7 @@ class TematicAnaliseView(APIView):
             }
             return Response(data=data, status=status.HTTP_200_OK)
 
+        print(current_task.task_id)
         try:
             worker_id = TaskResult.objects.get(task_id=current_task.task_id)
         except ObjectDoesNotExist:
@@ -137,6 +140,8 @@ class TematicAnaliseView(APIView):
     def post(self, request):
         print(request.data)
         new_task = create_analise_task(user=request.user)
+        if new_task is None:
+            return Response(data={'data': None, 'message': 'worker in progress'}, status=status.HTTP_403_FORBIDDEN)
         task = analise_records.delay(records=request.data['articles'])
 
         new_task.task_id = task.id
@@ -153,7 +158,6 @@ class SummariseTextApi(APIView):
         try:
             worker_id = TaskResult.objects.get(task_id=task_id)
         except ObjectDoesNotExist:
-            current_task.delete()
             return Response(data={'data': None, 'message': 'worker not found'}, status=status.HTTP_404_NOT_FOUND)
 
         if worker_id.status == 'PROGRESS' or worker_id.status == 'STARTED':
@@ -164,14 +168,50 @@ class SummariseTextApi(APIView):
 
         if worker_id.status == 'SUCCESS':
             data = {
-                'data': AsyncResult(worker_id.task_id, app=parse_records).get()
+                'data': AsyncResult(worker_id.task_id, app=summarise_text).get()
             }
         return Response(data=data, status=status.HTTP_200_OK)
 
     def post(self, request):
         print(request.data)
         task = summarise_text.delay(records=request.data['articles'])
+        data = {
+            'data': task.id,
+        }
+        return Response(data=data, status=status.HTTP_200_OK)
 
+class DDIReviewApi(APIView):
+    def get(self, requset):
+        task_id = requset.GET.get('task_id')
+        if not task_id == 'null':
+            try:
+                worker_id = TaskResult.objects.get(task_id=task_id)
+            except ObjectDoesNotExist:
+                return Response(data={'data': None, 'message': 'worker not found'}, status=status.HTTP_404_NOT_FOUND)
+
+            if worker_id.status == 'PROGRESS' or worker_id.status == 'STARTED':
+                return Response(data={'data': None, 'message': 'worker in progress'}, status=status.HTTP_202_ACCEPTED)
+
+            if worker_id.status == 'FAILURE':
+                return Response(data={'data': None, 'message': 'worker in failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+            if worker_id.status == 'SUCCESS':
+                with open('test_ddi.json', 'r') as f:
+                    try:
+                        data = json.load(f)
+                        data = data + AsyncResult(worker_id.task_id, app=get_ddi_articles).get()
+                    except:
+                        data = AsyncResult(worker_id.task_id, app=get_ddi_articles).get()
+                with open('test_ddi.json', 'w') as f:
+                    json.dump(data, f)
+
+        with open('test_ddi.json', 'r') as f:
+            data = json.load(f)
+        return Response(data=data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        print(request.data)
+        task = get_ddi_articles.delay(query=request.data['query'])
         data = {
             'data': task.id,
         }

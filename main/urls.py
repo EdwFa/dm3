@@ -9,4 +9,6 @@ urlpatterns = [
     path('graphs/', GetGraphData.as_view(), name='graph'),
     path('summarise', SummariseTextApi.as_view(), name='summarise'),
 
+    path('ddi_review', DDIReviewApi.as_view(), name='ddi'),
+
 ]
