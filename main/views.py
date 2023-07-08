@@ -142,7 +142,7 @@ class TematicAnaliseView(APIView):
         new_task = create_analise_task(user=request.user)
         if new_task is None:
             return Response(data={'data': None, 'message': 'worker in progress'}, status=status.HTTP_403_FORBIDDEN)
-        task = analise_records.delay(records=request.data['articles'])
+        task = analise_records.delay(IdList=request.data['articles'])
 
         new_task.task_id = task.id
         new_task.save()

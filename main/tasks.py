@@ -72,16 +72,28 @@ def check_working_analise_task(request):
     return False
 
 @shared_task(bind=True)
-def analise_records(self, records):
+def analise_records(self, IdList):
+    handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
+    records = ArticleSerializer([parse_record(record) for record in Medline.parse(handle) if record], many=True).data
+    handle.close()
+
     articles = create_clear_articles(records)
     topics, props, embeddings = analise_articles(articles)
     records = return_results(records, topics, props)
     graph = return_clust_graph([rec['titl'] for rec in records], embeddings)
     count_topics = len(set(topics))
+    print("COunt topic = ", count_topics)
     n_clusters = 10
-    if n_clusters > count_topics:
-        n_clusters = count_topics / 2
-    heapmap = return_heapmap(n_clusters=n_clusters)
+    if count_topics > 1:
+        if n_clusters > count_topics:
+            n_clusters = count_topics / 2
+        heapmap = return_heapmap(n_clusters=n_clusters)
+        with open('test_heapmap.json', 'w') as f:
+            f.write(heapmap)
+    else:
+        with open('test_heapmap.json', 'w') as f:
+            json.dump(None, f)
+
     heirarchy = return_heirarchy()
 
     with open('test_analise_json.json', 'w') as f:
