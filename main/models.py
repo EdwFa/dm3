@@ -10,7 +10,7 @@ task_statuses = (
 
 task_analise = (
     (0, 'tematic'),
-    (1, 'other'),
+    (1, 'markup'),
 )
 
 # Create your models here.
@@ -101,6 +101,7 @@ class Task(models.Model):
     end_date = models.DateTimeField(null=True, blank=True)
     status = models.IntegerField(choices=task_statuses, default=0)
     count = models.IntegerField()
+    message = models.TextField(default='')
 
 
 class TaskAnalise(models.Model):
@@ -110,3 +111,4 @@ class TaskAnalise(models.Model):
     end_date = models.DateTimeField(null=True, blank=True)
     status = models.IntegerField(choices=task_statuses, default=0)
     type_analise = models.IntegerField(choices=task_statuses, default=0)
+    message = models.TextField(default='')
