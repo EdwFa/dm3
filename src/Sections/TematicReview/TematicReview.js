@@ -19,6 +19,7 @@ import Slider from 'react-input-slider';
 import { variables } from '../Variables.js';
 
 
+
 var topicFilterParams = {
   comparator: (TopicParam, cellValue) => {
     if (TopicParam === cellValue) {
@@ -74,7 +75,7 @@ export class TematicReview extends Component {
             // Filters
             queryText: 'covid-19',
             queryStartDate: '2022-01-01',
-            queryEndDate: null,
+            queryEndDate: new Date().toISOString().split('T')[0],
             queryTypes: new Set(),
             queryOlds: new Set(),
             queryGenders: new Set(),
@@ -151,6 +152,40 @@ export class TematicReview extends Component {
         return query
     }
 
+//    getArticles = (url, interval = 1000) => {
+//      fetch(variables.API_URL + '/api/articles/',
+//            {
+//                headers: {
+//                    'Content-Type': 'application/json;charset=utf-8',
+//                    'Authorization': `Token ${variables.token}`,
+//                },
+//            }
+//          )
+//          .then(response => {
+//                console.log(response.status);
+//                if (response.status == 202) {
+//                    this.setState({loading: true})
+//                    setTimeout(() => {
+//                      return this.getArticles(url, interval)
+//                    }, interval);
+//                }
+//                if (response.status == 200) {
+//                    return response.json()
+//                } else {
+//                    throw Error(response.statusText)
+//                }
+//          })
+//          .then(data => {
+//            this.setState({
+//                articles: data.data, DetailArticle: data.data[0], message: data.message, loading: false
+//            });
+//          })
+//          .catch(error => {
+//            console.log(error);
+//            this.setState({ articles: [], articlesInfo: [], loading: false });
+//          })
+//    }
+
     getArticles = (url, interval = 1000) => {
       fetch(variables.API_URL + '/api/articles/',
             {
@@ -162,26 +197,28 @@ export class TematicReview extends Component {
           )
           .then(response => {
                 console.log(response.status);
-                if (response.status == 202) {
-                    this.setState({loading: true})
-                    setTimeout(() => {
-                      return this.getArticles(url, interval)
-                    }, interval);
-                }
-                if (response.status == 200) {
+                if (response.ok) {
                     return response.json()
                 } else {
                     throw Error(response.statusText)
                 }
           })
           .then(data => {
-            this.setState({
-                articles: data.data, DetailArticle: data.data[0], message: data.message, loading: false
-            });
+            if (!data.data) {
+                this.setState({loading: true, message: data.message});
+                console.log(data.message);
+                setTimeout(() => {
+                  return this.getArticles(url, interval)
+                }, interval);
+            } else {
+                this.setState({
+                    articles: data.data, DetailArticle: data.data[0], message: data.message, loading: false
+                });
+            }
           })
           .catch(error => {
             console.log(error);
-            this.setState({ articles: [], articlesInfo: [], loading: false });
+            this.setState({ articles: [], articlesInfo: [], loading: false, message: 'Something gone wrong' });
           })
     }
 
@@ -212,6 +249,7 @@ export class TematicReview extends Component {
                     articles: [],
                     articlesInfo: [],
                     loading: true,
+
                 });
                 alert("You query in queue? please wait to get result");
                 this.getArticles()
@@ -324,6 +362,52 @@ export class TematicReview extends Component {
         this.setState({DetailArticle: (selectedRows.length === 1 ? selectedRows[0] : null)})
     }
 
+//    getAnalise = (url, interval = 1000) => {
+//        fetch(variables.API_URL + "/api/analise/",
+//          {
+//            headers: {
+//                'Content-Type': 'application/json;charset=utf-8',
+//                'Authorization': `Token ${variables.token}`,
+//            },
+//          }
+//        )
+//        .then((res) => {
+//                if (res.status == 202) {
+//                    this.setState({loading: true})
+//                    setTimeout(() => {
+//                      return this.getAnalise(url, interval)
+//                    }, interval);
+//                }
+//                if (res.status == 200) {
+//                    return res.json()
+//                } else {
+//                    throw Error(res.statusText)
+//                }
+//            })
+//        .then((data) => {
+//          delete data.graph.layout.width;
+//          delete data.heapmap.layout.width;
+//          delete data.heirarchy.layout.width;
+//          var topics = new Set()
+//          for (let record of data.data) {
+//            topics.add(record.topic)
+//          }
+//          this.setState({
+//            analise_articles: data.data,
+//            DetailArticle: data.data[0],
+//            clust_graph: data.graph,
+//            heapmap: data.heapmap,
+//            heirarchy: data.heirarchy,
+//            loading: false,
+//            topics: [...topics],
+//          });
+//        })
+//        .catch((err) => {
+//          console.log(err);
+//          this.setState({data: [], dataInfo: [], DetailArticle: null, loading: false});
+//        });
+//    }
+
     getAnalise = (url, interval = 1000) => {
         fetch(variables.API_URL + "/api/analise/",
           {
@@ -334,35 +418,38 @@ export class TematicReview extends Component {
           }
         )
         .then((res) => {
-                if (res.status == 202) {
-                    this.setState({loading: true})
-                    setTimeout(() => {
-                      return this.getAnalise(url, interval)
-                    }, interval);
-                }
-                if (res.status == 200) {
+                if (res.ok) {
                     return res.json()
                 } else {
                     throw Error(res.statusText)
                 }
             })
         .then((data) => {
-          delete data.graph.layout.width;
-          delete data.heapmap.layout.width;
-          delete data.heirarchy.layout.width;
-          var topics = new Set()
-          for (let record of data.data) {
-            topics.add(record.topic)
+          if (!data.data) {
+            this.setState({loading: true, message: data.message});
+                console.log(data.message);
+                setTimeout(() => {
+                  return this.getAnalise(url, interval)
+                }, interval);
+          } else {
+              delete data.graph.layout.width;
+              delete data.heapmap.layout.width;
+              delete data.heirarchy.layout.width;
+              var topics = new Set()
+              for (let record of data.data) {
+                topics.add(record.topic)
+              }
+              this.setState({
+                analise_articles: data.data,
+                DetailArticle: data.data[0],
+                clust_graph: data.graph,
+                heapmap: data.heapmap,
+                heirarchy: data.heirarchy,
+                loading: false,
+                message: data.message,
+                topics: [...topics],
+              });
           }
-          this.setState({
-            analise_articles: data.data,
-            DetailArticle: data.data[0],
-            clust_graph: data.graph,
-            heapmap: data.heapmap,
-            heirarchy: data.heirarchy,
-            loading: false,
-            topics: [...topics],
-          });
         })
         .catch((err) => {
           console.log(err);
@@ -861,7 +948,7 @@ export class TematicReview extends Component {
                                 <div class="accordion-item">
                                   <h2 class="accordion-header" id="">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseSeven" aria-expanded="false" aria-controls="flush-collapseSeven">
-                                      По запросу найдено { count } источников. {count != 0?  loading? "В процессе" : "Все обработано": null}
+                                      По запросу найдено { count } источников. {message}
                                     </button>
                                   </h2>
                                   <div id="flush-collapseSeven" class="collapse multi-collapse" aria-labelledby="flush-headingSeven" data-bs-target="#accordionFlushExample">
@@ -897,6 +984,32 @@ export class TematicReview extends Component {
                                                 pagination={true}
                                                 onSelectionChanged={this.onSelectionAnalise}
                                                 rowSelection={'single'}
+                                                sideBar={{
+                                                  toolPanels: [
+                                                    {
+                                                      id: 'columns',
+                                                      labelDefault: 'Columns',
+                                                      labelKey: 'columns',
+                                                      iconKey: 'columns',
+                                                      toolPanel: 'agColumnsToolPanel',
+                                                      minWidth: 225,
+                                                      width: 225,
+                                                      maxWidth: 225,
+                                                    },
+                                                    {
+                                                      id: 'filters',
+                                                      labelDefault: 'Filters',
+                                                      labelKey: 'filters',
+                                                      iconKey: 'filter',
+                                                      toolPanel: 'agFiltersToolPanel',
+                                                      minWidth: 180,
+                                                      maxWidth: 400,
+                                                      width: 250,
+                                                    },
+                                                  ],
+                                                  position: 'left',
+                                                  defaultToolPanel: 'filters',
+                                                }}
                                             >
                                             </AgGridReact>
                                         </div>
@@ -927,6 +1040,32 @@ export class TematicReview extends Component {
                                             animateRows={true}
                                             isExternalFilterPresent={this.isExternalFilterPresent}
                                             doesExternalFilterPass={this.doesExternalFilterPass}
+                                            sideBar={{
+                                                  toolPanels: [
+                                                    {
+                                                      id: 'columns',
+                                                      labelDefault: 'Columns',
+                                                      labelKey: 'columns',
+                                                      iconKey: 'columns',
+                                                      toolPanel: 'agColumnsToolPanel',
+                                                      minWidth: 225,
+                                                      width: 225,
+                                                      maxWidth: 225,
+                                                    },
+                                                    {
+                                                      id: 'filters',
+                                                      labelDefault: 'Filters',
+                                                      labelKey: 'filters',
+                                                      iconKey: 'filter',
+                                                      toolPanel: 'agFiltersToolPanel',
+                                                      minWidth: 180,
+                                                      maxWidth: 400,
+                                                      width: 250,
+                                                    },
+                                                  ],
+                                                  position: 'left',
+                                                  defaultToolPanel: 'filters',
+                                                }}
                                         >
                                         </AgGridReact>
                                     </div>

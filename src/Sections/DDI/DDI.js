@@ -27,24 +27,67 @@ export class DDIReview extends Component {
 
             //queries
             query_list: [],
-            task_id: null,
+            message: null,
             articles: [],
             articlesInfo: [
-                {field: 'pmid', filter: 'agTextColumnFilter'},
-                {field: 'score', filter: 'agTextColumnFilter'},
+                {
+                    field: 'uid',
+                },
+                {field: 'score', filter: 'agNumberColumnFilter', 'sortable': true},
                 {field: 'text', filter: 'agTextColumnFilter'},
+                {field: 'section', filter: 'agTextColumnFilter'},
+                {field: 'titl', filter: 'agTextColumnFilter'},
+                {field: 'pdat', filter: 'agTextColumnFilter'},
+                {field: 'auth', filter: 'agTextColumnFilter'},
+                {field: 'jour', filter: 'agTextColumnFilter'},
+                {field: 'pt', filter: 'agTextColumnFilter'},
             ],
 
             // Filters
-            queryText: 'covid-19',
+            queryText: 'What methods are available to measure anti-mullerian hormone concentrations in young women?',
             queryStartDate: '2022-01-01',
             queryEndDate: null,
             queryTypes: new Set(),
         }
     }
 
+//    getArticles = (task_id, interval = 1000) => {
+//      fetch(variables.API_URL + `/api/ddi_review?task_id=${task_id}`,
+//            {
+//                headers: {
+//                    'Content-Type': 'application/json;charset=utf-8',
+//                    'Authorization': `Token ${variables.token}`,
+//                },
+//            }
+//          )
+//          .then(response => {
+//                console.log(response.status);
+//                if (response.status == 202) {
+//                    this.setState({loading: true})
+//                    console.log(response.json())
+//                    setTimeout(() => {
+//                      return this.getArticles(task_id, interval)
+//                    }, interval);
+//                }
+//                if (response.status == 200) {
+//                    return response.json()
+//                } else {
+//                    throw Error(response.statusText)
+//                }
+//          })
+//          .then(data => {
+//            this.setState({
+//                articles: data.data, DetailArticle: data.data[0], loading: false
+//            });
+//          })
+//          .catch(error => {
+//            console.log(error);
+//                this.setState({ articles: [], DetailArticle: null, loading: false });
+//          })
+//    }
+
     getArticles = (task_id, interval = 1000) => {
-      fetch(variables.API_URL + `/api/ddi_review?task_id=${task_id}`,
+      fetch(variables.API_URL + `/api/ddi_review`,
             {
                 headers: {
                     'Content-Type': 'application/json;charset=utf-8',
@@ -54,26 +97,28 @@ export class DDIReview extends Component {
           )
           .then(response => {
                 console.log(response.status);
-                if (response.status == 202) {
-                    this.setState({loading: true})
-                    setTimeout(() => {
-                      return this.getArticles(task_id, interval)
-                    }, interval);
-                }
-                if (response.status == 200) {
+                if (response.ok) {
                     return response.json()
                 } else {
                     throw Error(response.statusText)
                 }
           })
           .then(data => {
-            this.setState({
-                articles: data, DetailArticle: data[0], loading: false
-            });
+            if (!data.data) {
+                this.setState({loading: true, message: data.message});
+                console.log(data.message);
+                setTimeout(() => {
+                  return this.getArticles(task_id, interval)
+                }, interval);
+            } else {
+                this.setState({
+                    articles: data.data, DetailArticle: data.data[0], loading: false,  message: data.message
+                });
+            }
           })
           .catch(error => {
             console.log(error);
-                this.setState({ articles: [], DetailArticle: null, loading: false });
+                this.setState({ articles: [], DetailArticle: null, loading: false,  message: 'Something gone wrong' });
           })
     }
 
@@ -106,8 +151,30 @@ export class DDIReview extends Component {
         )
     }
 
+    clearTask() {
+        // Отправляем запрос на сервер для получения статей
+        fetch(variables.API_URL + '/api/ddi_review', {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json;charset=utf-8',
+                'Authorization': `Token ${variables.token}`,
+            }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert("File is clear");
+                this.setState({query_list: [], articles: [], DetailArticle: null})
+            })
+            .catch(error => {
+                console.log(error);
+                this.setState({ task: null });
+            }
+        )
+    }
+
     componentDidMount() {
-        this.getArticles(null);
+        this.getArticles();
         console.log('start');
     }
 
@@ -144,6 +211,7 @@ export class DDIReview extends Component {
             articlesInfo,
             articles,
             DetailArticle,
+            message,
 
             queryText,
             queryEndDate,
@@ -332,12 +400,15 @@ export class DDIReview extends Component {
                                 <div class="accordion-item">
                                   <h2 class="accordion-header" id="">
                                     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseSeven" aria-expanded="false" aria-controls="flush-collapseSeven">
-                                      Запросы
+                                      Запросы. {message}
                                     </button>
                                   </h2>
                                   <div id="flush-collapseSeven" class="collapse multi-collapse" aria-labelledby="flush-headingSeven" data-bs-target="#accordionFlushExample">
                                     <div class="accordion-body">
                                     {query_list?.map(query => <p class="pb-2 mb-3 border-bottom">{query}.</p>)}
+                                    </div>
+                                    <div class="accordion-body">
+                                        <input className="btn btn-primary" type="submit" value="Очистить" onClick={() => this.clearTask()}/>
                                     </div>
                                   </div>
                                 </div>
@@ -355,6 +426,32 @@ export class DDIReview extends Component {
                                                 pagination={true}
                                                 rowSelection={'single'}
                                                 onSelectionChanged={this.onSelectionChanged}
+                                                sideBar={{
+                                                  toolPanels: [
+                                                    {
+                                                      id: 'columns',
+                                                      labelDefault: 'Columns',
+                                                      labelKey: 'columns',
+                                                      iconKey: 'columns',
+                                                      toolPanel: 'agColumnsToolPanel',
+                                                      minWidth: 225,
+                                                      width: 225,
+                                                      maxWidth: 225,
+                                                    },
+                                                    {
+                                                      id: 'filters',
+                                                      labelDefault: 'Filters',
+                                                      labelKey: 'filters',
+                                                      iconKey: 'filter',
+                                                      toolPanel: 'agFiltersToolPanel',
+                                                      minWidth: 180,
+                                                      maxWidth: 400,
+                                                      width: 250,
+                                                    },
+                                                  ],
+                                                  position: 'left',
+                                                  defaultToolPanel: 'filters',
+                                                }}
                                             >
                                             </AgGridReact>
                                         </div>
@@ -365,17 +462,24 @@ export class DDIReview extends Component {
                               </div>
                             </section>
 
-                            <aside id="sidebar2" class="col-md-4 bg-light collapse show width mb-5 shadow">
+                           <aside id="sidebar2" class="col-md-4 bg-light collapse show width mb-5 shadow">
                               <h1 class="h2 pt-3 pb-2 mb-3 border-bottom">Подробности</h1>
                               <nav class="small" id="toc">
                                 {DetailArticle?
                                     <div class="card mb-3">
                                         <div class="card-body">
-                                          <a href= { DetailArticle.url } class="card-title link-primary text-decoration-none h5"> { DetailArticle.pmid } </a>
+                                          <a href= { DetailArticle.url } class="card-title link-primary text-decoration-none h5" target="_blank"> { DetailArticle.titl } </a>
+                                          <p class="card-text">---------------------------------- </p>
+                                          <p class="card-text">Авторы :  { DetailArticle.auth } </p>
                                           <p class="card-text">---------------------------------- </p>
                                           <p class="card-text">Аннотация :  </p>
-                                          <p class="card-text"> { DetailArticle.text } </p>
+                                          <p class="card-text" dangerouslySetInnerHTML={{__html: DetailArticle.tiab}} />
                                           <p class="card-text">---------------------------------- </p>
+                                          <p class="card-text"><small class="text-success">Дата публикации : { DetailArticle.pdat } </small></p>
+                                          <p class="card-text"><small class="text-success">Издание : { DetailArticle.jour }</small></p>
+                                          <p class="card-text"><small class="text-success">Вид публикации : { DetailArticle.pt }</small></p>
+                                          <p class="card-text"><small class="text-success">Страна : { DetailArticle.pl } </small></p>
+                                          <p class="card-text"><small class="text-success">{ DetailArticle.mesh } </small></p>
                                         </div>
                                       </div>
                                 :null}
