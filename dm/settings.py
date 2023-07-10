@@ -170,6 +170,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 if not os.path.exists('logs'):
     os.mkdir('logs')
 
+# Saving datasets
+if not os.path.exists('datasets'):
+    os.mkdir('datasets')
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,

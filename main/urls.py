@@ -8,6 +8,7 @@ urlpatterns = [
     path('analise/', TematicAnaliseView.as_view(), name='analise'),
     path('graphs/', GetGraphData.as_view(), name='graph'),
     path('summarise', SummariseTextApi.as_view(), name='summarise'),
+    path('summarise_emb', SummariseEmbApi.as_view(), name='summarise'),
 
     path('ddi_review', DDIReviewApi.as_view(), name='ddi'),
 

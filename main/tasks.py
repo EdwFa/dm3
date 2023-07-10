@@ -3,9 +3,12 @@ from Bio import Medline
 from celery import shared_task
 import time
 import json
+import os
+
 import oneai
 import requests
 
+from django_celery_results.models import TaskResult
 
 from .serializers import *
 from dm.settings import PARSER_EMAIL, MEDIA_URL
@@ -17,12 +20,28 @@ def create_task(**kwargs):
     return task
 
 
-def check_working_task(request):
-    tasks = Task.objects.filter(status=0, user=request.user)
-    if tasks.count() != 0:
-        return True
+def check_working_task(request, Task, **kwargs):
+    tasks = Task.objects.filter(**kwargs)
+    for task in tasks:
+        try:
+            worker = TaskResult.objects.get(task_id=task.task_id)
+        except:
+            task.delete()
+            continue
+        else:
+            if worker.status == 'PROGRESS' or worker.status == 'STARTED':
+                return True
 
     return False
+
+
+def get_path_to_file(username, file_name):
+    path_to_file = os.path.join('datasets', username, file_name)
+    print(path_to_file)
+    if not os.path.exists(path_to_file):
+        raise Exception('Not found current_file')
+
+    return path_to_file
 
 
 @shared_task(bind=True)
@@ -65,22 +84,24 @@ def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 
     }
     return data
 
-def create_analise_task(**kwargs):
-    if TaskAnalise.objects.filter(user=kwargs['user'], status=0).count() != 0:
+def create_analise_task(request, **kwargs):
+    if check_working_task(request, TaskAnalise, user=kwargs['user'], status=0):
         return None
+
     task = TaskAnalise.objects.create(**kwargs)
     return task
 
 
 def check_working_analise_task(request, type_status):
-    tasks = TaskAnalise.objects.filter(status=0, user=request.user, type_analise=type_status)
-    if tasks.count() != 0:
+    if check_working_task(request, TaskAnalise, status=0, user=request.user, type_analise=type_status):
         return True
+    # if tasks.count() != 0:
+    #     return True
 
     return False
 
 @shared_task(bind=True)
-def analise_records(self, IdList, new_task_id):
+def analise_records(self, username, IdList, new_task_id):
     handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
     records = ArticleSerializer([parse_record(record) for record in Medline.parse(handle) if record], many=True).data
     handle.close()
@@ -104,24 +125,24 @@ def analise_records(self, IdList, new_task_id):
     print("COunt topic = ", count_topics)
     n_clusters = 10
     if count_topics > 1:
-        if n_clusters > count_topics:
-            n_clusters = count_topics - 1
+        if n_clusters >= count_topics:
+            n_clusters = int(count_topics / 2)
+
+        print(n_clusters)
         heapmap = return_heapmap(n_clusters=n_clusters)
-        with open('test_heapmap.json', 'w') as f:
+        with open(get_path_to_file(username, 'test_heapmap.json'), 'w') as f:
             f.write(heapmap)
     else:
-        with open('test_heapmap.json', 'w') as f:
+        with open(get_path_to_file(username, 'test_heapmap.json'), 'w') as f:
             json.dump(None, f)
 
     heirarchy = return_heirarchy()
 
-    with open('test_analise_json.json', 'w') as f:
+    with open(get_path_to_file(username, 'test_analise_json.json'), 'w') as f:
         json.dump(records, f)
-    with open('test_clust_graph.json', 'w') as f:
+    with open(get_path_to_file(username, 'test_clust_graph.json'), 'w') as f:
         f.write(graph)
-    with open('test_heapmap.json', 'w') as f:
-        f.write(heapmap)
-    with open('test_heirarchy.json', 'w') as f:
+    with open(get_path_to_file(username, 'test_heirarchy.json'), 'w') as f:
         f.write(heirarchy)
     return None
 
@@ -139,18 +160,34 @@ def summarise_text(self, records):
     return output.summary.text
 
 @shared_task(bind=True)
-def get_ddi_articles(self, query, new_task_id):
-    # # оnly for test check status
-    # new_task = TaskAnalise.objects.get(id=new_task_id)
-    # for i in range(10):
-    #     new_task.message = f'On {i}/10 step...'
-    #     new_task.save()
-    #     time.sleep(1)
-    # return None
+def summarise_emb(self, username):
+    with open(get_path_to_file(username, 'test_ddi.json'), 'r') as f:
+        data = json.load(f)['data']
+    text = ' '.join([rec['text'] for rec in data])
+    print(len(text), text)
+    api_key = "0f4f9d19-644d-4577-94af-48abb689be60"
+    oneai.api_key = api_key
+    pipeline = oneai.Pipeline(steps=[
+        oneai.skills.Summarize(min_length=20),
+    ])
+
+    output = pipeline.run(text)
+    return output.summary.text
+
+
+def current_record(record, **filters):
+    if 'score' in filters:
+        if record['score'] < filters['score']:
+            return False
+    return True
+
+
+@shared_task(bind=True)
+def get_ddi_articles(self, query, new_task_id, **kwargs):
 
     url = f'https://www.ncbi.nlm.nih.gov/research/litsense-api/api/?query={query}&rerank=true'
     r = requests.get(url)
-    records_id = {record['pmid']: [round(record['score'], 2), record['section'], record['text']] for record in json.loads(r.text)}
+    records_id = {record['pmid']: [record['score'], record['section'], record['text']] for record in json.loads(r.text) if current_record(record, **kwargs)}
 
     handle = Entrez.efetch(db="pubmed", id=[k for k in records_id], rettype="medline", retmode="text")
 
@@ -167,8 +204,10 @@ def get_ddi_articles(self, query, new_task_id):
             if annotations is None:
                 annotations = get_annotations(record['tiab'])
                 if annotations is None:
+                    record['annotations'] = None
                     continue
-            record['tiab'] = markup_text(**annotations)
+            record['tiab'] = annotations['text']
+            record['annotations'] = annotations['annotations']
             record['score'], record['section'], record['text'] = records_id[record['uid']]
 
             records.append(record)

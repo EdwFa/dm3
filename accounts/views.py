@@ -6,7 +6,18 @@ from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework.permissions import AllowAny
 
+import os
+
 from .serializers import *
+
+
+needed_files = ['test_analise_json.json', 'test_clust_graph.json', 'test_ddi.json', 'test_heapmap.json', 'test_heirarchy.json', 'test_json.json']
+
+def get_path_to_file(username, file_name):
+    path_to_file = os.path.join('datasets', username, file_name)
+    if not os.path.exists(path_to_file):
+        f = open(path_to_file, 'w')
+        f.close()
 
 
 class LoginApi(APIView):
@@ -28,6 +39,12 @@ class LoginApi(APIView):
                 except ObjectDoesNotExist:
                     pass
                 token = Token.objects.create(user=authenticated_user)
+
+                if not os.path.exists(f'datasets/{authenticated_user.username}'):
+                    os.mkdir(f'datasets/{authenticated_user.username}')
+                for need_file in needed_files:
+                    get_path_to_file(authenticated_user.username, need_file)
+
                 print(token)
                 return Response(TokenSeriazliser(token).data)
             return Response(serializer.errors, status=403)
