@@ -39,7 +39,8 @@ function markup_text(text, annotations) {
     for (let annotation of annotations) {
         let start = annotation.span.begin
         let end = annotation.span.end
-        let markup_str = `<span style=\"color: ${obj_color[annotation.obj]}\">${text.slice(start, end)}<sub>${annotation.prob.toFixed(2)}</sub></span>`
+        if (!annotation.prop) { console.log('This')}
+        let markup_str = `<span style=\"color: ${obj_color[annotation.obj]}\">${text.slice(start, end)}<sub>${annotation.prob? annotation.prob.toFixed(2): ""}</sub></span>`
         markup_text = `${markup_text}${text.slice(last_position, start)}${markup_str}`
 
         last_position = end
