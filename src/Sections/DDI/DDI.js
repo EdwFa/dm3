@@ -14,6 +14,39 @@ import 'ag-grid-community/styles/ag-theme-alpine.css';
 
 import { variables } from '../Variables.js';
 
+import Slider from 'react-input-slider';
+
+
+const obj_color = {
+    'disease': "#fdbbbb",
+    'drug': "#ECC58B",
+    'gene': "#E2DB8C",
+    'chemical': "#21c354",
+    'species': "#A6EFDC",
+    'mutation': "#B2DDEA",
+    'cell_type': "#C6DEF5",
+    'cell_line': "#A3B3D2",
+    'DNA': "#C9B9E8",
+    'RNA': "#D7DBE8",
+}
+
+function markup_text(text, annotations) {
+    if (!annotations) {
+        return text
+    }
+    let markup_text = ''
+    let last_position = 0
+    for (let annotation of annotations) {
+        let start = annotation.span.begin
+        let end = annotation.span.end
+        let markup_str = `<span style=\"color: ${obj_color[annotation.obj]}\">${text.slice(start, end)}<sub>${annotation.prob.toFixed(2)}</sub></span>`
+        markup_text = `${markup_text}${text.slice(last_position, start)}${markup_str}`
+
+        last_position = end
+    }
+    return markup_text
+}
+
 
 export class DDIReview extends Component {
 
@@ -42,11 +75,14 @@ export class DDIReview extends Component {
                 {field: 'jour', filter: 'agTextColumnFilter'},
                 {field: 'pt', filter: 'agTextColumnFilter'},
             ],
+            summarise: null,
+            task_id: null,
 
             // Filters
             queryText: 'What methods are available to measure anti-mullerian hormone concentrations in young women?',
             queryStartDate: '2022-01-01',
             queryEndDate: null,
+            queryScore: 0.8,
             queryTypes: new Set(),
         }
     }
@@ -133,6 +169,7 @@ export class DDIReview extends Component {
             },
             body: JSON.stringify({
                 query: this.state.queryText,
+                score: this.state.queryScore,
             })
             })
             .then(response => response.json())
@@ -204,6 +241,67 @@ export class DDIReview extends Component {
         this.setState({updateOr: !this.state.updateOr})
     }
 
+    // Summarise
+
+    getSummarise = (task_id, interval = 1000) => {
+        fetch(variables.API_URL + `/api/summarise_emb?task_id=${task_id}`,
+          {
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8',
+                'Authorization': `Token ${variables.token}`,
+            },
+          }
+        )
+        .then((res) => {
+                if (res.status == 202) {
+                    this.setState({loading: true})
+                    setTimeout(() => {
+                      return this.getSummarise(task_id, interval)
+                    }, interval);
+                } else if (res.status == 200) {
+                    return res.json()
+                } else {
+                    throw Error(res.statusText)
+                }
+            })
+        .then((data) => {
+          this.setState({
+            summarise: data.data,
+            message: 'Суммаризация прошла успешно'
+          });
+        })
+        .catch((err) => {
+          console.log(err);
+          this.setState({summarise: null, message: 'Произошла ошибка при суммаризации'});
+        });
+    }
+
+    createSummariseQuery() {
+        fetch(variables.API_URL + '/api/summarise_emb', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json;charset=utf-8',
+                'Authorization': `Token ${variables.token}`,
+            },
+            body: JSON.stringify({
+                articles: 'some'
+            })
+        })
+            .then((res) => {
+                if (res.status == 200) { return res.json() }
+                else { throw Error(res.statusText) }
+            })
+            .then((result) => {
+                var task_id = result.data;
+                this.setState({message: 'Отправлено на суммаризацию пожайлуста дождитесь ответа'})
+                this.getSummarise(task_id);
+            })
+            .catch((error) => {
+                alert('Ошибка')
+            })
+    }
+
     render() {
         const {
             token,
@@ -212,10 +310,12 @@ export class DDIReview extends Component {
             articles,
             DetailArticle,
             message,
+            summarise,
 
             queryText,
             queryEndDate,
             queryStartDate,
+            queryScore,
         } = this.state;
 
         if (!token){
@@ -370,6 +470,38 @@ export class DDIReview extends Component {
                                       </div>
                                     </div>
                                   </div>
+                                  <div className="accordion-item">
+                                    <h2 class="accordion-header" id="flush-headingThree">
+                                      <button class="accordion-button collapsed" data-target='#flush-collapseThree' type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseThree" aria-expanded="false" aria-controls="flush-collapseThree">
+                                        Точность
+                                      </button>
+                                    </h2>
+                                    <div id="flush-collapseThree" className="collapse show multi-collapse" aria-labelledby="flush-headingFour" data-bs-target="#accordionFlushExample">
+                                      <div className="accordion-body">
+                                        <p>Требуемая точность = {queryScore.toFixed(2)}</p>
+                                        <Slider
+                                            axis="x"
+                                            x={queryScore}
+                                            xmax={1}
+                                            xmin={0}
+                                            xstep={0.01}
+                                            onChange={({x}) => this.setState({queryScore: x})}
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="accordion-item">
+                                    <h2 class="accordion-header" id="flush-headingThree">
+                                      <button class="accordion-button collapsed" data-target='#flush-collapseThree' type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseFive" aria-expanded="false" aria-controls="flush-collapseThree">
+                                        Выделенные сущности
+                                      </button>
+                                    </h2>
+                                    <div id="flush-collapseFive" className="collapse show multi-collapse" aria-labelledby="flush-headingFour" data-bs-target="#accordionFlushExample">
+                                      <div className="accordion-body">
+                                        {Object.entries(obj_color).map(tag => <p class="pb-2 mb-3 border-bottom" style={{color: `${tag[1]}`}}>{tag[0]}.</p>)}
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
                             </aside>
 
@@ -455,6 +587,14 @@ export class DDIReview extends Component {
                                             >
                                             </AgGridReact>
                                         </div>
+                                        <div>
+                                            {summarise?
+                                            <>
+                                                <p>Summarise</p>
+                                                <p>{summarise}</p>
+                                            </>
+                                            :<input className="btn btn-primary" type="submit" value="Суммаризовать" onClick={() => this.createSummariseQuery()}/>}
+                                        </div>
                                     </div>
                                   </div>
                                 </div>
@@ -473,7 +613,7 @@ export class DDIReview extends Component {
                                           <p class="card-text">Авторы :  { DetailArticle.auth } </p>
                                           <p class="card-text">---------------------------------- </p>
                                           <p class="card-text">Аннотация :  </p>
-                                          <p class="card-text" dangerouslySetInnerHTML={{__html: DetailArticle.tiab}} />
+                                          <p class="card-text" dangerouslySetInnerHTML={{__html: markup_text(DetailArticle.tiab, DetailArticle.annotations)}} />
                                           <p class="card-text">---------------------------------- </p>
                                           <p class="card-text"><small class="text-success">Дата публикации : { DetailArticle.pdat } </small></p>
                                           <p class="card-text"><small class="text-success">Издание : { DetailArticle.jour }</small></p>

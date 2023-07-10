@@ -453,7 +453,7 @@ export class TematicReview extends Component {
         })
         .catch((err) => {
           console.log(err);
-          this.setState({data: [], dataInfo: [], DetailArticle: null, loading: false});
+          this.setState({data: [], dataInfo: [], DetailArticle: null, loading: false, message: 'Something gone wrong!'});
         });
     }
 
