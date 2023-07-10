@@ -8,9 +8,6 @@ from celery.result import AsyncResult
 
 from datetime import date, datetime
 
-from json import encoder
-encoder.FLOAT_REPR = lambda o: format(o, '.2f')
-
 from .tasks import *
 
 
@@ -226,8 +223,7 @@ class DDIReviewApi(APIView):
 
         with open(get_path_to_file(request.user.username, 'test_ddi.json'), 'r') as f:
             data = json.load(f)
-            for a in data['data'][0]['annotations']:
-                print(a)
+
         return Response(data=data, status=status.HTTP_200_OK)
 
     def post(self, request):

@@ -4,6 +4,7 @@ from celery import shared_task
 import time
 import json
 import os
+import math
 
 import oneai
 import requests
@@ -187,7 +188,7 @@ def get_ddi_articles(self, query, new_task_id, **kwargs):
 
     url = f'https://www.ncbi.nlm.nih.gov/research/litsense-api/api/?query={query}&rerank=true'
     r = requests.get(url)
-    records_id = {record['pmid']: [record['score'], record['section'], record['text']] for record in json.loads(r.text) if current_record(record, **kwargs)}
+    records_id = {record['pmid']: [round(record['score'], 2), record['section'], record['text']] for record in json.loads(r.text) if current_record(record, **kwargs)}
 
     handle = Entrez.efetch(db="pubmed", id=[k for k in records_id], rettype="medline", retmode="text")
 
@@ -203,9 +204,15 @@ def get_ddi_articles(self, query, new_task_id, **kwargs):
             annotations = get_pmid(record['uid'])
             if annotations is None:
                 annotations = get_annotations(record['tiab'])
-                if annotations is None:
-                    record['annotations'] = None
-                    continue
+
+            if annotations is None:
+                record['annotations'] = None
+                continue
+            else:
+                for annotation in annotations['annotations']:
+                    print(annotation['prob'])
+                    if math.isnan(annotation['prob']):
+                        annotation['prob'] = None
             record['tiab'] = annotations['text']
             record['annotations'] = annotations['annotations']
             record['score'], record['section'], record['text'] = records_id[record['uid']]
