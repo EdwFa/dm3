@@ -231,3 +231,7 @@ CELERY_TASK_TRACK_STARTED = bool_env(os.getenv('CELERY_TASK_TRACK_STARTED'))
 # настройки парсера
 PARSER_EMAIL = os.getenv('PARSER_EMAIL')
 
+# настройки для ncbi
+RETMAX = os.getenv('RETMAX')
+MAX_COUNT = os.getenv('MAX_COUNT')
+

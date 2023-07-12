@@ -8,6 +8,7 @@ from celery.result import AsyncResult
 
 from datetime import date, datetime
 
+from dm.settings import RETMAX, MAX_COUNT
 from .tasks import *
 
 
@@ -15,7 +16,7 @@ class CreateTaskView(APIView):
 
     def get(self, request):
 
-        retmax = 1000
+        max_retmax = RETMAX
 
         if check_working_task(request, Task, status=0, user=request.user):
             return Response(data={'data': 'exist working tasks'}, status=status.HTTP_403_FORBIDDEN)
@@ -25,7 +26,7 @@ class CreateTaskView(APIView):
         new_task = create_task(query=query, count=count, full_query=full_query, user=request.user, translation_stack=translation_stack)
 
         print(query, count, new_task.id, full_query, translation_stack)
-        task = parse_records.delay(query=query, count=count, new_task_id=new_task.id, retmax=retmax)
+        task = parse_records.delay(query=query, count=count, new_task_id=new_task.id, retmax=max_retmax)
 
         new_task.task_id = task.id
         new_task.save()
