@@ -11,6 +11,8 @@ import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-enterprise';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
+import '../ag-theme-acmecorp.css';
+
 
 import { variables } from '../Variables.js';
 
@@ -551,7 +553,7 @@ export class DDIReview extends Component {
                                 <div class="tab-content" id="myTabContent">
                                   <div class="tab-pane fade active show" id="home" role="tabpanel" aria-labelledby="home-tab">
                                     <div class="container-fluid g-0">
-                                        <div className="ag-theme-alpine" style={{height: 700}}>
+                                        <div className="ag-theme-alpine ag-theme-acmecorp" style={{height: 700}}>
                                             <AgGridReact
                                                 ref={this.gridRef}
                                                 rowData={articles}

@@ -11,8 +11,11 @@ import { AgGridReact } from 'ag-grid-react';
 import 'ag-grid-enterprise';
 import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
+import '../ag-theme-acmecorp.css';
 
 import Plot from 'react-plotly.js';
+
+import Select from 'react-select';
 
 import Slider from 'react-input-slider';
 
@@ -437,8 +440,11 @@ export class TematicReview extends Component {
               delete data.heirarchy.layout.width;
               var topics = new Set()
               for (let record of data.data) {
-                topics.add(record.topic)
+                if (!topics.has(record.topic)) {
+                    topics.add(record.topic)
+                }
               }
+              console.log(topics)
               this.setState({
                 analise_articles: data.data,
                 DetailArticle: data.data[0],
@@ -478,7 +484,6 @@ export class TematicReview extends Component {
 
     getGraphData = () => {
         var current_topic = this.state.current_topic.toString();
-        console.log(current_topic)
         if (current_topic === '-2') {
             return this.state.clust_graph.data
         }
@@ -517,20 +522,25 @@ export class TematicReview extends Component {
             })
         .then((data) => {
           this.setState({
-            summarise: data.data
+            summarise: data.data,
+            message: 'Суммаризация прошла успешно'
           });
         })
         .catch((err) => {
           console.log(err);
-          this.setState({summarise: null});
+          this.setState({summarise: null, message: 'Произошла ошибка при суммаризации'});
         });
     }
 
     createSummariseQuery() {
-        var data = []
-        for (let article of this.state.analise_articles) {
-            if (this.state.current_topic === article.topic) {
-                data.push(article);
+        if (this.state.current_topic === -2) {
+            var data = this.state.analise_articles
+        } else {
+            var data = []
+            for (let article of this.state.analise_articles) {
+                if (this.state.current_topic === article.topic) {
+                    data.push(article);
+                }
             }
         }
         fetch(variables.API_URL + '/api/summarise', {
@@ -550,6 +560,7 @@ export class TematicReview extends Component {
             })
             .then((result) => {
                 var task_id = result.data;
+                this.setState({message: 'Отправлено на суммаризацию пожайлуста дождитесь ответа'})
                 this.getSummarise(task_id);
             })
             .catch((error) => {
@@ -947,11 +958,11 @@ export class TematicReview extends Component {
                               <div class="accordion accordion-flush" id="accordion">
                                 <div class="accordion-item">
                                   <h2 class="accordion-header" id="">
-                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseSeven" aria-expanded="false" aria-controls="flush-collapseSeven">
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseEleven" aria-expanded="false" aria-controls="flush-collapseSeven">
                                       По запросу найдено { count } источников. {message}
                                     </button>
                                   </h2>
-                                  <div id="flush-collapseSeven" class="collapse multi-collapse" aria-labelledby="flush-headingSeven" data-bs-target="#accordionFlushExample">
+                                  <div id="flush-collapseEleven" class="collapse multi-collapse" aria-labelledby="flush-headingEleven" data-bs-target="#accordionFlushExample">
                                     <div class="accordion-body">
                                       <p class="pb-2 mb-3 border-bottom"> Запрос {short_query} .</p>
                                       <p class="pb-2 mb-3 border-bottom"> Запрос автоматически расширен до следующего вида - {full_query}.</p>
@@ -976,13 +987,14 @@ export class TematicReview extends Component {
                                 <div class="tab-content" id="myTabContent">
                                   <div class="tab-pane fade active show" id="home" role="tabpanel" aria-labelledby="home-tab">
                                     <div class="container-fluid g-0">
-                                        <div className="ag-theme-alpine" style={{height: 700}}>
+                                        <div className="ag-theme-alpine ag-theme-acmecorp" style={{height: 700}}>
                                             <AgGridReact
                                                 ref={this.gridRef}
                                                 rowData={articles}
                                                 columnDefs={articlesInfo}
                                                 pagination={true}
                                                 onSelectionChanged={this.onSelectionAnalise}
+                                                onChange={this.externalFilterChanged}
                                                 rowSelection={'single'}
                                                 sideBar={{
                                                   toolPanels: [
@@ -1024,85 +1036,152 @@ export class TematicReview extends Component {
                                         <Slider
                                             axis="x"
                                             x={current_topic}
-                                            xmax={topics.length - 1}
+                                            xmax={topics.length - 2}
                                             xmin={-2}
                                             onChange={this.externalFilterChanged}
                                         />
-                                    </div>
-                                    <div className="ag-theme-alpine" style={{height: 700}}>
-                                        <AgGridReact
-                                            ref={this.gridAnaliseRef}
-                                            rowData={analise_articles}
-                                            columnDefs={analise_info}
-                                            pagination={true}
-                                            rowSelection={'single'}
-                                            onSelectionChanged={this.onSelectionChanged}
-                                            animateRows={true}
-                                            isExternalFilterPresent={this.isExternalFilterPresent}
-                                            doesExternalFilterPass={this.doesExternalFilterPass}
-                                            sideBar={{
-                                                  toolPanels: [
-                                                    {
-                                                      id: 'columns',
-                                                      labelDefault: 'Columns',
-                                                      labelKey: 'columns',
-                                                      iconKey: 'columns',
-                                                      toolPanel: 'agColumnsToolPanel',
-                                                      minWidth: 225,
-                                                      width: 225,
-                                                      maxWidth: 225,
-                                                    },
-                                                    {
-                                                      id: 'filters',
-                                                      labelDefault: 'Filters',
-                                                      labelKey: 'filters',
-                                                      iconKey: 'filter',
-                                                      toolPanel: 'agFiltersToolPanel',
-                                                      minWidth: 180,
-                                                      maxWidth: 400,
-                                                      width: 250,
-                                                    },
-                                                  ],
-                                                  position: 'left',
-                                                  defaultToolPanel: 'filters',
-                                                }}
-                                        >
-                                        </AgGridReact>
-                                    </div>
-                                    <div>
-                                        {clust_graph?
-                                        <Plot
-                                            data={this.getGraphData()}
-                                            layout={clust_graph.layout}
+                                        {/*<Select
+                                            className="basic-single"
+                                            classNamePrefix="select"
+                                            value={current_topic}
+                                            isSearchable
+                                            placeholder="Выберите класс"
+                                            name="topic"
+                                            options={topics}
+                                            getOptionLabel={(option) => `${option.label}`}
+                                            getOptionValue={(option) => `${option.value}`}
                                           />
-                                        :null
-                                        }
+                                        */}
                                     </div>
-                                    <div>
-                                        {heapmap?
-                                        <Plot
-                                            data={heapmap.data}
-                                            layout={heapmap.layout}
-                                          />
-                                        :null
-                                        }
+                                    <div className="accordion-item">
+                                        <h2 className="accordion-header" id="flush-headingTwo">
+                                          <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseSix" aria-expanded="false" aria-controls="flush-collapseTwo">
+                                            Таблица
+                                          </button>
+                                        </h2>
+                                        <div id="flush-collapseSix" className="collapse show multi-collapse" aria-labelledby="flush-headingTwo" data-bs-target="#accordionFlushExample">
+                                          <div className="accordion-body">
+                                            <div className="ag-theme-alpine ag-theme-acmecorp" style={{height: 700}}>
+                                                <AgGridReact
+                                                    ref={this.gridAnaliseRef}
+                                                    rowData={analise_articles}
+                                                    columnDefs={analise_info}
+                                                    pagination={true}
+                                                    rowSelection={'single'}
+                                                    onSelectionChanged={this.onSelectionChanged}
+                                                    animateRows={true}
+                                                    isExternalFilterPresent={this.isExternalFilterPresent}
+                                                    doesExternalFilterPass={this.doesExternalFilterPass}
+                                                    sideBar={{
+                                                          toolPanels: [
+                                                            {
+                                                              id: 'columns',
+                                                              labelDefault: 'Columns',
+                                                              labelKey: 'columns',
+                                                              iconKey: 'columns',
+                                                              toolPanel: 'agColumnsToolPanel',
+                                                              minWidth: 225,
+                                                              width: 225,
+                                                              maxWidth: 225,
+                                                            },
+                                                            {
+                                                              id: 'filters',
+                                                              labelDefault: 'Filters',
+                                                              labelKey: 'filters',
+                                                              iconKey: 'filter',
+                                                              toolPanel: 'agFiltersToolPanel',
+                                                              minWidth: 180,
+                                                              maxWidth: 400,
+                                                              width: 250,
+                                                            },
+                                                          ],
+                                                          position: 'left',
+                                                          defaultToolPanel: 'filters',
+                                                        }}
+                                                >
+                                                </AgGridReact>
+                                            </div>
+                                          </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        {heirarchy?
-                                        <Plot
-                                            data={heirarchy.data}
-                                            layout={heirarchy.layout}
-                                          />
-                                        :null
-                                        }
+                                    <div className="accordion-item">
+                                        <h2 className="accordion-header" id="flush-headingTwo">
+                                          <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseSeven" aria-expanded="false" aria-controls="flush-collapseTwo">
+                                            Класстеризация
+                                          </button>
+                                        </h2>
+                                        <div id="flush-collapseSeven" className="collapse show multi-collapse" aria-labelledby="flush-headingTwo" data-bs-target="#accordionFlushExample">
+                                          <div className="accordion-body">
+                                            <div>
+                                                {clust_graph?
+                                                <Plot
+                                                    data={this.getGraphData()}
+                                                    layout={clust_graph.layout}
+                                                  />
+                                                :null
+                                                }
+                                            </div>
+                                          </div>
+                                        </div>
                                     </div>
-                                    <div>
-                                        {summarise?
-                                        <>
-                                            <p>Summarise</p>
-                                            <p>{summarise}</p>
-                                        </>
-                                        :<input className="btn btn-primary" type="submit" value="Суммаризовать" onClick={() => this.createSummariseQuery()}/>}
+                                    <div className="accordion-item">
+                                        <h2 className="accordion-header" id="flush-headingTwo">
+                                          <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseEight" aria-expanded="false" aria-controls="flush-collapseTwo">
+                                            Таблица близости
+                                          </button>
+                                        </h2>
+                                        <div id="flush-collapseEight" className="collapse show multi-collapse" aria-labelledby="flush-headingTwo" data-bs-target="#accordionFlushExample">
+                                          <div className="accordion-body">
+                                            <div>
+                                                {heapmap?
+                                                <Plot
+                                                    data={heapmap.data}
+                                                    layout={heapmap.layout}
+                                                  />
+                                                :null
+                                                }
+                                            </div>
+                                          </div>
+                                        </div>
+                                    </div>
+                                    <div className="accordion-item">
+                                        <h2 className="accordion-header" id="flush-headingTwo">
+                                          <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseNine" aria-expanded="false" aria-controls="flush-collapseTwo">
+                                            Иерархическое дерево
+                                          </button>
+                                        </h2>
+                                        <div id="flush-collapseNine" className="collapse show multi-collapse" aria-labelledby="flush-headingTwo" data-bs-target="#accordionFlushExample">
+                                          <div className="accordion-body">
+                                            <div>
+                                                {heirarchy?
+                                                <Plot
+                                                    data={heirarchy.data}
+                                                    layout={heirarchy.layout}
+                                                  />
+                                                :null
+                                                }
+                                            </div>
+                                          </div>
+                                        </div>
+                                    </div>
+                                    <div className="accordion-item">
+                                        <h2 className="accordion-header" id="flush-headingTwo">
+                                          <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseTen" aria-expanded="false" aria-controls="flush-collapseTwo">
+                                            Суммаризация
+                                          </button>
+                                        </h2>
+                                        <div id="flush-collapseTen" className="collapse show multi-collapse" aria-labelledby="flush-headingTwo" data-bs-target="#accordionFlushExample">
+                                          <div className="accordion-body">
+                                            <div>
+                                                {summarise?
+                                                <>
+                                                    <p>Summarise</p>
+                                                    <p>{summarise}</p>
+                                                </>
+                                                :<input className="btn btn-primary" type="submit" value="Суммаризовать" onClick={() => this.createSummariseQuery()}/>}
+                                            </div>
+                                          </div>
+                                        </div>
                                     </div>
                                   </div>
                                   <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">
