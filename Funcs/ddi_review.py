@@ -21,6 +21,7 @@ def get_annotations(text, url="http://bern2.korea.ac.kr/plain"):
     response = requests.post(url, json={'text': text})
     print(response.status_code)
     if response.status_code != 200:
+        print(response.status_code)
         return None
 
     try:

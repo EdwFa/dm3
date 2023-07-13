@@ -3,13 +3,13 @@ from .views import *
 
 
 urlpatterns = [
-    path('', CreateTaskView.as_view(), name='index'),
-    path('articles/', CheckStatusTaskView.as_view(), name='check'),
+    path('search/', SearchTaskView.as_view(), name='search'),
     path('analise/', TematicAnaliseView.as_view(), name='analise'),
-    path('graphs/', GetGraphData.as_view(), name='graph'),
     path('summarise', SummariseTextApi.as_view(), name='summarise'),
-    path('summarise_emb', SummariseEmbApi.as_view(), name='summarise'),
 
-    path('ddi_review', DDIReviewApi.as_view(), name='ddi'),
+    path('graphs/', GetGraphData.as_view(), name='graph'),
+
+    path('ddi_review', EmbeddingTaskView.as_view(), name='ddi'),
+    path('summarise_emb', SummariseEmbApi.as_view(), name='summarise'),
 
 ]

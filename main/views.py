@@ -5,151 +5,211 @@ from django.core.exceptions import ObjectDoesNotExist
 
 from celery.result import AsyncResult
 
-
 from datetime import date, datetime
 
 from dm.settings import RETMAX, MAX_COUNT
 from .tasks import *
 
 
-class CreateTaskView(APIView):
 
-    def get(self, request):
+class BaseTaskView(APIView):
+    taskModel = TaskSearch  # Начальная модель для поиска задачи
+    files = ['search_ncbi', 'tematic_analise', 'clust_graph', 'heapmap', 'heirarchy', 'embeddings']  # Все возмодные файлы для записи данных
+    worker_func = parse_records
+    label = 'data'
+    retmax = 10000 # RETMAX
 
-        max_retmax = RETMAX
+    def check_working_task(self, request):
+        # Модуль проверки наличии уже запущенных запросов в поиске данному пользователю
+        worked_tasks = self.taskModel.objects.filter(status=0, user=request.user).order_by('-start_date')
+        if worked_tasks.count() != 0:  # Если пользователь имеет уже запущенные запросы выводим их ему
+            try:
+                return worked_tasks[0], TaskResult.objects.get(task_id=worked_tasks[0].task_id)
+            except ObjectDoesNotExist:
+                return worked_tasks[0], None
+        return None, None
 
-        if check_working_task(request, Task, status=0, user=request.user):
-            return Response(data={'data': 'exist working tasks'}, status=status.HTTP_403_FORBIDDEN)
+    def get_path_to_file(self, username, file_name):
+        path_to_file = os.path.join('datasets', username, file_name)
+        if not os.path.exists(path_to_file):
+            raise Exception(f'Not found {path_to_file}')
 
-        query = create_query(request)
-        full_query, translation_stack, count = get_records(query)
-        new_task = create_task(query=query, count=count, full_query=full_query, user=request.user, translation_stack=translation_stack)
+        return path_to_file
 
-        print(query, count, new_task.id, full_query, translation_stack)
-        task = parse_records.delay(query=query, count=count, new_task_id=new_task.id, retmax=max_retmax)
+    def create_task(self, **kwargs):
+        # Создаем новую задачу
+        task = self.taskModel.objects.create(**kwargs)
+        return task
 
-        new_task.task_id = task.id
-        new_task.save()
+    def update_task(self, current_task, **kwargs):
+        # обновляем состояние нашей задачи
+        current_tasks = self.taskModel.objects.filter(id=current_task.id)
+        current_tasks.update(**kwargs)
 
-        data = {
-            'task': TaskSerializer(new_task, many=False).data
-        }
-
-        return Response(data=data, status=status.HTTP_200_OK)
-
-class CheckStatusTaskView(APIView):
-
-    def get(self, request):
-        # Получаем информацию о выполении задачи селери
-        try:
-            current_task = Task.objects.get(status=0, user=request.user)
-        except ObjectDoesNotExist:
-            with open(get_path_to_file(request.user.username, 'test_json.json'), 'r') as f:
-                data = json.load(f)
-            # return Response(data={'data': data, 'message': 'No one query yet'}, status=status.HTTP_404_NOT_FOUND)
-            return Response(data=data, status=status.HTTP_200_OK)
-
-        try:
-            worker_id = TaskResult.objects.get(task_id=current_task.task_id)
-        except ObjectDoesNotExist:
-            current_task.delete()
-            return Response(data={'data': None, 'message': 'worker not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        if worker_id.status == 'PROGRESS' or worker_id.status == 'STARTED':
-            return Response(data={'data': None, 'message': f'worker in progress. {current_task.message}'}, status=status.HTTP_202_ACCEPTED)
-
-        if worker_id.status == 'FAILURE':
-            current_task.status = 2
-            current_task.end_date = datetime.now()
-            current_task.save()
-            return Response(data={'data': None, 'message': 'worker in failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        if worker_id.status == 'SUCCESS':
-            current_task.status = 1
-            current_task.end_date = datetime.now()
-            current_task.message = 'Done!'
-            current_task.save()
-            data = AsyncResult(worker_id.task_id, app=parse_records)
-            with open(get_path_to_file(request.user.username, 'test_json.json'), 'w') as f:
-                json.dump(data.get(), f)
-
-            return Response(data=data.get(), status=status.HTTP_200_OK)
-
-
-class TematicAnaliseView(APIView):
-
-    def get(self, request):
-        try:
-            current_task = TaskAnalise.objects.get(status=0, type_analise=0, user=request.user)
-        except ObjectDoesNotExist:
-            with open(get_path_to_file(request.user.username, 'test_analise_json.json'), 'r') as f:
-                table = json.load(f)
-            with open(get_path_to_file(request.user.username, 'test_clust_graph.json'), 'r') as f:
-                graph = json.load(f)
-            with open(get_path_to_file(request.user.username, 'test_heapmap.json'), 'r') as f:
-                heapmap = json.load(f)
-            with open(get_path_to_file(request.user.username, 'test_heirarchy.json'), 'r') as f:
-                heirarchy = json.load(f)
-            data = {
-                'data': table,
-                'graph': graph,
-                'heapmap': heapmap,
-                'heirarchy': heirarchy,
-                'message': 'last query get'
+    def save_data(self, current_worker: TaskResult, username):
+        # Если наш запрос успешно обработался то сохраняем данные а если нет то файл пуст
+        """
+            Если наш запрос успешно обработался то сохраняем данные а если нет то файл пуст
+            Формат data = {
+                key1: value1, (List of dicts or None)
+                ...
+                keyN: valueN
             }
-            return Response(data=data, status=status.HTTP_200_OK)
+        """
+        data = AsyncResult(current_worker.task_id, app=self.worker_func).get()
+        for file_name in self.files:
+            self.write_data(data[file_name], username, file_name)
+        return
 
-        print(current_task.task_id)
-        try:
-            worker_id = TaskResult.objects.get(task_id=current_task.task_id)
-        except ObjectDoesNotExist:
+    def write_data(self, data, username, file_name):
+        # Сохраняем наши изменения при условии что запрос прошел успешно
+        f = open(self.get_path_to_file(username, f'{file_name}.json'), 'w')
+        json.dump(data, f)
+        f.close()
+
+    def create_data_response(self, username):
+        data = dict()
+        for file_name in self.files:
+            f = open(self.get_path_to_file(username, f'{file_name}.json'), 'r')
+            data[file_name] = json.load(f)
+            f.close()
+        return data
+
+    def response_data(self, error_status, **kwargs):
+        # Вывод наших данных, если запрос неудачный то вывводим ошибку б этом
+        if error_status > 201:
+            return Response(data={f'{kwargs["label"]}': None, 'message': kwargs['message']}, status=error_status)
+        
+        return Response(data=kwargs['data'], status=error_status)
+
+    def get(self, request):
+        current_task, current_worker = self.check_working_task(request)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
+
+        if current_task is None: # Если воркер отсутвует значит у пользователя сейчас свободна очередь запросов
+            data = self.create_data_response(request.user.username)
+            return self.response_data(200, data=data)  # Выводим его последний запрос из базы
+
+        if current_worker is None:  # Пользователь отправил запрос но обработчик не принял его
             current_task.delete()
-            return Response(data={'data': None, 'message': 'worker not found'}, status=status.HTTP_404_NOT_FOUND)
+            return self.response_data(404, message='Ваш запрос не обработался! Пожайлуста повторите попытку позже', label=self.label)  # Выводим ошибку об отсутвии обработки запросов
 
-        if worker_id.status == 'PROGRESS' or worker_id.status == 'STARTED':
-            return Response(data={'data': None, 'message': f'worker in progress. {current_task.message}'}, status=status.HTTP_202_ACCEPTED)
+        if current_worker.status == 'PROGRESS' or current_worker.status == 'STARTED':
+             return self.response_data(202, message=current_task.message, label=self.label)
 
-        if worker_id.status == 'FAILURE':
-            current_task.status = 2
-            current_task.end_date = datetime.now()
-            current_task.save()
-            return Response(data={'data': None, 'message': 'worker in failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        if current_worker.status == 'FAILURE':
+            self.update_task(current_task, status=2, end_date=datetime.now(), message='Запрос завершен с ошибкой!')
+            return self.response_data(500, message=current_task.message, label=self.label)
 
-        if worker_id.status == 'SUCCESS':
-            current_task.status = 1
-            current_task.end_date = datetime.now()
-            current_task.save()
+        if current_worker.status == 'SUCCESS':
+            self.update_task(current_task, status=1, end_date=datetime.now(), message='Запрос успешно завершен!')
+            self.save_data(current_worker, request.user.username)
 
-        with open(get_path_to_file(request.user.username, 'test_analise_json.json'), 'r') as f:
-            table = json.load(f)
-        with open(get_path_to_file(request.user.username, 'test_clust_graph.json'), 'r') as f:
-            graph = json.load(f)
-        with open(get_path_to_file(request.user.username, 'test_heapmap.json'), 'r') as f:
-            heapmap = json.load(f)
-        with open(get_path_to_file(request.user.username, 'test_heirarchy.json'), 'r') as f:
-            heirarchy = json.load(f)
-        data = {
-            'data': table,
-            'graph': graph,
-            'heapmap': heapmap,
-            'heirarchy': heirarchy,
-            'message': 'Done!'
-        }
-        return Response(data=data, status=status.HTTP_200_OK)
+        data = self.create_data_response(request.user.username)
+        return self.response_data(200, data=data)
+
+
+class SearchTaskView(BaseTaskView):
+    taskModel = TaskSearch  # Начальная модель для поиска задачи
+    files = ['search_ncbi']  #
+    worker_func = parse_records
+    label = 'search_ncbi'
+
+    def get(self, request):
+        return super().get(request)
 
     def post(self, request):
-        print(request.data)
-        new_task = create_analise_task(request=request, user=request.user)
-        if new_task is None:
-            return Response(data={'data': None, 'message': 'worker in progress'}, status=status.HTTP_403_FORBIDDEN)
-        task = analise_records.delay(username=request.user.username, IdList=request.data['articles'], new_task_id=new_task.id)
+        current_task, current_worker = self.check_working_task(request)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
+        if (current_task is not None) and (current_worker is not None) and (current_worker.status == 'PROGRESS' or current_worker.status == 'STARTED'):
+            return self.response_data(403, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
 
+        query = create_query(**request.data)
+        full_query, translation_stack, count = get_records(query)
+        new_task = self.create_task(query=query, count=count, full_query=full_query, user=request.user,
+                               translation_stack=translation_stack)
+        task = parse_records.delay(query=query, count=count, new_task_id=new_task.id, retmax=self.retmax)
+        new_task.message = 'Запрос получен'
         new_task.task_id = task.id
         new_task.save()
         data = {
             'data': TaskAnaliseSerializer(new_task, many=False).data,
         }
-        return Response(data=data, status=status.HTTP_200_OK)
+        return self.response_data(201, data=data)
+
+
+class TematicAnaliseView(BaseTaskView):
+    taskModel = TaskAnalise  # Начальная модель для поиска задачи
+    files = ['tematic_analise', 'clust_graph', 'heapmap', 'heirarchy']
+    worker_func = analise_records
+    label = 'tematic_analise'
+
+    def save_data(self, current_worker, username):
+        return None
+
+    def get(self, request):
+        return super().get(request)
+
+    def post(self, request):
+        current_task, current_worker = self.check_working_task(request)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
+        if (current_task is not None) and (current_worker is not None) and (current_worker.status == 'PROGRESS' or current_worker.status == 'STARTED'):
+            return self.response_data(403, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
+
+        new_task = self.create_task(user=request.user, type_analise=0)
+        task = analise_records.delay(username=request.user.username, IdList=request.data['articles'], new_task_id=new_task.id)
+
+        new_task.task_id = task.id
+        new_task.message = 'Начинаем обработку...'
+        new_task.save()
+        data = {
+            'data': TaskAnaliseSerializer(new_task, many=False).data,
+        }
+        return self.response_data(200, data=data)
+
+
+class EmbeddingTaskView(BaseTaskView):
+    taskModel = TaskAnalise  # Начальная модель для поиска задачи
+    files = ['embeddings']
+    worker_func = get_ddi_articles
+    label = 'embeddings'
+
+    def write_data(self, new_data, username, file_name):
+        with open(self.get_path_to_file(username, f'{file_name}.json'), 'r') as f:
+            try:
+                data = json.load(f)
+                data = data + new_data
+            except:
+                data = new_data
+        with open(self.get_path_to_file(username, f'{file_name}.json'), 'w') as f:
+            json.dump(data, f)
+
+    def get(self, request):
+        return super().get(request)
+
+    def post(self, request):
+        current_task, current_worker = self.check_working_task(request)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
+        if (current_task is not None) and (current_worker is not None) and (current_worker.status == 'PROGRESS' or current_worker.status == 'STARTED'):
+            return self.response_data(403, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
+
+        new_task = self.create_task(user=request.user, type_analise=1)
+        task = get_ddi_articles.delay(query=request.data['query'], new_task_id=new_task.id, score=request.data['score'])
+
+        new_task.task_id = task.id
+        new_task.save()
+
+        data = {
+            'data': TaskAnaliseSerializer(new_task, many=False).data,
+            'message': 'Начало обработки...'
+        }
+        return self.response_data(200, data=data)
+
+    def delete(self, request):
+        for file_name in self.files:
+            f = open(get_path_to_file(request.user.username, f'{file_name}.json'), 'w')
+            f.close()
+        data = {
+            'data': None,
+            'message': "Успешно очищено"
+        }
+        return self.response_data(200, data=data)
 
 
 class SummariseTextApi(APIView):
@@ -179,75 +239,6 @@ class SummariseTextApi(APIView):
             'data': task.id,
         }
         return Response(data=data, status=status.HTTP_200_OK)
-
-class DDIReviewApi(APIView):
-    def get(self, request):
-
-        try:
-            current_task = TaskAnalise.objects.get(status=0, type_analise=1, user=request.user)
-        except ObjectDoesNotExist:
-            with open(get_path_to_file(request.user.username, 'test_ddi.json'), 'r') as f:
-                data = json.load(f)
-            return Response(data=data, status=status.HTTP_200_OK)
-
-        try:
-            worker_id = TaskResult.objects.get(task_id=current_task.task_id)
-        except ObjectDoesNotExist:
-            current_task.delete()
-            return Response(data={'data': None, 'message': 'worker not found'}, status=status.HTTP_404_NOT_FOUND)
-
-        if worker_id.status == 'PROGRESS' or worker_id.status == 'STARTED':
-            return Response(data={'data': None, 'message': f'worker in progress. {current_task.message}'}, status=status.HTTP_202_ACCEPTED)
-
-        if worker_id.status == 'FAILURE':
-            current_task.status = 2
-            current_task.end_date = datetime.now()
-            current_task.save()
-            return Response(data={'data': None, 'message': 'worker in failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        if worker_id.status == 'SUCCESS':
-            current_task.status = 1
-            current_task.end_date = datetime.now()
-            current_task.save()
-            with open(get_path_to_file(request.user.username, 'test_ddi.json'), 'r') as f:
-                try:
-                    data = json.load(f)
-                    data = data + AsyncResult(worker_id.task_id, app=get_ddi_articles).get()
-                except:
-                    data = AsyncResult(worker_id.task_id, app=get_ddi_articles).get()
-            with open(get_path_to_file(request.user.username, 'test_ddi.json'), 'w') as f:
-                data = {
-                    'data': data,
-                    'message': 'Done!'
-                }
-                json.dump(data, f)
-
-        with open(get_path_to_file(request.user.username, 'test_ddi.json'), 'r') as f:
-            data = json.load(f)
-
-        return Response(data=data, status=status.HTTP_200_OK)
-
-    def post(self, request):
-
-        new_task = create_analise_task(request=request, user=request.user, type_analise=1)
-        if new_task is None:
-            return Response(data={'data': None, 'message': 'worker in progress'}, status=status.HTTP_403_FORBIDDEN)
-
-        print(request.data)
-        task = get_ddi_articles.delay(query=request.data['query'], new_task_id=new_task.id, score=request.data['score'])
-
-        new_task.task_id = task.id
-        new_task.save()
-
-        data = {
-            'data': TaskAnaliseSerializer(new_task, many=False).data
-        }
-        return Response(data=data, status=status.HTTP_200_OK)
-
-    def delete(self, request):
-        f = open(get_path_to_file(request.user.username, 'test_ddi.json'), 'w')
-        f.close()
-        return Response(data={'data': None, 'message': 'file is clear'}, status=status.HTTP_200_OK)
 
 
 class SummariseEmbApi(APIView):

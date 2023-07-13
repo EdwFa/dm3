@@ -7,16 +7,18 @@ from rest_framework.request import Request
 from rest_framework.permissions import AllowAny
 
 import os
+import json
 
 from .serializers import *
 
 
-needed_files = ['test_analise_json.json', 'test_clust_graph.json', 'test_ddi.json', 'test_heapmap.json', 'test_heirarchy.json', 'test_json.json']
+needed_files = ['search_ncbi', 'tematic_analise', 'clust_graph', 'heapmap', 'heirarchy', 'embeddings']
 
 def get_path_to_file(username, file_name):
     path_to_file = os.path.join('datasets', username, file_name)
     if not os.path.exists(path_to_file):
         f = open(path_to_file, 'w')
+        json.dump([], f)
         f.close()
 
 
@@ -43,7 +45,7 @@ class LoginApi(APIView):
                 if not os.path.exists(f'datasets/{authenticated_user.username}'):
                     os.mkdir(f'datasets/{authenticated_user.username}')
                 for need_file in needed_files:
-                    get_path_to_file(authenticated_user.username, need_file)
+                    get_path_to_file(authenticated_user.username, f'{need_file}.json')
 
                 print(token)
                 return Response(TokenSeriazliser(token).data)

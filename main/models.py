@@ -91,7 +91,7 @@ COIS, Conflict of Interest Statements, Conflict of Interest Statements
 '''
 
 
-class Task(models.Model):
+class TaskSearch(models.Model):
     task_id = models.CharField(max_length=150, null=True)
     user = models.ForeignKey(User, on_delete=models.DO_NOTHING, null=True, related_name='task_search')
     query = models.TextField()

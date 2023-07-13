@@ -1,7 +1,7 @@
 from django.contrib import admin
-from .models import Article, Task, TaskAnalise
+from .models import Article, TaskSearch, TaskAnalise
 
 
 admin.site.register(Article)
-admin.site.register(Task)
+admin.site.register(TaskSearch)
 admin.site.register(TaskAnalise)

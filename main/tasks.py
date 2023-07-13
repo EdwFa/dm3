@@ -16,11 +16,6 @@ from dm.settings import PARSER_EMAIL, MEDIA_URL
 from Funcs import *
 
 
-def create_task(**kwargs):
-    task = Task.objects.create(**kwargs)
-    return task
-
-
 def check_working_task(request, Task, **kwargs):
     tasks = Task.objects.filter(**kwargs)
     for task in tasks:
@@ -50,7 +45,7 @@ def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 
     # Парсим полученные записи
     print("Start parsing...")
     print(f"Count={count}, Task id={new_task_id}")
-    new_task = Task.objects.get(id=new_task_id)
+    new_task = TaskSearch.objects.get(id=new_task_id)
     Entrez.email = PARSER_EMAIL  # Говорю NCBI кто я есть
 
     handle = Entrez.esearch(db="pubmed", sort='relevance', term=query, retmax=retmax)
@@ -68,21 +63,18 @@ def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 
         if data:
             records.append(data)
 
-        if i % 10 == 0:
+        if i % 100 == 0:
             new_task.message = f'On {i}/{count} step...'
             new_task.save()
 
         i += 1
 
     new_task.save()
-
     print(len(records))
-
-    handle.close()
     data = {
-        'data': ArticleSerializer(records, many=True).data,
-        'message': 'Done!'
+        'search_ncbi': ArticleSerializer(records, many=True).data
     }
+    handle.close()
     return data
 
 def create_analise_task(request, **kwargs):
@@ -109,42 +101,43 @@ def analise_records(self, username, IdList, new_task_id):
 
 
     new_task = TaskAnalise.objects.get(id=new_task_id)
-    new_task.message = 'Start clearing articles for model...'
+    new_task.message = 'Предобработка данных перед передачей модели...'
     new_task.save()
 
     articles = create_clear_articles(records)
 
-    new_task.message = 'Analise articles in model...'
+    new_task.message = 'Анализ записей моделью...'
     new_task.save()
     topics, props, embeddings = analise_articles(articles)
     records = return_results(records, topics, props)
 
-    new_task.message = 'Printing graphics after analising...'
+    new_task.message = 'Вывод результатов и отрисовка графиков...'
     new_task.save()
     graph = return_clust_graph([rec['titl'] for rec in records], embeddings)
     count_topics = len(set(topics))
-    print("COunt topic = ", count_topics)
+    print("Count topic = ", count_topics)
     n_clusters = 10
     if count_topics > 1:
-        if n_clusters >= count_topics:
+        if n_clusters >= count_topics - 2:
             n_clusters = int(count_topics / 2)
 
         print(n_clusters)
         heapmap = return_heapmap(n_clusters=n_clusters)
-        with open(get_path_to_file(username, 'test_heapmap.json'), 'w') as f:
+        with open(get_path_to_file(username, 'heapmap.json'), 'w') as f:
             f.write(heapmap)
     else:
-        with open(get_path_to_file(username, 'test_heapmap.json'), 'w') as f:
+        with open(get_path_to_file(username, 'heapmap.json'), 'w') as f:
             json.dump(None, f)
 
-    heirarchy = return_heirarchy()
-
-    with open(get_path_to_file(username, 'test_analise_json.json'), 'w') as f:
+    with open(get_path_to_file(username, 'tematic_analise.json'), 'w') as f:
         json.dump(records, f)
-    with open(get_path_to_file(username, 'test_clust_graph.json'), 'w') as f:
+    with open(get_path_to_file(username, 'clust_graph.json'), 'w') as f:
         f.write(graph)
-    with open(get_path_to_file(username, 'test_heirarchy.json'), 'w') as f:
-        f.write(heirarchy)
+    with open(get_path_to_file(username, 'heirarchy.json'), 'w') as f:
+        try:
+            f.write(return_heirarchy())
+        except:
+            json.dump(None, f)
     return None
 
 @shared_task(bind=True)
@@ -162,7 +155,7 @@ def summarise_text(self, records):
 
 @shared_task(bind=True)
 def summarise_emb(self, username):
-    with open(get_path_to_file(username, 'test_ddi.json'), 'r') as f:
+    with open(get_path_to_file(username, 'embeddings.json'), 'r') as f:
         data = json.load(f)['data']
     text = ' '.join([rec['text'] for rec in data])
     print(len(text), text)
@@ -205,12 +198,12 @@ def get_ddi_articles(self, query, new_task_id, **kwargs):
             if annotations is None:
                 annotations = get_annotations(record['tiab'])
 
+            print(annotations is None)
             if annotations is None:
                 record['annotations'] = None
                 continue
             else:
                 for annotation in annotations['annotations']:
-                    print(annotation['prob'])
                     if math.isnan(annotation['prob']):
                         annotation['prob'] = None
             record['tiab'] = annotations['text']
@@ -226,9 +219,11 @@ def get_ddi_articles(self, query, new_task_id, **kwargs):
         i += 1
 
     print(len(records))
-
+    data = {
+        'embeddings': records
+    }
     handle.close()
-    return records
+    return data
 
 
 

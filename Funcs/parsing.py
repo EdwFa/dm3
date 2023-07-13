@@ -9,41 +9,43 @@ default_query = "{0} and {1}:{2}[dp] and Clinical Trial[pt]".format('covid-19', 
                                                                     date.today().strftime("%Y/%m/%d"))
 
 # Создание запроса на основе полученных ключей
-def create_query(request):
+def create_query(**filters):
     # Преобразуем наши ключи в запрос pubmed
-    print([i for i in request.GET.items()])
+    print([i for i in filters.items()])
 
-    if len([i for i in request.GET.items()]) == 0:
+    if len([i for i in filters]) == 0:
         return default_query
 
     # Содаем запрос с текстом запроса
     query = ""
-    text = request.GET.get('search_field', None)
+    text = filters.get('search_field', None)
     if text:
         query = f'{text}'
 
     # Добавляем даты
-    start_date = request.GET.get('dateStart', "1900-01-01")
-    end_date = request.GET.get('dateStop', date.today().strftime("%Y-%m-%d"))
+    start_date = filters.get('dateStart', "1900-01-01")
+    end_date = filters.get('dateStop', date.today().strftime("%Y-%m-%d"))
     query = f"{query} and {start_date.replace('-', '/')}:{end_date.replace('-', '/')}[dp]"
 
     # Добавляем гендеры
-    genders = request.GET.getlist('Gender', None)
-    if genders:
+    genders = filters.get('Gender', [])
+    if len(genders) != 0:
         query_genders = " OR ".join([f'{i}[mh]' for i in genders])
         query = f"{query} AND ({query_genders})"
 
     # Добавляем типы документов
-    types = request.GET.getlist('Type', None)
-    if types:
+    types = filters.get('Type', [])
+    if len(types) != 0:
         query_types = " OR ".join([f'{i}[pt]' for i in types])
         query = f"{query} AND ({query_types})"
 
     # Добавляем Возрастные группы
-    olds = request.GET.getlist('Old', None)
-    if olds:
+    olds = filters.get('Old', [])
+    if len(olds) != 0:
         query_olds = " OR ".join(olds)
         query = f"{query} AND ({query_olds})"
+
+    print(query)
 
     return query
 
