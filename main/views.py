@@ -14,7 +14,7 @@ from .tasks import *
 
 class BaseTaskView(APIView):
     taskModel = TaskSearch  # Начальная модель для поиска задачи
-    files = ['search_ncbi', 'tematic_analise', 'clust_graph', 'heapmap', 'heirarchy', 'embeddings']  # Все возмодные файлы для записи данных
+    files = ['search_ncbi', 'tematic_analise', 'clust_graph', 'heapmap', 'heirarchy', 'embeddings', 'info_graph']  # Все возмодные файлы для записи данных
     worker_func = parse_records
     label = 'data'
     retmax = 10000 # RETMAX
@@ -270,35 +270,18 @@ class SummariseEmbApi(APIView):
         return Response(data=data, status=status.HTTP_200_OK)
 
 
-class GetGraphData(APIView):
+class GetGraphData(BaseTaskView):
+    files = ['info_graph']
 
     def get(self, request):
-        # Получаем данные для графа
-        try:
-            current_task = Task.objects.get(status=0, user=request.user)
-            return Response(data={'data': None, 'message': 'worker in progress'}, status=status.HTTP_403_FORBIDDEN)
-        except ObjectDoesNotExist:
-            last_task = Task.objects.filter(user=request.user).order_by('-end_date')
-            if last_task.count() == 0:
-                return Response(data={'data': None, 'message': 'No one query yet'}, status=status.HTTP_404_NOT_FOUND)
-
-            last_task = last_task[0]
-            start_time = time.time()
-            articles = last_task.articles.all()
-            print(articles.count())
-            print("Time for get in db articles = ", time.time() - start_time)
-
-            start_time = time.time()
-            print('Start get graph data...')
-            nodes, edges = get_uniq_info_for_graph(articles[:50], 5, 0)
-            print("Time for create graph data = ", time.time() - start_time)
-            start_time = time.time()
-            data = {
-                'graph': {
-                    'nodes': nodes,
-                    'edges': edges
-                }
-            }
-            print("Time for serialize articles = ", time.time() - start_time)
-            return Response(data=data, status=status.HTTP_200_OK)
+        # f = open(self.get_path_to_file(request.user.username, 'tematic_analise.json'), 'r')
+        # articles = json.load(f)
+        # max_size = 1000
+        # if len(articles) > max_size:
+        #     articles = articles[:max_size]
+        # f.close()
+        # data = get_uniq_info_for_graph(articles)
+        # self.write_data(data, request.user.username, self.files[0])
+        data = self.create_data_response(request.user.username)
+        return self.response_data(200, data=data)
 

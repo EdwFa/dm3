@@ -16,21 +16,6 @@ from dm.settings import PARSER_EMAIL, MEDIA_URL
 from Funcs import *
 
 
-def check_working_task(request, Task, **kwargs):
-    tasks = Task.objects.filter(**kwargs)
-    for task in tasks:
-        try:
-            worker = TaskResult.objects.get(task_id=task.task_id)
-        except:
-            task.delete()
-            continue
-        else:
-            if worker.status == 'PROGRESS' or worker.status == 'STARTED':
-                return True
-
-    return False
-
-
 def get_path_to_file(username, file_name):
     path_to_file = os.path.join('datasets', username, file_name)
     print(path_to_file)
@@ -77,21 +62,6 @@ def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 
     handle.close()
     return data
 
-def create_analise_task(request, **kwargs):
-    if check_working_task(request, TaskAnalise, user=kwargs['user'], status=0):
-        return None
-
-    task = TaskAnalise.objects.create(**kwargs)
-    return task
-
-
-def check_working_analise_task(request, type_status):
-    if check_working_task(request, TaskAnalise, status=0, user=request.user, type_analise=type_status):
-        return True
-    # if tasks.count() != 0:
-    #     return True
-
-    return False
 
 @shared_task(bind=True)
 def analise_records(self, username, IdList, new_task_id):
@@ -140,6 +110,7 @@ def analise_records(self, username, IdList, new_task_id):
             json.dump(None, f)
     return None
 
+
 @shared_task(bind=True)
 def summarise_text(self, records):
     text = ' '.join([rec['titl'] + rec['tiab'] for rec in records])
@@ -152,6 +123,7 @@ def summarise_text(self, records):
 
     output = pipeline.run(text)
     return output.summary.text
+
 
 @shared_task(bind=True)
 def summarise_emb(self, username):
