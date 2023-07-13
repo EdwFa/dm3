@@ -13,11 +13,6 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv, dotenv_values
-import nltk
-
-
-nltk.download('stopwords')
-nltk.download('punkt')
 
 
 bool_env = lambda key: True if key == 'True' else False  # Ф-я для превращения данных в булевые значения из .env файла конфигурации
@@ -90,7 +85,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'dm.wsgi.application'
 
-# Cookie and sessions configs
+# Cookie and sessions configs.py
 
 CORS_ORIGIN_ALLOW_ALL = bool_env(os.getenv('CORS_ORIGIN_ALLOW_ALL'))
 CORS_ALLOW_CREDENTIALS = bool_env(os.getenv('CORS_ALLOW_CREDENTIALS'))
@@ -234,4 +229,7 @@ PARSER_EMAIL = os.getenv('PARSER_EMAIL')
 # настройки для ncbi
 RETMAX = os.getenv('RETMAX')
 MAX_COUNT = os.getenv('MAX_COUNT')
+
+# настройки для api bertTopic
+BERTTOPICAPI_URL = os.getenv('BERTTOPICAPI_URL')
 

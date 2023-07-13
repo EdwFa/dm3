@@ -1,6 +1,7 @@
 from Bio import Entrez
 from Bio import Medline
 from celery import shared_task
+import requests
 import time
 import json
 import os
@@ -9,10 +10,8 @@ import math
 import oneai
 import requests
 
-from django_celery_results.models import TaskResult
-
 from .serializers import *
-from dm.settings import PARSER_EMAIL, MEDIA_URL
+from dm.settings import PARSER_EMAIL, MEDIA_URL, BERTTOPICAPI_URL
 from Funcs import *
 
 
@@ -65,50 +64,37 @@ def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 
 
 @shared_task(bind=True)
 def analise_records(self, username, IdList, new_task_id):
-    handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
-    records = ArticleSerializer([parse_record(record) for record in Medline.parse(handle) if record], many=True).data
-    handle.close()
-
-
     new_task = TaskAnalise.objects.get(id=new_task_id)
-    new_task.message = 'Предобработка данных перед передачей модели...'
+    new_task.message = 'Запущен процесс анализа, пожайлуста подождите...'
     new_task.save()
 
-    articles = create_clear_articles(records)
+    response = requests.post(f'{BERTTOPICAPI_URL}/analise', json={'articles': IdList})
+    print(response.status_code)
+    if response.status_code != 200:
+        raise Exception('Api is failed!')
 
-    new_task.message = 'Анализ записей моделью...'
-    new_task.save()
-    topics, props, embeddings = analise_articles(articles)
-    records = return_results(records, topics, props)
-
-    new_task.message = 'Вывод результатов и отрисовка графиков...'
-    new_task.save()
-    graph = return_clust_graph([rec['titl'] for rec in records], embeddings)
-    count_topics = len(set(topics))
-    print("Count topic = ", count_topics)
-    n_clusters = 10
-    if count_topics > 1:
-        if n_clusters >= count_topics - 2:
-            n_clusters = int(count_topics / 2)
-
-        print(n_clusters)
-        heapmap = return_heapmap(n_clusters=n_clusters)
-        with open(get_path_to_file(username, 'heapmap.json'), 'w') as f:
-            f.write(heapmap)
-    else:
-        with open(get_path_to_file(username, 'heapmap.json'), 'w') as f:
-            json.dump(None, f)
-
+    data = response.json()
+    with open(get_path_to_file(username, 'heapmap.json'), 'w') as f:
+        json.dump(data['heapmap'], f)
     with open(get_path_to_file(username, 'tematic_analise.json'), 'w') as f:
-        json.dump(records, f)
+        json.dump(data['tematic_analise'], f)
     with open(get_path_to_file(username, 'clust_graph.json'), 'w') as f:
-        f.write(graph)
+        json.dump(data['clust_graph'], f)
     with open(get_path_to_file(username, 'heirarchy.json'), 'w') as f:
-        try:
-            f.write(return_heirarchy())
-        except:
-            json.dump(None, f)
-    return None
+        json.dump(data['heirarchy'], f)
+
+
+    # Start plot graph on tematic analise
+    articles = data['tematic_analise']
+    max_size = 1000
+    if len(articles) > max_size:
+        articles = articles[:max_size]
+    f.close()
+    data = get_uniq_info_for_graph(articles)
+    f = open(get_path_to_file(username, 'info_graph.json'), 'w')
+    json.dump(data, f)
+    f.close()
+    return
 
 
 @shared_task(bind=True)
@@ -196,6 +182,55 @@ def get_ddi_articles(self, query, new_task_id, **kwargs):
     }
     handle.close()
     return data
+
+
+# Старая версия кода для анализа без микросервисной архитектуры
+# @shared_task(bind=True)
+# def analise_records(self, username, IdList, new_task_id):
+    # handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
+    # records = ArticleSerializer([parse_record(record) for record in Medline.parse(handle) if record], many=True).data
+    # handle.close()
+    #
+    #
+    # new_task = TaskAnalise.objects.get(id=new_task_id)
+    # new_task.message = 'Запущен процесс анализа, пожайлуста подождите...'
+    # new_task.save()
+    #
+    # articles = create_clear_articles(records)
+    #
+    # new_task.message = 'Анализ записей моделью...'
+    # new_task.save()
+    # topics, props, embeddings = analise_articles(articles)
+    # records = return_results(records, topics, props)
+    #
+    # new_task.message = 'Вывод результатов и отрисовка графиков...'
+    # new_task.save()
+    # graph = return_clust_graph([rec['titl'] for rec in records], embeddings)
+    # count_topics = len(set(topics))
+    # print("Count topic = ", count_topics)
+    # n_clusters = 10
+    # if count_topics > 1:
+    #     if n_clusters >= count_topics - 2:
+    #         n_clusters = int(count_topics / 2)
+    #
+    #     print(n_clusters)
+    #     heapmap = return_heapmap(n_clusters=n_clusters)
+    #     with open(get_path_to_file(username, 'heapmap.json'), 'w') as f:
+    #         f.write(heapmap)
+    # else:
+    #     with open(get_path_to_file(username, 'heapmap.json'), 'w') as f:
+    #         json.dump(None, f)
+    #
+    # with open(get_path_to_file(username, 'tematic_analise.json'), 'w') as f:
+    #     json.dump(records, f)
+    # with open(get_path_to_file(username, 'clust_graph.json'), 'w') as f:
+    #     f.write(graph)
+    # with open(get_path_to_file(username, 'heirarchy.json'), 'w') as f:
+    #     try:
+    #         f.write(return_heirarchy())
+    #     except:
+    #         json.dump(None, f)
+    # return None
 
 
 

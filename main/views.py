@@ -4,6 +4,7 @@ from rest_framework import status
 from django.core.exceptions import ObjectDoesNotExist
 
 from celery.result import AsyncResult
+from django_celery_results.models import TaskResult
 
 from datetime import date, datetime
 
@@ -274,14 +275,6 @@ class GetGraphData(BaseTaskView):
     files = ['info_graph']
 
     def get(self, request):
-        # f = open(self.get_path_to_file(request.user.username, 'tematic_analise.json'), 'r')
-        # articles = json.load(f)
-        # max_size = 1000
-        # if len(articles) > max_size:
-        #     articles = articles[:max_size]
-        # f.close()
-        # data = get_uniq_info_for_graph(articles)
-        # self.write_data(data, request.user.username, self.files[0])
         data = self.create_data_response(request.user.username)
         return self.response_data(200, data=data)
 

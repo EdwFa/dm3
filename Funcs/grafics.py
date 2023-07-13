@@ -80,7 +80,7 @@ def get_uniq_info_for_graph(articles, author_on_article=10, count_of_rel=0):
     new_edges = []
     random.seed(20)
     uniq_contries = {k: v + 1 for v, k in enumerate(set([i.cluster_group for i in nodes.values()]))}
-    nodes = [{'id': node._id, 'label': k, 'x': random.uniform(-2., 2.), 'y': random.uniform(-2., 2.), 'cluster': uniq_contries[node.cluster_group], 'weights': {'Documents': 1}} for k, node in nodes.items()]
+    nodes = [{'id': node._id, 'label': k, 'x': random.uniform(-10., 10.), 'y': random.uniform(-10., 10.), 'cluster': uniq_contries[node.cluster_group], 'weights': {'Documents': 1}} for k, node in nodes.items()]
     nodes.sort(key=sort_key)
     start_time = time.time()
     for i in range(size):
