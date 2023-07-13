@@ -355,6 +355,7 @@ export class TematicReview extends Component {
                 message: data.message,
                 topics: [...topics],
               });
+              this.getGraphInfo()
           }
         })
         .catch((err) => {
