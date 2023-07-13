@@ -121,76 +121,8 @@ export class TematicReview extends Component {
 
     // Search
 
-    createQuery() {
-        let query = "/api"
-        if (this.state.queryText) {
-            query = `${query}?search_field=${this.state.queryText}`
-        }
-        if (this.state.queryStartDate) {
-            query = `${query}&dateStart=${this.state.queryStartDate}`
-        }
-        if (this.state.queryEndDate) {
-            query = `${query}&dateStop=${this.state.queryEndDate}`
-        }
-        if (this.state.queryGenders.size != 0) {
-            for (let el of [...this.state.queryGenders]) {
-                query = `${query}&Gender=${el}`
-            }
-        }
-        if (this.state.queryTypes.size != 0) {
-            for (let el of [...this.state.queryTypes]) {
-                query = `${query}&Type=${el}`
-            }
-        }
-        if (this.state.queryOlds.size != 0) {
-            for (let el of [...this.state.queryOlds]) {
-                query = `${query}&Old=${el}`
-            }
-        }
-
-        if (query === "/api") {
-            throw "Not query text"
-        }
-
-        return query
-    }
-
-//    getArticles = (url, interval = 1000) => {
-//      fetch(variables.API_URL + '/api/articles/',
-//            {
-//                headers: {
-//                    'Content-Type': 'application/json;charset=utf-8',
-//                    'Authorization': `Token ${variables.token}`,
-//                },
-//            }
-//          )
-//          .then(response => {
-//                console.log(response.status);
-//                if (response.status == 202) {
-//                    this.setState({loading: true})
-//                    setTimeout(() => {
-//                      return this.getArticles(url, interval)
-//                    }, interval);
-//                }
-//                if (response.status == 200) {
-//                    return response.json()
-//                } else {
-//                    throw Error(response.statusText)
-//                }
-//          })
-//          .then(data => {
-//            this.setState({
-//                articles: data.data, DetailArticle: data.data[0], message: data.message, loading: false
-//            });
-//          })
-//          .catch(error => {
-//            console.log(error);
-//            this.setState({ articles: [], articlesInfo: [], loading: false });
-//          })
-//    }
-
     getArticles = (url, interval = 1000) => {
-      fetch(variables.API_URL + '/api/articles/',
+      fetch(variables.API_URL + '/api/search/',
             {
                 headers: {
                     'Content-Type': 'application/json;charset=utf-8',
@@ -207,54 +139,61 @@ export class TematicReview extends Component {
                 }
           })
           .then(data => {
-            if (!data.data) {
+            if (data.search_ncbi === null) {
                 this.setState({loading: true, message: data.message});
                 console.log(data.message);
                 setTimeout(() => {
                   return this.getArticles(url, interval)
                 }, interval);
             } else {
-                this.setState({
-                    articles: data.data, DetailArticle: data.data[0], message: data.message, loading: false
-                });
+                if (data.search_ncbi.length === 0) {
+                    this.setState({ articles: [], articlesInfo: [], loading: false, message: 'Запросов нет' });
+                } else {
+                    this.setState({
+                        articles: data.search_ncbi, DetailArticle: data.search_ncbi[0], message: data.message, loading: false
+                    });
+                }
             }
           })
           .catch(error => {
             console.log(error);
-            this.setState({ articles: [], articlesInfo: [], loading: false, message: 'Something gone wrong' });
+            this.setState({ articles: [], articlesInfo: [], loading: false, message: 'Что-то пошло не так' });
           })
     }
 
     createTask() {
         // Отправляем запрос на сервер для получения статей
-        let query_url = ''
-        try {
-            query_url = variables.API_URL + this.createQuery()
-        } catch(e) {
-            alert('Не введен текст для поиска');
-            return
-        }
-        fetch(query_url,
+        fetch(variables.API_URL + '/api/search/',
             {
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json;charset=utf-8',
                     'Authorization': `Token ${this.state.token}`,
                 },
+                body: JSON.stringify({
+                    search_field: this.state.queryText,
+                    dateStart: this.state.queryStartDate,
+                    dateStop: this.state.queryEndDate,
+                    Gender: [...this.state.queryGenders],
+                    Type: [...this.state.queryTypes],
+                    Old: [...this.state.queryOlds],
+                })
             })
             .then(response => response.json())
             .then(data => {
                 this.setState({
-                    full_query: data.task.full_query,
-                    translation_stack: data.task.translation_stack,
-                    short_query: data.task.query,
-                    task: data.task,
-                    count: data.task.count,
+                    full_query: data.full_query,
+                    translation_stack: data.translation_stack,
+                    short_query: data.query,
+                    message: data.message,
+                    task: data,
+                    count: data.count,
                     articles: [],
                     articlesInfo: [],
                     loading: true,
 
                 });
-                alert("You query in queue? please wait to get result");
+                alert("Ваш запрос в очереди. Пожайлуста дождитесь результата");
                 this.getArticles()
             })
             .catch(error => {
@@ -350,7 +289,9 @@ export class TematicReview extends Component {
                 if (res.status == 200) { return res.json() }
                 else { throw Error(res.statusText) }
             })
-            .then((result) => {
+            .then((data) => {
+                this.setState({message: data.message})
+                alert("Ваш запрос в очереди. Пожайлуста дождитесь результата");
                 this.getAnalise();
             })
             .catch((error) => {
@@ -364,52 +305,6 @@ export class TematicReview extends Component {
         const selectedRows = this.gridAnaliseRef.current.api.getSelectedRows();
         this.setState({DetailArticle: (selectedRows.length === 1 ? selectedRows[0] : null)})
     }
-
-//    getAnalise = (url, interval = 1000) => {
-//        fetch(variables.API_URL + "/api/analise/",
-//          {
-//            headers: {
-//                'Content-Type': 'application/json;charset=utf-8',
-//                'Authorization': `Token ${variables.token}`,
-//            },
-//          }
-//        )
-//        .then((res) => {
-//                if (res.status == 202) {
-//                    this.setState({loading: true})
-//                    setTimeout(() => {
-//                      return this.getAnalise(url, interval)
-//                    }, interval);
-//                }
-//                if (res.status == 200) {
-//                    return res.json()
-//                } else {
-//                    throw Error(res.statusText)
-//                }
-//            })
-//        .then((data) => {
-//          delete data.graph.layout.width;
-//          delete data.heapmap.layout.width;
-//          delete data.heirarchy.layout.width;
-//          var topics = new Set()
-//          for (let record of data.data) {
-//            topics.add(record.topic)
-//          }
-//          this.setState({
-//            analise_articles: data.data,
-//            DetailArticle: data.data[0],
-//            clust_graph: data.graph,
-//            heapmap: data.heapmap,
-//            heirarchy: data.heirarchy,
-//            loading: false,
-//            topics: [...topics],
-//          });
-//        })
-//        .catch((err) => {
-//          console.log(err);
-//          this.setState({data: [], dataInfo: [], DetailArticle: null, loading: false});
-//        });
-//    }
 
     getAnalise = (url, interval = 1000) => {
         fetch(variables.API_URL + "/api/analise/",
@@ -428,27 +323,28 @@ export class TematicReview extends Component {
                 }
             })
         .then((data) => {
-          if (!data.data) {
+          if (data.tematic_analise === null) {
             this.setState({loading: true, message: data.message});
-                console.log(data.message);
                 setTimeout(() => {
                   return this.getAnalise(url, interval)
                 }, interval);
           } else {
-              delete data.graph.layout.width;
-              delete data.heapmap.layout.width;
-              delete data.heirarchy.layout.width;
+              delete data.clust_graph.layout.width;
+              if (data.heapmap !== null)
+                delete data.heapmap.layout.width;
+              if (data.heirarchy !== null)
+                delete data.heirarchy.layout.width;
               var topics = new Set()
-              for (let record of data.data) {
+              for (let record of data.tematic_analise) {
                 if (!topics.has(record.topic)) {
                     topics.add(record.topic)
                 }
               }
               console.log(topics)
               this.setState({
-                analise_articles: data.data,
-                DetailArticle: data.data[0],
-                clust_graph: data.graph,
+                analise_articles: data.tematic_analise,
+                DetailArticle: data.tematic_analise[0],
+                clust_graph: data.clust_graph,
                 heapmap: data.heapmap,
                 heirarchy: data.heirarchy,
                 loading: false,
@@ -459,7 +355,7 @@ export class TematicReview extends Component {
         })
         .catch((err) => {
           console.log(err);
-          this.setState({data: [], dataInfo: [], DetailArticle: null, loading: false, message: 'Something gone wrong!'});
+          this.setState({data: [], dataInfo: [], DetailArticle: null, loading: false, message: 'Что-то пошло не так'});
         });
     }
 

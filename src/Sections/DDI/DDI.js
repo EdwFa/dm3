@@ -143,21 +143,20 @@ export class DDIReview extends Component {
                 }
           })
           .then(data => {
-            if (!data.data) {
+            if (data.embeddings === null) {
                 this.setState({loading: true, message: data.message});
-                console.log(data.message);
                 setTimeout(() => {
                   return this.getArticles(task_id, interval)
                 }, interval);
             } else {
                 this.setState({
-                    articles: data.data, DetailArticle: data.data[0], loading: false,  message: data.message
+                    articles: data.embeddings, DetailArticle: data.embeddings[0], loading: false,  message: data.message
                 });
             }
           })
           .catch(error => {
             console.log(error);
-                this.setState({ articles: [], DetailArticle: null, loading: false,  message: 'Something gone wrong' });
+                this.setState({ articles: [], DetailArticle: null, loading: false,  message: 'Что-то пошло не так' });
           })
     }
 
@@ -179,14 +178,15 @@ export class DDIReview extends Component {
             .then(data => {
                 this.state.query_list.push(this.state.queryText)
                 this.setState({
-                    task_id: data.data
+                    task_id: data.data,
+                    message: 'Запрос начал обрабатываться'
                 });
-                alert("You query in queue? please wait to get result");
+                alert("Ваш запрос в очереди. Пожайлуста дождитесь результата");
                 this.getArticles(data.data)
             })
             .catch(error => {
                 console.log(error);
-                this.setState({ task: null });
+                this.setState({ task: null, message: 'Что-то пошло не так' });
             }
         )
     }
