@@ -15,6 +15,8 @@ import '../ag-theme-acmecorp.css';
 
 import Plot from 'react-plotly.js';
 
+import { VOSviewerOnline } from 'vosviewer-online'
+
 import Select from 'react-select';
 
 import Slider from 'react-input-slider';
@@ -109,13 +111,14 @@ export class TematicReview extends Component {
             summarise: null,
 
         //Other
-            graph: null,
+            infoGraphData: null,
         }
     }
 
 
     componentDidMount() {
         this.getArticles();
+        this.getGraphInfo();
         console.log('start');
     }
 
@@ -206,6 +209,7 @@ export class TematicReview extends Component {
     componentDidMount() {
         this.getArticles();
         this.getAnalise();
+        this.getGraphInfo();
         console.log('start search');
     }
 
@@ -464,6 +468,27 @@ export class TematicReview extends Component {
             })
     }
 
+    // Graphs authors, countries, jornals
+    getGraphInfo() {
+        fetch(variables.API_URL + '/api/graphs/', {
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json;charset=utf-8',
+                'Authorization': `Token ${variables.token}`,
+            }
+        })
+            .then((res) => {
+                if (res.status == 200) { return res.json() }
+                else { throw Error(res.statusText) }
+            })
+            .then((data) => {
+                this.setState({infoGraphData: data.info_graph})
+            })
+            .catch((error) => {
+                alert('Ошибка')
+            })
+    }
+
     render() {
         const {
             token,
@@ -490,7 +515,7 @@ export class TematicReview extends Component {
             topics,
             summarise,
 
-            graph
+            infoGraphData,
         } = this.state;
 
         if (!token){
@@ -1083,24 +1108,8 @@ export class TematicReview extends Component {
                                   <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">
                                     <div class="container-fluid g-0">
                                       <div id="mynetwork" style={{width: "100%", height: "600px"}}>
-                                      {graph?
-                                        <Graph
-                                          graph={graph}
-                                          zoomView={true}
-//                                          events={this.selectEvent}
-                                          key={uuidv4()}
-                                          options={{
-                                            layout: {
-                                                hierarchical: false,
-                                            },
-                                            edges: {
-                                              color: "#000000"
-                                            }
-                                          }}
-//                                          getNetwork={network => {
-//                                            setNetwork(network);
-//                                          }}
-                                        />
+                                      {infoGraphData?
+                                        <VOSviewerOnline data={infoGraphData} />
                                         :null}
                                       </div>
                                     </div>
