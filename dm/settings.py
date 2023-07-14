@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv, dotenv_values
+from Bio import Entrez
 
 
 bool_env = lambda key: True if key == 'True' else False  # Ф-я для превращения данных в булевые значения из .env файла конфигурации
@@ -225,6 +226,7 @@ CELERY_TASK_TRACK_STARTED = bool_env(os.getenv('CELERY_TASK_TRACK_STARTED'))
 
 # настройки парсера
 PARSER_EMAIL = os.getenv('PARSER_EMAIL')
+Entrez.email = PARSER_EMAIL  # Говорю NCBI кто я есть
 
 # настройки для ncbi
 RETMAX = os.getenv('RETMAX')

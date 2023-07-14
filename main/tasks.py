@@ -30,7 +30,6 @@ def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 
     print("Start parsing...")
     print(f"Count={count}, Task id={new_task_id}")
     new_task = TaskSearch.objects.get(id=new_task_id)
-    Entrez.email = PARSER_EMAIL  # Говорю NCBI кто я есть
 
     handle = Entrez.esearch(db="pubmed", sort='relevance', term=query, retmax=retmax)
     f = Entrez.read(handle)
@@ -152,20 +151,8 @@ def get_ddi_articles(self, query, new_task_id, **kwargs):
         data = parse_record(record)
         if data:
             record = ArticleSerializer(data, many=False).data
-            annotations = get_pmid(record['uid'])
-            if annotations is None:
-                annotations = get_annotations(record['tiab'])
-
-            print(annotations is None)
-            if annotations is None:
-                record['annotations'] = None
-                continue
-            else:
-                for annotation in annotations['annotations']:
-                    if math.isnan(annotation['prob']):
-                        annotation['prob'] = None
-            record['tiab'] = annotations['text']
-            record['annotations'] = annotations['annotations']
+            record['annotations'] = None
+            record['query_number'] = kwargs['number_of_query']
             record['score'], record['section'], record['text'] = records_id[record['uid']]
 
             records.append(record)
@@ -177,12 +164,25 @@ def get_ddi_articles(self, query, new_task_id, **kwargs):
         i += 1
 
     print(len(records))
-    data = {
-        'embeddings': records
-    }
     handle.close()
-    return data
+    return records
 
+@shared_task(bind=True)
+def markup_artcile(self, record):
+    annotations = get_pmid(record['uid'])
+    if annotations is None:
+        annotations = get_annotations(record['tiab'])
+
+    if annotations is None:
+        record['annotations'] = None
+    else:
+        for annotation in annotations['annotations']:
+            if math.isnan(annotation['prob']):
+                annotation['prob'] = None
+    record['tiab'] = annotations['text']
+    record['annotations'] = annotations['annotations']
+
+    return record
 
 # Старая версия кода для анализа без микросервисной архитектуры
 # @shared_task(bind=True)

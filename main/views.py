@@ -170,20 +170,31 @@ class EmbeddingTaskView(BaseTaskView):
     taskModel = TaskAnalise  # Начальная модель для поиска задачи
     files = ['embeddings']
     worker_func = get_ddi_articles
-    label = 'embeddings'
-
-    def write_data(self, new_data, username, file_name):
-        with open(self.get_path_to_file(username, f'{file_name}.json'), 'r') as f:
-            try:
-                data = json.load(f)
-                data = data + new_data
-            except:
-                data = new_data
-        with open(self.get_path_to_file(username, f'{file_name}.json'), 'w') as f:
-            json.dump(data, f)
+    label = 'data'
 
     def get(self, request):
-        return super().get(request)
+        current_task, current_worker = self.check_working_task(request)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
+        if current_task is None:
+            return self.response_data(404, message='Пока нет ни одного запроса',
+                                      label=self.label)  # Выводим ошибку об отсутвии обработки запросов
+        if current_worker is None:  # Пользователь отправил запрос но обработчик не принял его
+            current_task.delete()
+            return self.response_data(404, message='Ваш запрос не обработался! Пожайлуста повторите попытку позже',
+                                      label=self.label)  # Выводим ошибку об отсутвии обработки запросов
+
+        if current_worker.status == 'PROGRESS' or current_worker.status == 'STARTED':
+            return self.response_data(202, message=current_task.message, label=self.label)
+
+        if current_worker.status == 'FAILURE':
+            self.update_task(current_task, status=2, end_date=datetime.now(), message='Запрос завершен с ошибкой!')
+            return self.response_data(500, message=current_task.message, label=self.label)
+
+        if current_worker.status == 'SUCCESS':
+            self.update_task(current_task, status=1, end_date=datetime.now(), message='Запрос успешно завершен!')
+            data = {
+                'data': AsyncResult(current_worker.task_id, app=summarise_text).get()
+            }
+        return self.response_data(200, data=data)
 
     def post(self, request):
         current_task, current_worker = self.check_working_task(request)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
@@ -191,7 +202,7 @@ class EmbeddingTaskView(BaseTaskView):
             return self.response_data(403, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
 
         new_task = self.create_task(user=request.user, type_analise=1)
-        task = get_ddi_articles.delay(query=request.data['query'], new_task_id=new_task.id, score=request.data['score'])
+        task = get_ddi_articles.delay(new_task_id=new_task.id, **request.data)
 
         new_task.task_id = task.id
         new_task.save()
@@ -270,6 +281,34 @@ class SummariseEmbApi(APIView):
         }
         return Response(data=data, status=status.HTTP_200_OK)
 
+
+class MartUpApi(APIView):
+    def get(self, requset):
+        task_id = requset.GET.get('task_id')
+        try:
+            worker_id = TaskResult.objects.get(task_id=task_id)
+        except ObjectDoesNotExist:
+            return Response(data={'data': None, 'message': 'worker not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if worker_id.status == 'PROGRESS' or worker_id.status == 'STARTED':
+            return Response(data={'data': None, 'message': 'worker in progress'}, status=status.HTTP_202_ACCEPTED)
+
+        if worker_id.status == 'FAILURE':
+            return Response(data={'data': None, 'message': 'worker in failed'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        if worker_id.status == 'SUCCESS':
+            data = {
+                'data': AsyncResult(worker_id.task_id, app=summarise_emb).get()
+            }
+        return Response(data=data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        print(request.data)
+        task = markup_artcile.delay(record=request.data['article'])
+        data = {
+            'data': task.id,
+        }
+        return Response(data=data, status=status.HTTP_200_OK)
 
 class GetGraphData(BaseTaskView):
     files = ['info_graph']
