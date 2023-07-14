@@ -60,23 +60,17 @@ export class DDIReview extends Component {
         this.gridAnaliseRef = createRef();
         this.state = {
             token: variables.token,
+            loading: false,
 
             //queries
             query_list: [],
             message: null,
             articles: [],
             articlesInfo: [
-                {
-                    field: 'uid',
-                },
+                {field: 'query_number'},
                 {field: 'score', filter: 'agNumberColumnFilter', 'sortable': true},
                 {field: 'text', filter: 'agTextColumnFilter'},
                 {field: 'section', filter: 'agTextColumnFilter'},
-                {field: 'titl', filter: 'agTextColumnFilter'},
-                {field: 'pdat', filter: 'agTextColumnFilter'},
-                {field: 'auth', filter: 'agTextColumnFilter'},
-                {field: 'jour', filter: 'agTextColumnFilter'},
-                {field: 'pt', filter: 'agTextColumnFilter'},
             ],
             summarise: null,
             task_id: null,
@@ -90,42 +84,7 @@ export class DDIReview extends Component {
         }
     }
 
-//    getArticles = (task_id, interval = 1000) => {
-//      fetch(variables.API_URL + `/api/ddi_review?task_id=${task_id}`,
-//            {
-//                headers: {
-//                    'Content-Type': 'application/json;charset=utf-8',
-//                    'Authorization': `Token ${variables.token}`,
-//                },
-//            }
-//          )
-//          .then(response => {
-//                console.log(response.status);
-//                if (response.status == 202) {
-//                    this.setState({loading: true})
-//                    console.log(response.json())
-//                    setTimeout(() => {
-//                      return this.getArticles(task_id, interval)
-//                    }, interval);
-//                }
-//                if (response.status == 200) {
-//                    return response.json()
-//                } else {
-//                    throw Error(response.statusText)
-//                }
-//          })
-//          .then(data => {
-//            this.setState({
-//                articles: data.data, DetailArticle: data.data[0], loading: false
-//            });
-//          })
-//          .catch(error => {
-//            console.log(error);
-//                this.setState({ articles: [], DetailArticle: null, loading: false });
-//          })
-//    }
-
-    getArticles = (task_id, interval = 1000) => {
+    getArticles = (task_id, query_number = 0, interval = 1000) => {
       fetch(variables.API_URL + `/api/ddi_review`,
             {
                 headers: {
@@ -135,6 +94,7 @@ export class DDIReview extends Component {
             }
           )
           .then(response => {
+                console.log(query_number)
                 console.log(response.status);
                 if (response.ok) {
                     return response.json()
@@ -143,25 +103,33 @@ export class DDIReview extends Component {
                 }
           })
           .then(data => {
-            if (data.embeddings === null) {
+            if (data.data === null) {
                 this.setState({loading: true, message: data.message});
                 setTimeout(() => {
-                  return this.getArticles(task_id, interval)
+                  return this.getArticles(task_id, query_number, interval)
                 }, interval);
             } else {
                 this.setState({
-                    articles: data.embeddings, DetailArticle: data.embeddings[0], loading: false,  message: data.message
+                    articles: [...this.state.articles, ...data.data], DetailArticle: data.data[0], loading: false,  message: 'Выполненно'
                 });
+                if (query_number !== 0) {
+                    this.state.query_list[query_number - 1].status = 1;
+                }
             }
           })
           .catch(error => {
             console.log(error);
-                this.setState({ articles: [], DetailArticle: null, loading: false,  message: 'Что-то пошло не так' });
+            this.setState({ articles: [], DetailArticle: null, loading: false,  message: 'Что-то пошло не так' });
+            if (query_number !== 0) {
+                    this.state.query_list[query_number - 1].status = 2;
+                }
           })
     }
 
     createTask() {
         // Отправляем запрос на сервер для получения статей
+        this.state.query_list.push({query: this.state.queryText, status: 0});
+        const query_number = this.state.query_list.length;
         fetch(variables.API_URL + '/api/ddi_review', {
             method: 'POST',
             headers: {
@@ -172,17 +140,17 @@ export class DDIReview extends Component {
             body: JSON.stringify({
                 query: this.state.queryText,
                 score: this.state.queryScore,
+                number_of_query: query_number
             })
             })
             .then(response => response.json())
             .then(data => {
-                this.state.query_list.push(this.state.queryText)
                 this.setState({
                     task_id: data.data,
                     message: 'Запрос начал обрабатываться'
                 });
                 alert("Ваш запрос в очереди. Пожайлуста дождитесь результата");
-                this.getArticles(data.data)
+                this.getArticles(data.data, query_number)
             })
             .catch(error => {
                 console.log(error);
@@ -192,25 +160,8 @@ export class DDIReview extends Component {
     }
 
     clearTask() {
-        // Отправляем запрос на сервер для получения статей
-        fetch(variables.API_URL + '/api/ddi_review', {
-            method: 'DELETE',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json;charset=utf-8',
-                'Authorization': `Token ${variables.token}`,
-            }
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert("File is clear");
-                this.setState({query_list: [], articles: [], DetailArticle: null})
-            })
-            .catch(error => {
-                console.log(error);
-                this.setState({ task: null });
-            }
-        )
+        this.setState({query_list: [], articles: [], DetailArticle: null})
+        alert("Таблица очищена!");
     }
 
     componentDidMount() {
@@ -305,9 +256,90 @@ export class DDIReview extends Component {
             })
     }
 
+    // MarkUp article
+
+    getMarkUp = (task_id, interval = 1000) => {
+        fetch(variables.API_URL + `/api/markup?task_id=${task_id}`,
+          {
+            headers: {
+                'Content-Type': 'application/json;charset=utf-8',
+                'Authorization': `Token ${variables.token}`,
+            },
+          }
+        )
+        .then((res) => {
+                if (res.status == 202) {
+                    setTimeout(() => {
+                      return this.getMarkUp(task_id, interval)
+                    }, interval);
+                } else if (res.status == 200) {
+                    return res.json()
+                } else {
+                    throw Error(res.statusText)
+                }
+            })
+        .then((data) => {
+          try {
+            this.setState({
+                DetailArticle: data.data,
+                message: 'Разметка прошла успешно',
+                loading: false,
+              });
+          } catch {
+            console.log('access')
+          }
+        })
+        .catch((err) => {
+          console.log(err);
+          this.setState({message: 'Произошла ошибка при разметке', loading: false,});
+        });
+    }
+
+    markUpArticle(DetailArticle) {
+        this.setState({loading: true})
+        fetch(variables.API_URL + '/api/markup', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json;charset=utf-8',
+                'Authorization': `Token ${variables.token}`,
+            },
+            body: JSON.stringify({
+                article: DetailArticle
+            })
+        })
+        .then((res) => {
+                console.log(res.status)
+                if (res.ok) {
+                    return res.json()
+                } else {
+                    throw Error(res.statusText)
+                }
+            })
+        .then((result) => {
+          var task_id = result.data;
+          this.setState({message: 'Отправлено на суммаризацию пожайлуста дождитесь ответа'})
+          this.getMarkUp(task_id);
+        })
+        .catch((err) => {
+          console.log(err);
+          this.setState({
+            message: 'ошибка при разметке',
+            loading: false,
+          });
+        });
+    }
+
+    onRemoveSelected = () => {
+        const selectedData = this.gridRef.current.api.getSelectedRows();
+        const res = this.gridRef.current.api.applyTransaction({ remove: selectedData });
+    }
+
+
     render() {
         const {
             token,
+            loading,
             query_list,
             articlesInfo,
             articles,
@@ -540,7 +572,14 @@ export class DDIReview extends Component {
                                   </h2>
                                   <div id="flush-collapseSeven" class="collapse multi-collapse" aria-labelledby="flush-headingSeven" data-bs-target="#accordionFlushExample">
                                     <div class="accordion-body">
-                                    {query_list?.map(query => <p class="pb-2 mb-3 border-bottom">{query}.</p>)}
+                                    {query_list?.map((query, index) =>
+                                    query.status === 2?
+                                        <p class="pb-2 mb-3 border-bottom" style={{color: 'red'}}>{index + 1} - {query.query}.</p>
+                                    :query.status === 1?
+                                        <p class="pb-2 mb-3 border-bottom" style={{color: 'green'}}>{index + 1} - {query.query}.</p>
+                                    :
+                                        <p class="pb-2 mb-3 border-bottom" style={{color: 'black'}}>{index + 1} - {query.query}.</p>
+                                    )}
                                     </div>
                                     <div class="accordion-body">
                                         <input className="btn btn-primary" type="submit" value="Очистить" onClick={() => this.clearTask()}/>
@@ -623,6 +662,16 @@ export class DDIReview extends Component {
                                           <p class="card-text"><small class="text-success">Вид публикации : { DetailArticle.pt }</small></p>
                                           <p class="card-text"><small class="text-success">Страна : { DetailArticle.pl } </small></p>
                                           <p class="card-text"><small class="text-success">{ DetailArticle.mesh } </small></p>
+                                          {summarise?
+                                            <>
+                                                <p>Summarise</p>
+                                                <p>{summarise}</p>
+                                            </>
+                                            :loading?
+                                                <p>Loading...</p>
+                                            :<input className="btn btn-primary" type="submit" value="Разметить" onClick={() => this.markUpArticle(DetailArticle)}/>
+                                          }
+                                          <input className="btn btn-primary" type="submit" value="Удалить" onClick={() => this.onRemoveSelected()}/>
                                         </div>
                                       </div>
                                 :null}

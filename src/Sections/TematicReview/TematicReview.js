@@ -57,17 +57,11 @@ export class TematicReview extends Component {
             articles: [],
             DetailArticle: null,
             articlesInfo: [
-                {
-                    field: 'uid',
-
-                },
                 {field: 'titl', filter: 'agTextColumnFilter'},
                 {field: 'pdat', filter: 'agTextColumnFilter'},
                 {field: 'auth', filter: 'agTextColumnFilter'},
                 {field: 'jour', filter: 'agTextColumnFilter'},
                 {field: 'pt', filter: 'agTextColumnFilter'},
-                {field: 'topic', filter: 'agNumberColumnFilter', sortable: true, filterParams: topicFilterParams},
-                {field: 'prop', filter: 'agNumberColumnFilter'},
             ],
             translation_stack: null,
             full_query: null,
@@ -89,12 +83,13 @@ export class TematicReview extends Component {
             // Analise table
             analise_articles: [],
             analise_info: [
-                {field: 'uid'},
                 {field: 'titl', filter: 'agTextColumnFilter'},
                 {field: 'pdat', filter: 'agTextColumnFilter'},
                 {field: 'auth', filter: 'agTextColumnFilter'},
                 {field: 'jour', filter: 'agTextColumnFilter'},
                 {field: 'pt', filter: 'agTextColumnFilter'},
+                {field: 'topic', filter: 'agNumberColumnFilter', sortable: true, filterParams: topicFilterParams},
+                {field: 'prop', filter: 'agNumberColumnFilter'},
             ],
             DetailArticle: null,
 
