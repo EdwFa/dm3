@@ -1,3 +1,4 @@
+from datetime import datetime
 from Bio import Entrez
 from Bio import Medline
 from celery import shared_task
@@ -133,11 +134,31 @@ def current_record(record, **filters):
     return True
 
 
+def filter_record(record, **filters):
+    if 'date' in filters:
+        if filters['date']:
+            period = datetime.now().year - int(record.pdat.split(' ')[0])
+            print(period, filters['date'])
+            if period > filters['date']:
+                return False
+    if 'type' in filters:
+        res = False
+        current_types = record.pt.split('; ')
+        print(current_types, filters['type'])
+        for filter_type in filters['type']:
+            if filter_type in current_types:
+                res = True
+    return res
+
+
 @shared_task(bind=True)
 def get_ddi_articles(self, query, new_task_id, **kwargs):
 
     url = f'https://www.ncbi.nlm.nih.gov/research/litsense-api/api/?query={query}&rerank=true'
     r = requests.get(url)
+    print(r.status_code)
+    if (r.status_code > 299 or r.status_code < 200):
+        raise ConnectionError(f'Подключение к эмбедингам ncbi прошло неудачно с {r.status_code} ошибкой')
     records_id = {record['pmid']: [round(record['score'], 2), record['section'], record['text']] for record in json.loads(r.text) if current_record(record, **kwargs)}
 
     handle = Entrez.efetch(db="pubmed", id=[k for k in records_id], rettype="medline", retmode="text")
@@ -149,6 +170,9 @@ def get_ddi_articles(self, query, new_task_id, **kwargs):
 
     for record in Medline.parse(handle):
         data = parse_record(record)
+        if not filter_record(data, **kwargs):
+            i += 1
+            continue
         if data:
             record = ArticleSerializer(data, many=False).data
             record['annotations'] = None

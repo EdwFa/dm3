@@ -6,8 +6,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from celery.result import AsyncResult
 from django_celery_results.models import TaskResult
 
-from datetime import date, datetime
-
 from dm.settings import RETMAX, MAX_COUNT
 from .tasks import *
 
