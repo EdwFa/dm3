@@ -13,7 +13,7 @@ export class Login extends Component {
 
         this.state = {
             token: variables.token,
-            username: "",
+            email: "",
             password: "",
             error: "",
             isAuthenticated: false,
@@ -28,8 +28,8 @@ export class Login extends Component {
         this.setState({password: event.target.value});
     }
 
-      handleUserNameChange = (event) => {
-        this.setState({username: event.target.value});
+      handleEmailChange = (event) => {
+        this.setState({email: event.target.value});
     }
 
     isResponseOk(response) {
@@ -48,17 +48,18 @@ export class Login extends Component {
             "Content-Type": "application/json",
           },
           credentials: "same-origin",
-          body: JSON.stringify({username: this.state.username, password: this.state.password}),
+          body: JSON.stringify({email: this.state.email, password: this.state.password}),
         })
         .then(this.isResponseOk)
         .then((data) => {
           console.log(data);
-          this.setState({token: data.key});
-          variables.token = data.key
+          this.setState({token: data.token.key});
+          variables.token = data.token.key
+          variables.email = data.email
         })
         .catch((err) => {
           console.log(err);
-          this.setState({error: "Wrong username or password."});
+          this.setState({error: "Wrong email or password."});
         });
     }
 
@@ -91,11 +92,11 @@ export class Login extends Component {
               <h2>Login</h2>
               <form onSubmit={this.login}>
                 <div className="form-group">
-                  <label htmlFor="username">Username</label>
-                  <input type="text" className="form-control" id="username" name="username" value={this.state.username} onChange={this.handleUserNameChange} />
+                  <label htmlFor="email">Email</label>
+                  <input type="email" className="form-control" id="email" name="email" value={this.state.email} onChange={this.handleEmailChange} />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="username">Password</label>
+                  <label htmlFor="password">Password</label>
                   <input type="password" className="form-control" id="password" name="password" value={this.state.password} onChange={this.handlePasswordChange} />
                   <div>
                     {this.state.error &&
