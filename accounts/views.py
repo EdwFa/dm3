@@ -14,8 +14,9 @@ from .serializers import *
 
 needed_files = ['search_ncbi', 'tematic_analise', 'clust_graph', 'heapmap', 'heirarchy', 'embeddings', 'info_graph']
 
-def get_path_to_file(username, file_name):
-    path_to_file = os.path.join('datasets', username, file_name)
+
+def get_path_to_file(pk, file_name):
+    path_to_file = os.path.join('datasets', str(pk), file_name)
     if not os.path.exists(path_to_file):
         f = open(path_to_file, 'w')
         json.dump([], f)
@@ -42,13 +43,13 @@ class LoginApi(APIView):
                     pass
                 token = Token.objects.create(user=authenticated_user)
 
-                if not os.path.exists(f'datasets/{authenticated_user.username}'):
-                    os.mkdir(f'datasets/{authenticated_user.username}')
+                if not os.path.exists(f'datasets/{authenticated_user.id}'):
+                    os.mkdir(f'datasets/{authenticated_user.id}')
                 for need_file in needed_files:
-                    get_path_to_file(authenticated_user.username, f'{need_file}.json')
+                    get_path_to_file(authenticated_user.id, f'{need_file}.json')
 
                 print(token)
-                return Response(TokenSeriazliser(token).data)
+                return Response(data={'token': TokenSeriazliser(token).data, 'email': authenticated_user.email}, status=200)
             return Response(serializer.errors, status=403)
         else:
             return Response(serializer.errors, status=400)

@@ -28,8 +28,8 @@ class BaseTaskView(APIView):
                 return worked_tasks[0], None
         return None, None
 
-    def get_path_to_file(self, username, file_name):
-        path_to_file = os.path.join('datasets', username, file_name)
+    def get_path_to_file(self, pk, file_name):
+        path_to_file = os.path.join('datasets', str(pk), file_name)
         if not os.path.exists(path_to_file):
             raise Exception(f'Not found {path_to_file}')
 
@@ -45,7 +45,7 @@ class BaseTaskView(APIView):
         current_tasks = self.taskModel.objects.filter(id=current_task.id)
         current_tasks.update(**kwargs)
 
-    def save_data(self, current_worker: TaskResult, username):
+    def save_data(self, current_worker: TaskResult, pk):
         # Если наш запрос успешно обработался то сохраняем данные а если нет то файл пуст
         """
             Если наш запрос успешно обработался то сохраняем данные а если нет то файл пуст
@@ -57,19 +57,19 @@ class BaseTaskView(APIView):
         """
         data = AsyncResult(current_worker.task_id, app=self.worker_func).get()
         for file_name in self.files:
-            self.write_data(data[file_name], username, file_name)
+            self.write_data(data[file_name], pk, file_name)
         return
 
-    def write_data(self, data, username, file_name):
+    def write_data(self, data, pk, file_name):
         # Сохраняем наши изменения при условии что запрос прошел успешно
-        f = open(self.get_path_to_file(username, f'{file_name}.json'), 'w')
+        f = open(self.get_path_to_file(pk, f'{file_name}.json'), 'w')
         json.dump(data, f)
         f.close()
 
-    def create_data_response(self, username):
+    def create_data_response(self, pk):
         data = dict()
         for file_name in self.files:
-            f = open(self.get_path_to_file(username, f'{file_name}.json'), 'r')
+            f = open(self.get_path_to_file(pk, f'{file_name}.json'), 'r')
             data[file_name] = json.load(f)
             f.close()
         return data
@@ -85,7 +85,7 @@ class BaseTaskView(APIView):
         current_task, current_worker = self.check_working_task(request)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
 
         if current_task is None: # Если воркер отсутвует значит у пользователя сейчас свободна очередь запросов
-            data = self.create_data_response(request.user.username)
+            data = self.create_data_response(request.user.id)
             return self.response_data(200, data=data)  # Выводим его последний запрос из базы
 
         if current_worker is None:  # Пользователь отправил запрос но обработчик не принял его
@@ -101,9 +101,9 @@ class BaseTaskView(APIView):
 
         if current_worker.status == 'SUCCESS':
             self.update_task(current_task, status=1, end_date=datetime.now(), message='Запрос успешно завершен!')
-            self.save_data(current_worker, request.user.username)
+            self.save_data(current_worker, request.user.id)
 
-        data = self.create_data_response(request.user.username)
+        data = self.create_data_response(request.user.id)
         return self.response_data(200, data=data)
 
 
@@ -141,7 +141,7 @@ class TematicAnaliseView(BaseTaskView):
     worker_func = analise_records
     label = 'tematic_analise'
 
-    def save_data(self, current_worker, username):
+    def save_data(self, current_worker, id):
         return None
 
     def get(self, request):
@@ -153,7 +153,7 @@ class TematicAnaliseView(BaseTaskView):
             return self.response_data(403, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
 
         new_task = self.create_task(user=request.user, type_analise=0)
-        task = analise_records.delay(username=request.user.username, IdList=request.data['articles'], new_task_id=new_task.id)
+        task = analise_records.delay(pk=request.user.id, IdList=request.data['articles'], new_task_id=new_task.id)
 
         new_task.task_id = task.id
         new_task.message = 'Начинаем обработку...'
@@ -213,7 +213,7 @@ class EmbeddingTaskView(BaseTaskView):
 
     def delete(self, request):
         for file_name in self.files:
-            f = open(get_path_to_file(request.user.username, f'{file_name}.json'), 'w')
+            f = open(get_path_to_file(request.user.id, f'{file_name}.json'), 'w')
             f.close()
         data = {
             'data': None,
@@ -273,7 +273,7 @@ class SummariseEmbApi(APIView):
 
     def post(self, request):
         print(request.data)
-        task = summarise_emb.delay(username=request.user.username)
+        task = summarise_emb.delay(pk=request.user.id)
         data = {
             'data': task.id,
         }
@@ -312,6 +312,6 @@ class GetGraphData(BaseTaskView):
     files = ['info_graph']
 
     def get(self, request):
-        data = self.create_data_response(request.user.username)
+        data = self.create_data_response(request.user.id)
         return self.response_data(200, data=data)
 

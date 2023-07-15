@@ -1,12 +1,13 @@
 from rest_framework import serializers
-from django.contrib.auth.models import User
 from rest_framework.authtoken.models import Token
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 
 class UserLoginSerilizer(serializers.Serializer):
     model = User
 
-    username = serializers.CharField(required=True)
+    email = serializers.EmailField(required=True)
     password = serializers.CharField(required=True)
 
 class TokenSeriazliser(serializers.ModelSerializer):
