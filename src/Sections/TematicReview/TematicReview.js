@@ -62,6 +62,7 @@ export class TematicReview extends Component {
                 {field: 'auth', filter: 'agTextColumnFilter'},
                 {field: 'jour', filter: 'agTextColumnFilter'},
                 {field: 'pt', filter: 'agTextColumnFilter'},
+                {field: 'mesh', filter: 'agTextColumnFilter'},
             ],
             translation_stack: null,
             full_query: null,
@@ -88,6 +89,7 @@ export class TematicReview extends Component {
                 {field: 'auth', filter: 'agTextColumnFilter'},
                 {field: 'jour', filter: 'agTextColumnFilter'},
                 {field: 'pt', filter: 'agTextColumnFilter'},
+                {field: 'mesh', filter: 'agTextColumnFilter'},
                 {field: 'topic', filter: 'agNumberColumnFilter', sortable: true, filterParams: topicFilterParams},
                 {field: 'prop', filter: 'agNumberColumnFilter'},
             ],
@@ -936,8 +938,7 @@ export class TematicReview extends Component {
                                                       width: 250,
                                                     },
                                                   ],
-                                                  position: 'left',
-                                                  defaultToolPanel: 'filters',
+                                                  position: 'left'
                                                 }}
                                             >
                                             </AgGridReact>
@@ -1013,7 +1014,6 @@ export class TematicReview extends Component {
                                                             },
                                                           ],
                                                           position: 'left',
-                                                          defaultToolPanel: 'filters',
                                                         }}
                                                 >
                                                 </AgGridReact>
