@@ -13,8 +13,8 @@ function App() {
   useEffect(() => {
     // 👇️ adding multiple classes to the body element
     document.body.classList.add(
-      'bg-gray-100',
-      'dark:bg-gray-900',
+      'bg-gray-200',
+      'dark:bg-gray-200',
     );
   }, []);
 
