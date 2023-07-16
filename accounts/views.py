@@ -49,7 +49,9 @@ class LoginApi(APIView):
                     get_path_to_file(authenticated_user.id, f'{need_file}.json')
 
                 print(token)
-                return Response(data={'token': TokenSeriazliser(token).data, 'email': authenticated_user.email}, status=200)
+                return Response(data={'token': TokenSeriazliser(token).data,
+                                      'email': authenticated_user.email,
+                                      'allow': authenticated_user.allow_status}, status=200)
             return Response(serializer.errors, status=403)
         else:
             return Response(serializer.errors, status=400)

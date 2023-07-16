@@ -111,5 +111,5 @@ class TaskAnalise(models.Model):
     start_date = models.DateTimeField(auto_now_add=True)
     end_date = models.DateTimeField(null=True, blank=True)
     status = models.IntegerField(choices=task_statuses, default=0)
-    type_analise = models.IntegerField(choices=task_statuses, default=0)
+    type_analise = models.IntegerField(choices=task_analise, default=0)
     message = models.TextField(default='')

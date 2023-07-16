@@ -16,11 +16,11 @@ class BaseTaskView(APIView):
     files = ['search_ncbi', 'tematic_analise', 'clust_graph', 'heapmap', 'heirarchy', 'embeddings', 'info_graph']  # Все возмодные файлы для записи данных
     worker_func = parse_records
     label = 'data'
-    retmax = 10000 # RETMAX
+    retmax = 1000 # RETMAX
 
-    def check_working_task(self, request):
+    def check_working_task(self, request, **kwargs):
         # Модуль проверки наличии уже запущенных запросов в поиске данному пользователю
-        worked_tasks = self.taskModel.objects.filter(status=0, user=request.user).order_by('-start_date')
+        worked_tasks = self.taskModel.objects.filter(status=0, user=request.user, **kwargs).order_by('-start_date')
         if worked_tasks.count() != 0:  # Если пользователь имеет уже запущенные запросы выводим их ему
             try:
                 return worked_tasks[0], TaskResult.objects.get(task_id=worked_tasks[0].task_id)
@@ -81,16 +81,16 @@ class BaseTaskView(APIView):
         
         return Response(data=kwargs['data'], status=error_status)
 
-    def get(self, request):
-        current_task, current_worker = self.check_working_task(request)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
+    def get(self, request, **kwargs):
+        current_task, current_worker = self.check_working_task(request, **kwargs)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
 
         if current_task is None: # Если воркер отсутвует значит у пользователя сейчас свободна очередь запросов
             data = self.create_data_response(request.user.id)
-            return self.response_data(200, data=data)  # Выводим его последний запрос из базы
+            return self.response_data(200, data=data, message='Запросов нет')  # Выводим его последний запрос из базы
 
         if current_worker is None:  # Пользователь отправил запрос но обработчик не принял его
             current_task.delete()
-            return self.response_data(404, message='Ваш запрос не обработался! Пожайлуста повторите попытку позже', label=self.label)  # Выводим ошибку об отсутвии обработки запросов
+            return self.response_data(500, message='Запрос завершен с ошибкой!', label=self.label)  # Выводим ошибку об отсутвии обработки запросов
 
         if current_worker.status == 'PROGRESS' or current_worker.status == 'STARTED':
              return self.response_data(202, message=current_task.message, label=self.label)
@@ -145,7 +145,7 @@ class TematicAnaliseView(BaseTaskView):
         return None
 
     def get(self, request):
-        return super().get(request)
+        return super().get(request, type_analise=0)
 
     def post(self, request):
         current_task, current_worker = self.check_working_task(request)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
@@ -171,13 +171,13 @@ class EmbeddingTaskView(BaseTaskView):
     label = 'data'
 
     def get(self, request):
-        current_task, current_worker = self.check_working_task(request)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
+        current_task, current_worker = self.check_working_task(request, type_analise=1)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
         if current_task is None:
-            return self.response_data(404, message='Пока нет ни одного запроса',
+            return self.response_data(404, message='Сделайте запрос',
                                       label=self.label)  # Выводим ошибку об отсутвии обработки запросов
         if current_worker is None:  # Пользователь отправил запрос но обработчик не принял его
             current_task.delete()
-            return self.response_data(404, message='Ваш запрос не обработался! Пожайлуста повторите попытку позже',
+            return self.response_data(500, message='Ваш запрос не обработался! Пожайлуста повторите попытку позже',
                                       label=self.label)  # Выводим ошибку об отсутвии обработки запросов
 
         if current_worker.status == 'PROGRESS' or current_worker.status == 'STARTED':
@@ -203,6 +203,7 @@ class EmbeddingTaskView(BaseTaskView):
         task = get_ddi_articles.delay(new_task_id=new_task.id, **request.data)
 
         new_task.task_id = task.id
+        new_task.message = 'Начало обработки...'
         new_task.save()
 
         data = {
