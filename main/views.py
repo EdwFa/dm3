@@ -16,7 +16,7 @@ class BaseTaskView(APIView):
     files = ['search_ncbi', 'tematic_analise', 'clust_graph', 'heapmap', 'heirarchy', 'embeddings', 'info_graph']  # Все возмодные файлы для записи данных
     worker_func = parse_records
     label = 'data'
-    retmax = 1000 # RETMAX
+    retmax = 10000 # RETMAX
 
     def check_working_task(self, request, **kwargs):
         # Модуль проверки наличии уже запущенных запросов в поиске данному пользователю
