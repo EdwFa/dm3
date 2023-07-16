@@ -138,10 +138,12 @@ def filter_record(record, **filters):
     if 'date' in filters:
         if filters['date']:
             period = datetime.now().year - int(record.pdat.split(' ')[0])
-            print(period, filters['date'])
+            print(f"{period} ?> {filters['date']}")
             if period > filters['date']:
                 return False
-    if 'type' in filters:
+    if not ('type' in filters and len(filters['type']) > 0):
+        return True
+    else:
         res = False
         current_types = record.pt.split('; ')
         print(current_types, filters['type'])
