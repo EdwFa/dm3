@@ -40,6 +40,8 @@ var topicFilterParams = {
   },
 };
 
+var ErrorMessage = 0
+
 export class TematicReview extends Component {
 
   constructor(props) {
@@ -52,6 +54,7 @@ export class TematicReview extends Component {
       loading: false,
       useAll: true,
       token: variables.token,
+      allow_page: variables.allow,
 
       // Search
       articles: [],
@@ -69,6 +72,7 @@ export class TematicReview extends Component {
       short_query: null,
       task: null,
       message: null,
+      messageStatus: 200,
       count: 0,
       analiseRows: [],
 
@@ -135,29 +139,34 @@ export class TematicReview extends Component {
         if (response.ok) {
           return response.json()
         } else {
-          throw Error(response.statusText)
+          ErrorMessage = response.status
+          throw Error(response.status)
         }
       })
       .then(data => {
         if (data.search_ncbi === null) {
-          this.setState({ loading: true, message: data.message });
+          this.setState({ loading: true, message: data.message, messageStatus: 202 });
           console.log(data.message);
           setTimeout(() => {
             return this.getArticles(url, interval)
           }, interval);
         } else {
-          if (data.search_ncbi.length === 0) {
-            this.setState({ articles: [], articlesInfo: [], loading: false, message: 'Запросов нет' });
-          } else {
             this.setState({
-              articles: data.search_ncbi, DetailArticle: data.search_ncbi[0], message: data.message, loading: false
+              articles: data.search_ncbi,
+              DetailArticle: (data.search_ncbi && data.search_ncbi.length !== 0?data.search_ncbi[0] : null),
+              message: data.message,
+              loading: false,
+              message: "Запрос успешно обработан",
+              messageStatus: 200,
             });
-          }
         }
       })
       .catch(error => {
-        console.log(error);
-        this.setState({ articles: [], articlesInfo: [], loading: false, message: 'Что-то пошло не так' });
+        if (ErrorMessage === 500) {
+            this.setState({ articles: [], articlesInfo: [], DetailArticle: null, loading: false, message: 'Ошибка сервера', messageStatus: 500 });
+        } else {
+            this.setState({ articles: [], articlesInfo: [], DetailArticle: null, loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
+        }
       })
   }
 
@@ -179,28 +188,39 @@ export class TematicReview extends Component {
           Old: [...this.state.queryOlds],
         })
       })
-      .then(response => response.json())
+      .then(response => {
+        console.log(response.status);
+        if (response.ok) {
+          return response.json()
+        } else {
+          ErrorMessage = response.status
+          throw Error(response.status)
+        }
+      })
       .then(data => {
         this.setState({
           full_query: data.full_query,
           translation_stack: data.translation_stack,
           short_query: data.query,
-          message: data.message,
+          message: "Ваш запрос в очереди. Пожайлуста дождитесь результата",
           task: data,
           count: data.count,
           articles: [],
           articlesInfo: [],
           loading: true,
-
+          messageStatus: 201
         });
-        alert("Ваш запрос в очереди. Пожайлуста дождитесь результата");
         this.getArticles()
       })
       .catch(error => {
-        console.log(error);
-        this.setState({ task: null });
-      }
-      )
+        if (ErrorMessage === 500) {
+            this.setState({ task: null, loading: false, message: 'Ошибка сервера', messageStatus: 500 });
+        } else if (ErrorMessage === 403) {
+            this.setState({ task: null, loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 400 });
+        } else {
+            this.setState({ task: null, loading: false, message: 'Что=то пошло не так', messageStatus: 400 });
+        }
+      })
   }
 
   componentDidMount() {
@@ -286,17 +306,27 @@ export class TematicReview extends Component {
         articles: analise_data
       })
     })
-      .then((res) => {
-        if (res.status == 200) { return res.json() }
-        else { throw Error(res.statusText) }
+      .then(response => {
+        console.log(response.status);
+        if (response.ok) {
+          return response.json()
+        } else {
+          ErrorMessage = response.status
+          throw Error(response.status)
+        }
       })
       .then((data) => {
-        this.setState({ message: data.message })
-        alert("Ваш запрос в очереди. Пожайлуста дождитесь результата");
+        this.setState({ message: "Ваш запрос в очереди. Пожайлуста дождитесь результата", messageStatus: 201 })
         this.getAnalise();
       })
       .catch((error) => {
-        alert('Ошибка')
+        if (ErrorMessage === 500) {
+            this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, message: 'Ошибка сервера', messageStatus: 500 });
+        } else if (ErrorMessage === 403) {
+            this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 403 });
+        } else {
+            this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, message: 'Что=то пошло не так', messageStatus: 400 });
+        }
       })
   }
 
@@ -320,26 +350,35 @@ export class TematicReview extends Component {
         if (res.ok) {
           return res.json()
         } else {
-          throw Error(res.statusText)
+          ErrorMessage = res.status
+          throw new Error(res)
         }
       })
       .then((data) => {
         if (data.tematic_analise === null) {
-          this.setState({ loading: true, message: data.message });
+          this.setState({ loading: true, message: data.message, messageStatus: 202 });
           setTimeout(() => {
             return this.getAnalise(url, interval)
           }, interval);
         } else {
-          delete data.clust_graph.layout.width;
+          if (data.clust_graph.length !== 0) {
+            delete data.clust_graph.layout.width;
+          }
           if (data.heapmap !== null)
-            delete data.heapmap.layout.width;
-          if (data.heirarchy !== null)
-            delete data.heirarchy.layout.width;
-          var topics = new Set()
-          for (let record of data.tematic_analise) {
-            if (!topics.has(record.topic)) {
-              topics.add(record.topic)
+            if (data.heapmap.length !== 0) {
+                delete data.heapmap.layout.width;
             }
+          if (data.heirarchy !== null)
+            if (data.heirarchy.length !== 0) {
+                delete data.heirarchy.layout.width;
+            }
+          var topics = new Set()
+          if (data.tematic_analise.length !== 0) {
+              for (let record of data.tematic_analise) {
+                if (!topics.has(record.topic)) {
+                  topics.add(record.topic)
+                }
+              }
           }
           console.log(topics)
           this.setState({
@@ -349,15 +388,22 @@ export class TematicReview extends Component {
             heapmap: data.heapmap,
             heirarchy: data.heirarchy,
             loading: false,
-            message: data.message,
+            message: "Запрос успешно обработан",
+            messageStatus: 200,
             topics: [...topics],
           });
           this.getGraphInfo()
         }
       })
-      .catch((err) => {
-        console.log(err);
-        this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, message: 'Что-то пошло не так' });
+      .catch((error) => {
+        console.log(error);
+        if (ErrorMessage === 500) {
+            this.setState({ analise_articles: [], clust_graph: null, heapmap: null, heirarchy: null, DetailArticle: null, loading: false, message: 'Ошибка сервера', messageStatus: 500 });
+        } else if (ErrorMessage === 403) {
+            this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 403 });
+        } else {
+            this.setState({ analise_articles: [], clust_graph: null, heapmap: null, heirarchy: null, DetailArticle: null, loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
+        }
       });
   }
 
@@ -407,7 +453,7 @@ export class TematicReview extends Component {
     )
       .then((res) => {
         if (res.status == 202) {
-          this.setState({ loading: true })
+          this.setState({ loading: true, messageStatus: 202, message: "Отправлено на суммаризацию..." })
           setTimeout(() => {
             return this.getSummarise(task_id, interval)
           }, interval);
@@ -415,18 +461,21 @@ export class TematicReview extends Component {
         if (res.status == 200) {
           return res.json()
         } else {
+          ErrorMessage = res.status
           throw Error(res.statusText)
         }
       })
       .then((data) => {
         this.setState({
           summarise: data.data,
-          message: 'Суммаризация прошла успешно'
+           loading: false,
+          message: 'Суммаризация прошла успешно',
+          messageStatus: 200
         });
       })
       .catch((err) => {
         console.log(err);
-        this.setState({ summarise: null, message: 'Произошла ошибка при суммаризации' });
+        this.setState({ summarise: null, message: 'Произошла ошибка при суммаризации', messageStatus: 500 });
       });
   }
 
@@ -452,17 +501,22 @@ export class TematicReview extends Component {
         articles: data
       })
     })
-      .then((res) => {
-        if (res.status == 200) { return res.json() }
-        else { throw Error(res.statusText) }
+      .then(response => {
+        console.log(response.status);
+        if (response.ok) {
+          return response.json()
+        } else {
+          ErrorMessage = response.status
+          throw Error(response.status)
+        }
       })
       .then((result) => {
         var task_id = result.data;
-        this.setState({ message: 'Отправлено на суммаризацию пожайлуста дождитесь ответа' })
+        this.setState({ message: 'Отправлено на суммаризацию пожайлуста дождитесь ответа', messageStatus: 201 })
         this.getSummarise(task_id);
       })
       .catch((error) => {
-        alert('Ошибка')
+        this.setState({ message: 'Ошибка при суммаризации', messageStatus: 500 })
       })
   }
 
@@ -475,15 +529,20 @@ export class TematicReview extends Component {
         'Authorization': `Token ${variables.token}`,
       }
     })
-      .then((res) => {
-        if (res.status == 200) { return res.json() }
-        else { throw Error(res.statusText) }
+      .then(response => {
+        console.log(response.status);
+        if (response.ok) {
+          return response.json()
+        } else {
+          ErrorMessage = response.status
+          throw Error(response.status)
+        }
       })
       .then((data) => {
-        this.setState({ infoGraphData: data.info_graph })
+        this.setState({ infoGraphData: data.info_graph})
       })
       .catch((error) => {
-        alert('Ошибка')
+        console.log(error)
       })
   }
 
@@ -498,6 +557,7 @@ export class TematicReview extends Component {
       full_query,
       short_query,
       message,
+      messageStatus,
       loading,
 
       queryText,
@@ -512,12 +572,15 @@ export class TematicReview extends Component {
       current_topic,
       topics,
       summarise,
+      allow_page,
 
       infoGraphData,
     } = this.state;
 
     if (!token) {
       return <Navigate push to="/login" />
+    } else if (allow_page === 1) {
+      return <Navigate push to="/ddi_review" />
     } else {
       return (
         <>
@@ -529,18 +592,21 @@ export class TematicReview extends Component {
                     <img src="https://flowbite.s3.amazonaws.com/logo.svg" class="mr-3 h-8" alt="FlowBite Logo" />
                     <span class="self-center text-2xl font-semibold whitespace-nowrap">EBM DаtaMed</span>
                   </a>
-                  <ul class="flex font-medium flex-row space-x-8 ml-10">
-                    <Link to="/tematic_review">
-                      <li>
-                        <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0" aria-current="page">Тематический анализ</a>
-                      </li>
-                    </Link>
-                    <Link to="/ddi_review">
-                      <li>
-                        <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Факты для EBM</a>
-                      </li>
-                    </Link>
-                  </ul>
+                  {allow_page === 2?
+                      <ul class="flex font-medium flex-row space-x-8 ml-10">
+                        <Link to="/tematic_review">
+                          <li>
+                            <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0" aria-current="page">Тематический анализ</a>
+                          </li>
+                        </Link>
+                        <Link to="/ddi_review">
+                          <li>
+                            <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Факты для EBM</a>
+                          </li>
+                        </Link>
+                      </ul>
+                  :null}
+
                 </div>
                 <div class="flex items-center lg:order-2">
                   <div class="flex-shrink-0 dropdown">
@@ -906,8 +972,17 @@ export class TematicReview extends Component {
                     <div class="accordion accordion-flush" id="accordion">
                       <div class="accordion-item">
                         <h2 class="accordion-header" id="">
+                          {message?
+                              messageStatus > 299?
+                                <p class="pb-2 mb-3 border-bottom" style={{ color: 'red' }}>{message}.</p>
+                                : messageStatus === 200 ?
+                                <p class="pb-2 mb-3 border-bottom" style={{ color: 'green' }}>{message}.</p>
+                                :
+                                <p class="pb-2 mb-3 border-bottom" style={{ color: 'black' }}>{message}.</p>
+                              :null
+                          }
                           <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseEleven" aria-expanded="false" aria-controls="flush-collapseSeven">
-                            По запросу найдено {count} источников. {message}
+                            По запросу найдено {count} источников.
                           </button>
                         </h2>
                         <div id="flush-collapseEleven" class="collapse multi-collapse" aria-labelledby="flush-headingEleven" data-bs-target="#accordionFlushExample">

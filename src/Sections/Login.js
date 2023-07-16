@@ -56,6 +56,7 @@ export class Login extends Component {
         this.setState({ token: data.token.key });
         variables.token = data.token.key
         variables.email = data.email
+        variables.allow = data.allow
       })
       .catch((err) => {
         console.log(err);
@@ -281,6 +282,8 @@ export class Login extends Component {
           </div>
         </section>
       );
+    } else if (variables.allow === 1){
+      return <Navigate push to="/ddi_review" />
     } else {
       return <Navigate push to="/tematic_review" />
     }
