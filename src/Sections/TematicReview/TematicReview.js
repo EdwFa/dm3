@@ -983,7 +983,7 @@ export class TematicReview extends Component {
                               messageStatus > 299?
                                 <p class="pb-2 mb-3 border-bottom" style={{ color: 'red' }}>{message}. </p>
                                 : messageStatus === 200 ?
-                                <p class="pb-2 mb-3 border-bottom" style={{ color: 'green' }}>{message}. <input className="text-white right-2.5 my-4 bottom-2.5 bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="обновить" onClick={() => this.getArticles()} /></p>
+                                <p class="pb-2 mb-3 border-bottom" style={{ color: 'green' }}>{message}.</p>
                                 :
                                 <p class="pb-2 mb-3 border-bottom" style={{ color: 'black' }}>{message}.</p>
                               :null

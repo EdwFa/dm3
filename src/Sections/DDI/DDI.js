@@ -80,8 +80,8 @@ export class DDIReview extends Component {
 
       // Filters
       queryText: 'What methods are available to measure anti-mullerian hormone concentrations in young women?',
-      queryDate: 1,
-      queryScore: 0.9,
+      queryDate: null,
+      queryScore: 0.8,
       queryTypes: new Set(),
     }
   }
