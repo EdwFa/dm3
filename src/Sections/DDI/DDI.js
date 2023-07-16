@@ -70,7 +70,7 @@ export class DDIReview extends Component {
       messageStatus: 200,
       articles: [],
       articlesInfo: [
-        { field: 'text', filter: 'agTextColumnFilter', editable: true, },
+        { field: 'text', filter: 'agTextColumnFilter', editable: true, minWidth: 300, width: 450},
         { field: 'score', filter: 'agNumberColumnFilter', sortable: true, editable: true, },
         { field: 'query_number', editable: true, },
         { field: 'section', filter: 'agTextColumnFilter', editable: true, },
