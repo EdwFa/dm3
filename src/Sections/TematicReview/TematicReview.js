@@ -153,16 +153,11 @@ export class TematicReview extends Component {
         } else {
             console.log('This work')
             this.setState({
-              articles: data.search_ncbi,
-              articlesInfo: [
-                { field: 'titl', filter: 'agTextColumnFilter' },
-                { field: 'pdat', filter: 'agTextColumnFilter' },
-                { field: 'auth', filter: 'agTextColumnFilter' },
-                { field: 'jour', filter: 'agTextColumnFilter' },
-                { field: 'pt', filter: 'agTextColumnFilter' },
-                { field: 'mesh', filter: 'agTextColumnFilter' },
-              ],
+              articles: data.data.search_ncbi,
               loading: false,
+              full_query: data.task.full_query,
+              translation_stack: data.task.translation_stack,
+              short_query: data.task.query,
               message: "Запрос успешно обработан",
               messageStatus: 200,
             });
@@ -170,9 +165,9 @@ export class TematicReview extends Component {
       })
       .catch(error => {
         if (ErrorMessage === 500) {
-            this.setState({ articles: [], articlesInfo: [], DetailArticle: null, loading: false, message: 'Ошибка сервера', messageStatus: 500 });
+            this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Ошибка сервера', messageStatus: 500 });
         } else {
-            this.setState({ articles: [], articlesInfo: [], DetailArticle: null, loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
+            this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
         }
       })
   }
@@ -220,6 +215,7 @@ export class TematicReview extends Component {
         this.getArticles()
       })
       .catch(error => {
+        console.log(error)
         if (ErrorMessage === 500) {
             this.setState({ task: null, loading: false, message: 'Ошибка сервера', messageStatus: 500 });
         } else if (ErrorMessage === 403) {
@@ -362,26 +358,27 @@ export class TematicReview extends Component {
         }
       })
       .then((data) => {
-        if (data.tematic_analise === null) {
+        console.log(data)
+        if (data.data.tematic_analise === null) {
           this.setState({ loading: true, message: data.message, messageStatus: 202 });
           setTimeout(() => {
             return this.getAnalise(url, interval)
           }, interval);
         } else {
-          if (data.clust_graph.length !== 0) {
-            delete data.clust_graph.layout.width;
+          if (data.data.clust_graph !== null) {
+            delete data.data.clust_graph.layout.width;
           }
-          if (data.heapmap !== null)
-            if (data.heapmap.length !== 0) {
-                delete data.heapmap.layout.width;
+          if (data.data.heapmap !== null)
+            if (data.data.heapmap.length !== 0) {
+                delete data.data.heapmap.layout.width;
             }
-          if (data.heirarchy !== null)
-            if (data.heirarchy.length !== 0) {
-                delete data.heirarchy.layout.width;
+          if (data.data.heirarchy !== null)
+            if (data.data.heirarchy.length !== 0) {
+                delete data.data.heirarchy.layout.width;
             }
           var topics = new Set()
-          if (data.tematic_analise.length !== 0) {
-              for (let record of data.tematic_analise) {
+          if (data.data.tematic_analise.length !== 0) {
+              for (let record of data.data.tematic_analise) {
                 if (!topics.has(record.topic)) {
                   topics.add(record.topic)
                 }
@@ -389,11 +386,11 @@ export class TematicReview extends Component {
           }
           console.log(topics)
           this.setState({
-            analise_articles: data.tematic_analise,
-            DetailArticle: data.tematic_analise[0],
-            clust_graph: data.clust_graph,
-            heapmap: data.heapmap,
-            heirarchy: data.heirarchy,
+            analise_articles: data.data.tematic_analise,
+            DetailArticle: data.data.tematic_analise[0],
+            clust_graph: data.data.clust_graph,
+            heapmap: data.data.heapmap,
+            heirarchy: data.data.heirarchy,
             loading: false,
             message: "Запрос успешно обработан",
             messageStatus: 200,
@@ -546,7 +543,7 @@ export class TematicReview extends Component {
         }
       })
       .then((data) => {
-        this.setState({ infoGraphData: data.info_graph})
+        this.setState({ infoGraphData: data.data.info_graph})
       })
       .catch((error) => {
         console.log(error)
@@ -1047,7 +1044,7 @@ export class TematicReview extends Component {
                         </div>
                         <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
                           <div>
-                            <p>Topic {current_topic === -2 ? "Выбраны все" : `№ ${current_topic}`}</p>
+                            <p>Выбрана тема: {current_topic === -2 ? "Выбраны все" : `№ ${current_topic} из ${topics.length}`}</p>
                             <Slider
                               axis="x"
                               x={current_topic}
