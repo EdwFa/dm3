@@ -77,9 +77,11 @@ class BaseTaskView(APIView):
     def response_data(self, error_status, **kwargs):
         # Вывод наших данных, если запрос неудачный то вывводим ошибку б этом
         if error_status > 201:
-            return Response(data={f'{kwargs["label"]}': None, 'message': kwargs['message']}, status=error_status)
-        
-        return Response(data=kwargs['data'], status=error_status)
+            data = {f'{kwargs["label"]}': None, 'message': kwargs['message']}
+            return Response(data=data, status=error_status)
+
+        data = kwargs
+        return Response(data=data, status=error_status)
 
     def get(self, request, **kwargs):
         current_task, current_worker = self.check_working_task(request, **kwargs)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
@@ -114,7 +116,42 @@ class SearchTaskView(BaseTaskView):
     label = 'search_ncbi'
 
     def get(self, request):
-        return super().get(request)
+        current_task, current_worker = self.check_working_task(request)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
+
+        if current_task is None:  # Если воркер отсутвует значит у пользователя сейчас свободна очередь запросов
+            data = self.create_data_response(request.user.id)
+            task = TaskSearch.objects.filter(status=1, user=request.user).order_by('-end_date')
+            if task.count() > 0:
+                task = TaskSearchSerializer(task[0], many=False).data
+            else:
+                task = {'task': {
+                    'full_query': '',
+                    'translation_stack': '',
+                    'query': '',
+                }}
+            return self.response_data(200, data=data, message='Запросов нет', task=task)  # Выводим его последний запрос из базы
+
+        if current_worker is None:  # Пользователь отправил запрос но обработчик не принял его
+            task = TaskSearchSerializer(current_task, many=False).data
+            current_task.delete()
+            return self.response_data(500,
+                                      message='Запрос завершен с ошибкой!',
+                                      label=self.label,
+                                      task=task)  # Выводим ошибку об отсутвии обработки запросов
+
+        if current_worker.status == 'PROGRESS' or current_worker.status == 'STARTED':
+            return self.response_data(202, message=current_task.message, label=self.label, task=TaskSearchSerializer(current_task, many=False).data)
+
+        if current_worker.status == 'FAILURE':
+            self.update_task(current_task, status=2, end_date=datetime.now(), message='Запрос завершен с ошибкой!')
+            return self.response_data(500, message=current_task.message, label=self.label, task=TaskSearchSerializer(current_task, many=False).data)
+
+        if current_worker.status == 'SUCCESS':
+            self.update_task(current_task, status=1, end_date=datetime.now(), message='Запрос успешно завершен!')
+            self.save_data(current_worker, request.user.id)
+
+        data = self.create_data_response(request.user.id)
+        return self.response_data(200, data=data, task=TaskSearchSerializer(current_task, many=False).data)
 
     def post(self, request):
         current_task, current_worker = self.check_working_task(request)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
