@@ -158,6 +158,7 @@ export class TematicReview extends Component {
               full_query: data.task.full_query,
               translation_stack: data.task.translation_stack,
               short_query: data.task.query,
+              count: data.task.count,
               message: "Запрос успешно обработан",
               messageStatus: 200,
             });
@@ -208,7 +209,6 @@ export class TematicReview extends Component {
           task: data,
           count: data.count,
           articles: [],
-          articlesInfo: [],
           loading: true,
           messageStatus: 201
         });
