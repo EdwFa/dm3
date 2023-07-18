@@ -29,8 +29,9 @@ def analise_records():
     if not ('articles' in data):
         return jsonify({'status': 'Error', 'message': 'No one article id'}), 500
     IdList = data['articles']
+    print(len)
     handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
-    records = [parse_record(record) for record in Medline.parse(handle) if record]
+    records = [parse_record(record) for record in Medline.parse(handle) if not (record is None)]
     handle.close()
 
     current_app.logger.info(f'Start clear raw strings...')

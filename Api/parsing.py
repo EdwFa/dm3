@@ -21,7 +21,7 @@ class Article:
 def parse_record(record):
     # Парсим полученный словарь записи
     if not ('PMID' in record): # Проверяем на наличие pmid если его нет не сохраняем данные
-        return
+        return None
 
     data = Article()
     data.uid = int(record['PMID'])

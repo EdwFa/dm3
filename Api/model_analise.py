@@ -61,7 +61,6 @@ def return_results(records, topics, props):
     for rec, topic, prop in zip(records, topics, props):
         rec['topic'] = topic
         rec['prop'] = prop
-
     return records
 
 def return_clust_graph(docs_title, embeddings):
