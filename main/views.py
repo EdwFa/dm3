@@ -239,7 +239,7 @@ class EmbeddingTaskView(BaseTaskView):
                                       label=self.label)  # Выводим ошибку об отсутвии обработки запросов
 
         if current_worker.status == 'PROGRESS' or current_worker.status == 'STARTED':
-            return self.response_data(202, message=current_task.message, label=self.label)
+            return self.response_data(202, message=current_task.message, data=None)
 
         if current_worker.status == 'FAILURE':
             self.update_task(current_task, status=2, end_date=datetime.now(), message='Запрос завершен с ошибкой!')
@@ -247,9 +247,7 @@ class EmbeddingTaskView(BaseTaskView):
 
         if current_worker.status == 'SUCCESS':
             self.update_task(current_task, status=1, end_date=datetime.now(), message='Запрос успешно завершен!')
-            data = {
-                'data': AsyncResult(current_worker.task_id, app=summarise_text).get()
-            }
+            data = AsyncResult(current_worker.task_id, app=summarise_text).get()
         return self.response_data(200, data=data)
 
     def post(self, request):
