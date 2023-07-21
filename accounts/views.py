@@ -19,7 +19,7 @@ def get_path_to_file(pk, file_name):
     path_to_file = os.path.join('datasets', str(pk), file_name)
     if not os.path.exists(path_to_file):
         f = open(path_to_file, 'w')
-        json.dump([], f)
+        json.dump(None, f)
         f.close()
 
 
