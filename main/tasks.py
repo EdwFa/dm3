@@ -82,6 +82,8 @@ def analise_records(self, pk, IdList, new_task_id):
         json.dump(data['clust_graph'], f)
     with open(get_path_to_file(pk, 'heirarchy.json'), 'w') as f:
         json.dump(data['heirarchy'], f)
+    with open(get_path_to_file(pk, 'DTM.json'), 'w') as f:
+        json.dump(data['DTM'], f)
 
 
     # Start plot graph on tematic analise
@@ -90,9 +92,16 @@ def analise_records(self, pk, IdList, new_task_id):
     if len(articles) > max_size:
         articles = articles[:max_size]
     f.close()
-    data = get_uniq_info_for_graph(articles)
+    data = get_uniq_info_for_authors(articles)
     f = open(get_path_to_file(pk, 'info_graph.json'), 'w')
     json.dump(data, f)
+    f.close()
+    data = get_uniq_info_for_other(articles)
+    f = open(get_path_to_file(pk, 'info_graph_journals.json'), 'w')
+    json.dump(data[0], f)
+    f.close()
+    f = open(get_path_to_file(pk, 'info_graph_countries.json'), 'w')
+    json.dump(data[1], f)
     f.close()
     return
 

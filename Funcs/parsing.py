@@ -25,7 +25,7 @@ def create_query(**filters):
     # Добавляем даты
     start_date = filters.get('dateStart', "1900-01-01")
     end_date = filters.get('dateStop', date.today().strftime("%Y-%m-%d"))
-    query = f"{query} and {start_date.replace('-', '/')}:{end_date.replace('-', '/')}[dp]"
+    query = f"{query} AND {start_date.replace('-', '/')}:{end_date.replace('-', '/')}[dp]"
 
     # Добавляем гендеры
     genders = filters.get('Gender', [])

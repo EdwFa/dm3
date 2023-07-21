@@ -12,7 +12,7 @@ import json
 from .serializers import *
 
 
-needed_files = ['search_ncbi', 'tematic_analise', 'clust_graph', 'heapmap', 'heirarchy', 'embeddings', 'info_graph']
+needed_files = ['search_ncbi', 'tematic_analise', 'clust_graph', 'heapmap', 'heirarchy', 'embeddings', 'info_graph', 'info_graph_journals', 'info_graph_countries', 'DTM']
 
 
 def get_path_to_file(pk, file_name):

@@ -16,7 +16,7 @@ class BaseTaskView(APIView):
     files = ['search_ncbi', 'tematic_analise', 'clust_graph', 'heapmap', 'heirarchy', 'embeddings', 'info_graph']  # Все возмодные файлы для записи данных
     worker_func = parse_records
     label = 'data'
-    retmax = 10000 # RETMAX
+    retmax = RETMAX # RETMAX
 
     def check_working_task(self, request, **kwargs):
         # Модуль проверки наличии уже запущенных запросов в поиске данному пользователю
@@ -170,7 +170,7 @@ class SearchTaskView(BaseTaskView):
 
 class TematicAnaliseView(BaseTaskView):
     taskModel = TaskAnalise  # Начальная модель для поиска задачи
-    files = ['tematic_analise', 'clust_graph', 'heapmap', 'heirarchy']
+    files = ['tematic_analise', 'clust_graph', 'heapmap', 'heirarchy', 'DTM']
     worker_func = analise_records
     label = 'tematic_analise'
 
@@ -366,7 +366,7 @@ class MartUpApi(APIView):
         return Response(data=data, status=status.HTTP_200_OK)
 
 class GetGraphData(BaseTaskView):
-    files = ['info_graph']
+    files = ['info_graph', 'info_graph_journals', 'info_graph_countries']
 
     def get(self, request):
         data = self.create_data_response(request.user.id)
