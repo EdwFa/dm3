@@ -70,10 +70,10 @@ export class DDIReview extends Component {
       messageStatus: 200,
       articles: [],
       articlesInfo: [
-        { field: 'text', filter: 'agTextColumnFilter', editable: true, minWidth: 300, width: 450 },
-        { field: 'score', filter: 'agNumberColumnFilter', sortable: true, editable: true, },
-        { field: 'query_number', editable: true, },
-        { field: 'section', filter: 'agTextColumnFilter', editable: true, },
+        { field: 'text', filter: 'agTextColumnFilter', editable: true, minWidth: 300, width: 450, resizable: true},
+        { field: 'score', filter: 'agNumberColumnFilter', sortable: true, editable: true, resizable: true},
+        { field: 'query_number', editable: true, resizable: true},
+        { field: 'section', filter: 'agTextColumnFilter', editable: true, resizable: true},
       ],
       summarise: null,
       task_id: null,
@@ -123,7 +123,7 @@ export class DDIReview extends Component {
       .catch(error => {
         console.log(error);
         if (ErrorMessage === 500) {
-          this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Ошибка сервера', messageStatus: 500 });
+          this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Ошибка сервера', messageStatus: 500});
         } else if (ErrorMessage === 403) {
           this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 403 });
         } else if (ErrorMessage === 404) {

@@ -91,12 +91,12 @@ export class TematicReview extends Component {
       articles: [],
       DetailArticle: null,
       articlesInfo: [
-        { field: 'titl', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450},
-        { field: 'pdat', filter: 'agTextColumnFilter', enableRowGroup: true, enableValue: true,},
-        { field: 'auth', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450},
-        { field: 'jour', filter: 'agTextColumnFilter', enableRowGroup: true, enableValue: true,},
-        { field: 'pt', filter: 'agTextColumnFilter', enableRowGroup: true, enableValue: true, },
-        { field: 'mesh', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450},
+        { field: 'titl', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450, resizable: true},
+        { field: 'pdat', filter: 'agTextColumnFilter', enableRowGroup: true, enableValue: true, resizable: true},
+        { field: 'auth', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450, resizable: true},
+        { field: 'jour', filter: 'agTextColumnFilter', enableRowGroup: true, enableValue: true, resizable: true},
+        { field: 'pt', filter: 'agTextColumnFilter', enableRowGroup: true, enableValue: true, resizable: true},
+        { field: 'mesh', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450, resizable: true},
       ],
       translation_stack: null,
       full_query: null,
@@ -122,14 +122,14 @@ export class TematicReview extends Component {
       // Analise table
       analise_articles: [],
       analise_info: [
-        { field: 'titl', filter: 'agTextColumnFilter', minWidth: 300, width: 450},
-        { field: 'pdat', filter: 'agTextColumnFilter' },
-        { field: 'auth', filter: 'agTextColumnFilter', minWidth: 300, width: 450},
-        { field: 'jour', filter: 'agTextColumnFilter' },
-        { field: 'pt', filter: 'agTextColumnFilter' },
-        { field: 'mesh', filter: 'agTextColumnFilter', minWidth: 300, width: 450},
-        { field: 'topic', filter: 'agNumberColumnFilter', sortable: true, filterParams: topicFilterParams },
-        { field: 'prop', filter: 'agNumberColumnFilter' },
+        { field: 'titl', filter: 'agTextColumnFilter', minWidth: 300, width: 450, resizable: true},
+        { field: 'pdat', filter: 'agTextColumnFilter', resizable: true},
+        { field: 'auth', filter: 'agTextColumnFilter', minWidth: 300, width: 450, resizable: true},
+        { field: 'jour', filter: 'agTextColumnFilter', resizable: true},
+        { field: 'pt', filter: 'agTextColumnFilter', resizable: true},
+        { field: 'mesh', filter: 'agTextColumnFilter', minWidth: 300, width: 450, resizable: true},
+        { field: 'topic', filter: 'agNumberColumnFilter', sortable: true, filterParams: topicFilterParams, resizable: true},
+        { field: 'prop', filter: 'agNumberColumnFilter', resizable: true},
       ],
       DetailArticle: null,
 
@@ -195,6 +195,7 @@ export class TematicReview extends Component {
           }, interval);
         } else {
             console.log('This work')
+            console.log(data.task.query.split('AND ')[1].split(':')[1].replace('/', '-').replace('/', '-'))
             this.setState({
               articles: data.data.search_ncbi,
               loading: false,
@@ -204,7 +205,10 @@ export class TematicReview extends Component {
               count: data.task.count,
               message: "Запрос успешно обработан",
               messageStatus: 200,
-//              queryText: data.task.query.split(' AND')[0]
+              queryStartDate: data.task.query.split('AND ')[1].split(':')[0].replace('/', '-').replace('/', '-'),
+              queryEndDate: data.task.query.split('AND ')[1].split(':')[1].replace('/', '-').replace('/', '-').replace('[dp]', ''),
+              queryText: data.task.query.split(' AND')[0]
+
             });
         }
       })
