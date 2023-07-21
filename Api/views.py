@@ -63,11 +63,18 @@ def analise_records():
     except:
         heirarchy = None
 
+    current_app.logger.info(f'Plot DTM')
+    try:
+        DTM = return_DTM([rec['titl'] for rec in records], [int(record['pdat'].split(' ')[0]) for record in records])
+    except:
+        DTM = None
+
     data = {
         'tematic_analise': records,
         'heapmap': heapmap,
         'clust_graph': json.loads(graph),
-        'heirarchy': json.loads(heirarchy)
+        'heirarchy': json.loads(heirarchy),
+        'DTM': json.loads(DTM)
     }
 
     current_app.logger.info(f'Done analise!')

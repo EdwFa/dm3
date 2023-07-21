@@ -60,7 +60,7 @@ def analise_articles(articles):
 def return_results(records, topics, props):
     for rec, topic, prop in zip(records, topics, props):
         rec['topic'] = topic
-        rec['prop'] = prop
+        rec['prop'] = round(prop, 2)
     return records
 
 def return_clust_graph(docs_title, embeddings):
@@ -75,5 +75,11 @@ def return_heapmap(n_clusters: int):
 
 def return_heirarchy():
     fig = topic_model.visualize_hierarchy()
+    graphJSON = plotly.io.to_json(fig, pretty=True)
+    return graphJSON
+
+def return_DTM(docs_title, dates):
+    topics_over_time = topic_model.topics_over_time(docs_title, dates)
+    fig = topic_model.visualize_topics_over_time(topics_over_time)
     graphJSON = plotly.io.to_json(fig, pretty=True)
     return graphJSON
