@@ -70,7 +70,7 @@ export class DDIReview extends Component {
       messageStatus: 200,
       articles: [],
       articlesInfo: [
-        { field: 'text', filter: 'agTextColumnFilter', editable: true, minWidth: 300, width: 450},
+        { field: 'text', filter: 'agTextColumnFilter', editable: true, minWidth: 300, width: 450 },
         { field: 'score', filter: 'agNumberColumnFilter', sortable: true, editable: true, },
         { field: 'query_number', editable: true, },
         { field: 'section', filter: 'agTextColumnFilter', editable: true, },
@@ -98,15 +98,15 @@ export class DDIReview extends Component {
       .then(response => {
         console.log(query_number)
         console.log(response.status);
+        ErrorMessage = response.status
         if (response.ok) {
           return response.json()
         } else {
-          ErrorMessage = response.status
           throw Error(response.statusText)
         }
       })
       .then(data => {
-        if (data.data === null) {
+        if (ErrorMessage === 202) {
           this.setState({ loading: true, message: data.message, messageStatus: 202 });
           setTimeout(() => {
             return this.getArticles(task_id, query_number, interval)
@@ -123,13 +123,13 @@ export class DDIReview extends Component {
       .catch(error => {
         console.log(error);
         if (ErrorMessage === 500) {
-            this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Ошибка сервера', messageStatus: 500 });
+          this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Ошибка сервера', messageStatus: 500 });
         } else if (ErrorMessage === 403) {
-            this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 403 });
+          this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 403 });
         } else if (ErrorMessage === 404) {
-            this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Сделайте запрос', messageStatus: 202 });
+          this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Сделайте запрос', messageStatus: 202 });
         } else {
-            this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
+          this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
         }
         if (query_number !== 0) {
           this.state.query_list[query_number - 1].status = 2;
@@ -177,11 +177,11 @@ export class DDIReview extends Component {
       .catch(error => {
         console.log(error);
         if (ErrorMessage === 500) {
-            this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Ошибка сервера', messageStatus: 500 });
+          this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Ошибка сервера', messageStatus: 500 });
         } else if (ErrorMessage === 403) {
-            this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 403 });
+          this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 403 });
         } else {
-            this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
+          this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
         }
       }
       )
@@ -317,7 +317,7 @@ export class DDIReview extends Component {
       })
       .catch((err) => {
         console.log(err);
-        this.setState({ message: 'Произошла ошибка при разметке', loading: false, messageStatus: 500});
+        this.setState({ message: 'Произошла ошибка при разметке', loading: false, messageStatus: 500 });
       });
   }
 
@@ -422,20 +422,20 @@ export class DDIReview extends Component {
                     <img src="https://flowbite.s3.amazonaws.com/logo.svg" class="mr-3 h-8" alt="FlowBite Logo" />
                     <span class="self-center text-2xl font-semibold whitespace-nowrap">EBM DаtaMed</span>
                   </a>
-                  {allow_page === 2?
-                      <ul class="flex font-medium flex-row space-x-8">
-                        <Link to="/tematic_review">
-                          <li>
-                            <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0" aria-current="page">Тематический анализ</a>
-                          </li>
-                        </Link>
-                        <Link to="/ddi_review">
-                          <li>
-                            <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Факты для EBM</a>
-                          </li>
-                        </Link>
-                      </ul>
-                  :null}
+                  {allow_page === 2 ?
+                    <ul class="flex font-medium flex-row space-x-8">
+                      <Link to="/tematic_review">
+                        <li>
+                          <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Тематический анализ</a>
+                        </li>
+                      </Link>
+                      <Link to="/ddi_review">
+                        <li>
+                          <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0" aria-current="page">Факты для EBM</a>
+                        </li>
+                      </Link>
+                    </ul>
+                    : null}
                 </div>
                 <div class="flex items-center lg:order-2">
                   <button type="button" class="hidden sm:inline-flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-xs px-3 py-1.5 mr-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"><svg aria-hidden="true" class="mr-1 -ml-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"></path></svg> Действие</button>
@@ -443,8 +443,8 @@ export class DDIReview extends Component {
               </div>
             </nav>
             <nav class="bg-white border-gray-200 px-6">
-              <div class="max-w-screen-xl py-3">
-                <div class="flex items-start">
+              <div class="w-full">
+                <div class="flex justify-between items-center">
                   <button id="toggleSidebar" aria-expanded="true" aria-controls="sidebar" class="hidden p-2 mr-3 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700" data-bs-toggle="collapse" data-bs-target="#sidebar" aria-label="Toggle navigation">
                     <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
                   </button>
@@ -469,6 +469,9 @@ export class DDIReview extends Component {
                       <button type="submit" value="Найти" onClick={() => this.createTask()} class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2">Найти</button>
                     </div>
                   </div>
+                  <button id="toggleSidebar" aria-expanded="true" aria-controls="sidebar2" class="order-last hidden p-2 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700" data-bs-toggle="collapse" data-bs-target="#sidebar2" aria-label="Toggle navigation">
+                    <svg class="w-6 h-6 rotate-180" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
+                  </button>
                 </div>
               </div>
             </nav>
@@ -657,14 +660,14 @@ export class DDIReview extends Component {
                     <div class="accordion accordion-flush" id="accordion">
                       <div class="accordion-item">
                         <h2 class="accordion-header" id="">
-                          {message?
-                              messageStatus > 299?
-                                <p class="pb-2 mb-3 border-bottom" style={{ color: 'red' }}>{message}.</p>
-                                : messageStatus === 200 ?
+                          {message ?
+                            messageStatus > 299 ?
+                              <p class="pb-2 mb-3 border-bottom" style={{ color: 'red' }}>{message}.</p>
+                              : messageStatus === 200 ?
                                 <p class="pb-2 mb-3 border-bottom" style={{ color: 'green' }}>{message}.</p>
                                 :
                                 <p class="pb-2 mb-3 border-bottom" style={{ color: 'black' }}>{message}.</p>
-                              :null
+                            : null
                           }
                           <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseSeven" aria-expanded="false" aria-controls="flush-collapseSeven">
                             Запросы

@@ -42,6 +42,37 @@ var topicFilterParams = {
 
 var ErrorMessage = 0
 
+const obj_color = {
+  'disease': "#fdbbbb",
+  'drug': "#ECC58B",
+  'gene': "#E2DB8C",
+  'chemical': "#21c354",
+  'species': "#A6EFDC",
+  'mutation': "#B2DDEA",
+  'cell_type': "#C6DEF5",
+  'cell_line': "#A3B3D2",
+  'DNA': "#C9B9E8",
+  'RNA': "#D7DBE8",
+}
+
+function markup_text(text, annotations) {
+  if (!annotations) {
+    return text
+  }
+  let markup_text = ''
+  let last_position = 0
+  for (let annotation of annotations) {
+    let start = annotation.span.begin
+    let end = annotation.span.end
+    if (!annotation.prop) { console.log('This') }
+    let markup_str = `<span style=\"color: ${obj_color[annotation.obj]}\">${text.slice(start, end)}<sub>${annotation.prob ? annotation.prob.toFixed(2) : ""}</sub></span>`
+    markup_text = `${markup_text}${text.slice(last_position, start)}${markup_str}`
+
+    last_position = end
+  }
+  return markup_text
+}
+
 export class TematicReview extends Component {
 
   constructor(props) {
@@ -60,12 +91,12 @@ export class TematicReview extends Component {
       articles: [],
       DetailArticle: null,
       articlesInfo: [
-        { field: 'titl', filter: 'agTextColumnFilter' },
-        { field: 'pdat', filter: 'agTextColumnFilter' },
-        { field: 'auth', filter: 'agTextColumnFilter' },
-        { field: 'jour', filter: 'agTextColumnFilter' },
-        { field: 'pt', filter: 'agTextColumnFilter' },
-        { field: 'mesh', filter: 'agTextColumnFilter' },
+        { field: 'titl', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450},
+        { field: 'pdat', filter: 'agTextColumnFilter', enableRowGroup: true, enableValue: true,},
+        { field: 'auth', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450},
+        { field: 'jour', filter: 'agTextColumnFilter', enableRowGroup: true, enableValue: true,},
+        { field: 'pt', filter: 'agTextColumnFilter', enableRowGroup: true, enableValue: true, },
+        { field: 'mesh', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450},
       ],
       translation_stack: null,
       full_query: null,
@@ -77,7 +108,7 @@ export class TematicReview extends Component {
       analiseRows: [],
 
       // Filters
-      queryText: 'covid-19',
+      queryText: '',
       queryStartDate: '2022-01-01',
       queryEndDate: new Date().toISOString().split('T')[0],
       queryTypes: new Set(),
@@ -85,15 +116,18 @@ export class TematicReview extends Component {
       queryGenders: new Set(),
 
       // Analise
+      messageAnalise: null,
+      messageStatusAnalise: 200,
+
       // Analise table
       analise_articles: [],
       analise_info: [
-        { field: 'titl', filter: 'agTextColumnFilter' },
+        { field: 'titl', filter: 'agTextColumnFilter', minWidth: 300, width: 450},
         { field: 'pdat', filter: 'agTextColumnFilter' },
-        { field: 'auth', filter: 'agTextColumnFilter' },
+        { field: 'auth', filter: 'agTextColumnFilter', minWidth: 300, width: 450},
         { field: 'jour', filter: 'agTextColumnFilter' },
         { field: 'pt', filter: 'agTextColumnFilter' },
-        { field: 'mesh', filter: 'agTextColumnFilter' },
+        { field: 'mesh', filter: 'agTextColumnFilter', minWidth: 300, width: 450},
         { field: 'topic', filter: 'agNumberColumnFilter', sortable: true, filterParams: topicFilterParams },
         { field: 'prop', filter: 'agNumberColumnFilter' },
       ],
@@ -103,6 +137,7 @@ export class TematicReview extends Component {
       clust_graph: null,
       heapmap: null,
       heirarchy: null,
+      DTM: null,
 
       // Filter topic
       current_topic: -2,
@@ -111,8 +146,16 @@ export class TematicReview extends Component {
       //Summirise
       summarise: null,
 
-      //Other
-      infoGraphData: null,
+      //Graphs
+      messageGraph: null,
+      messageStatusGraph: 200,
+
+      current_graph: {label: 'authors'},
+      list_of_graphs: [{label: 'authors'}, {label: 'journals'}, {label: 'countries'}],
+
+      infoAuthorsData: null,
+      infoJournalsData: null,
+      infoCountryData: null
     }
   }
 
@@ -136,15 +179,15 @@ export class TematicReview extends Component {
     )
       .then(response => {
         console.log(response.status);
+        ErrorMessage = response.status
         if (response.ok) {
           return response.json()
         } else {
-          ErrorMessage = response.status
           throw Error(response.status)
         }
       })
       .then(data => {
-        if (data.search_ncbi === null) {
+        if (ErrorMessage === 202) {
           this.setState({ loading: true, message: data.message, messageStatus: 202 });
           console.log(data.message);
           setTimeout(() => {
@@ -161,6 +204,7 @@ export class TematicReview extends Component {
               count: data.task.count,
               message: "Запрос успешно обработан",
               messageStatus: 200,
+//              queryText: data.task.query.split(' AND')[0]
             });
         }
       })
@@ -175,6 +219,10 @@ export class TematicReview extends Component {
 
   createTask() {
     // Отправляем запрос на сервер для получения статей
+    if (this.state.queryText === '') {
+        alert('Пожайлуста заполните поле запроса!');
+        return;
+    }
     fetch(variables.API_URL + '/api/search/',
       {
         method: 'POST',
@@ -210,7 +258,7 @@ export class TematicReview extends Component {
           count: data.count,
           articles: [],
           loading: true,
-          messageStatus: 201
+          messageStatus: 201,
         });
         this.getArticles()
       })
@@ -319,16 +367,16 @@ export class TematicReview extends Component {
         }
       })
       .then((data) => {
-        this.setState({ message: "Ваш запрос в очереди. Пожайлуста дождитесь результата", messageStatus: 201 })
+        this.setState({ messageAnalise: "Ваш запрос в очереди. Пожайлуста дождитесь результата", messageStatusAnalise: 201 })
         this.getAnalise();
       })
       .catch((error) => {
         if (ErrorMessage === 500) {
-            this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, message: 'Ошибка сервера', messageStatus: 500 });
+            this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, messageAnalise: 'Ошибка сервера', messageStatusAnalise: 500 });
         } else if (ErrorMessage === 403) {
-            this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 403 });
+            this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, messageAnalise: 'Дождитесь окончания предыдушего запроса', messageStatusAnalise: 403 });
         } else {
-            this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, message: 'Что=то пошло не так', messageStatus: 400 });
+            this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, messageAnalise: 'Что=то пошло не так', messageStatusAnalise: 400 });
         }
       })
   }
@@ -351,22 +399,23 @@ export class TematicReview extends Component {
     )
       .then((res) => {
         if (res.ok) {
+          ErrorMessage = res.status
           return res.json()
         } else {
-          ErrorMessage = res.status
           throw new Error(res)
         }
       })
       .then((data) => {
         console.log(data)
-        if (data.data.tematic_analise === null) {
-          this.setState({ loading: true, message: data.message, messageStatus: 202 });
+        if (ErrorMessage === 202) {
+          this.setState({ loading: true, messageAnalise: data.message, messageStatusAnalise: 202 });
           setTimeout(() => {
             return this.getAnalise(url, interval)
           }, interval);
         } else {
           if (data.data.clust_graph !== null) {
-            delete data.data.clust_graph.layout.width;
+            // delete data.data.clust_graph.layout.width;
+            data.data.clust_graph.layout.width = 800;
           }
           if (data.data.heapmap !== null)
             if (data.data.heapmap.length !== 0) {
@@ -375,6 +424,10 @@ export class TematicReview extends Component {
           if (data.data.heirarchy !== null)
             if (data.data.heirarchy.length !== 0) {
                 delete data.data.heirarchy.layout.width;
+            }
+          if (data.data.DTM !== null)
+            if (data.data.DTM.length !== 0) {
+                delete data.data.DTM.layout.width;
             }
           var topics = new Set()
           if (data.data.tematic_analise.length !== 0) {
@@ -391,9 +444,10 @@ export class TematicReview extends Component {
             clust_graph: data.data.clust_graph,
             heapmap: data.data.heapmap,
             heirarchy: data.data.heirarchy,
+            DTM: data.data.DTM,
             loading: false,
-            message: "Запрос успешно обработан",
-            messageStatus: 200,
+            messageAnalise: "Запрос успешно обработан",
+            messageStatusAnalise: 200,
             topics: [...topics],
           });
           this.getGraphInfo()
@@ -402,11 +456,11 @@ export class TematicReview extends Component {
       .catch((error) => {
         console.log(error);
         if (ErrorMessage === 500) {
-            this.setState({ analise_articles: [], clust_graph: null, heapmap: null, heirarchy: null, DetailArticle: null, loading: false, message: 'Ошибка сервера', messageStatus: 500 });
+            this.setState({ analise_articles: [], clust_graph: null, heapmap: null, heirarchy: null, DetailArticle: null, loading: false, messageAnalise: 'Ошибка сервера', messageStatusAnalise: 500 });
         } else if (ErrorMessage === 403) {
-            this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 403 });
+            this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, messageAnalise: 'Дождитесь окончания предыдушего запроса', messageStatusAnalise: 403 });
         } else {
-            this.setState({ analise_articles: [], clust_graph: null, heapmap: null, heirarchy: null, DetailArticle: null, loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
+            this.setState({ analise_articles: [], clust_graph: null, heapmap: null, heirarchy: null, DetailArticle: null, loading: false, messageAnalise: 'Что-то пошло не так', messageStatusAnalise: 400 });
         }
       });
   }
@@ -428,6 +482,12 @@ export class TematicReview extends Component {
       }
     }
     return false;
+  }
+
+  autoGroupColumnDef = () => {
+    return {
+      minWidth: 200,
+    }
   }
 
   getGraphData = () => {
@@ -543,11 +603,87 @@ export class TematicReview extends Component {
         }
       })
       .then((data) => {
-        this.setState({ infoGraphData: data.data.info_graph})
+        this.setState({ infoAuthorsData: data.data.info_graph, infoJournalsData: data.data.info_graph_journals, infoCountryData: data.data.info_graph_countries})
       })
       .catch((error) => {
         console.log(error)
       })
+  }
+
+  // разметка
+
+  getMarkUp = (task_id, interval = 1000) => {
+    fetch(variables.API_URL + `/api/markup?task_id=${task_id}`,
+      {
+        headers: {
+          'Content-Type': 'application/json;charset=utf-8',
+          'Authorization': `Token ${variables.token}`,
+        },
+      }
+    )
+      .then((res) => {
+        if (res.status == 202) {
+          setTimeout(() => {
+            return this.getMarkUp(task_id, interval)
+          }, interval);
+        } else if (res.status == 200) {
+          return res.json()
+        } else {
+          throw Error(res.statusText)
+        }
+      })
+      .then((data) => {
+        try {
+          this.setState({
+            DetailArticle: data.data,
+            message: 'Разметка прошла успешно',
+            messageStatus: 200,
+            loading: false,
+          });
+        } catch {
+          console.log('access')
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+        this.setState({ message: 'Произошла ошибка при разметке', loading: false, messageStatus: 500 });
+      });
+  }
+
+  markUpArticle(DetailArticle) {
+    this.setState({ loading: true })
+    fetch(variables.API_URL + '/api/markup', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json;charset=utf-8',
+        'Authorization': `Token ${variables.token}`,
+      },
+      body: JSON.stringify({
+        article: DetailArticle
+      })
+    })
+      .then((res) => {
+        console.log(res.status)
+        if (res.ok) {
+          return res.json()
+        } else {
+          throw Error(res.statusText)
+        }
+      })
+      .then((result) => {
+        var task_id = result.data;
+        this.setState({ message: 'Отправлено на суммаризацию пожайлуста дождитесь ответа', messageStatus: 201 })
+        this.getMarkUp(task_id);
+      })
+      .catch((err) => {
+        console.log(err);
+        this.setState({
+          message: 'ошибка при разметке',
+          messageStatus: 500,
+          loading: false,
+        });
+      });
   }
 
   render() {
@@ -562,6 +698,8 @@ export class TematicReview extends Component {
       short_query,
       message,
       messageStatus,
+      messageAnalise,
+      messageStatusAnalise,
       loading,
 
       queryText,
@@ -573,12 +711,17 @@ export class TematicReview extends Component {
       clust_graph,
       heapmap,
       heirarchy,
+      DTM,
       current_topic,
       topics,
       summarise,
       allow_page,
 
-      infoGraphData,
+      current_graph,
+      list_of_graphs,
+      infoAuthorsData,
+      infoCountryData,
+      infoJournalsData
     } = this.state;
 
     if (!token) {
@@ -628,15 +771,15 @@ export class TematicReview extends Component {
               </div>
             </nav>
             <nav class="bg-white border border-gray-200 py-2 px-6">
-              <div class="max-w-screen-xl">
-                <div class="flex items-center">
-                  <button id="toggleSidebar" aria-expanded="true" aria-controls="sidebar" class="hidden p-2 mr-3 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700" data-bs-toggle="collapse" data-bs-target="#sidebar" aria-label="Toggle navigation">
+              <div class="w-full">
+                <div class="flex justify-between items-center">
+                  <button id="toggleSidebar" aria-expanded="true" aria-controls="sidebar" class="hidden order-first p-2 mr-3 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700" data-bs-toggle="collapse" data-bs-target="#sidebar" aria-label="Toggle navigation">
                     <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
                   </button>
                   <label for="topbar-search" class="sr-only">Поисковый запрос</label>
                   <div>
                     <label for="search" class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Поисковый запрос</label>
-                    <div class="relative mt-1 lg:w-96">
+                    <div class="relative mt-1 grow lg:w-96">
                       <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
                           <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
@@ -647,14 +790,14 @@ export class TematicReview extends Component {
                         id="search"
                         type="text"
                         name="search_field"
-                        placeholder="Поисковый запрос"
+                        placeholder={short_query? short_query.split(' AND')[0]: 'covid-19'}
                         value={queryText}
                         onChange={this.changeQueryText}
                         aria-label="Search" />
                       <button type="submit" value="Найти" onClick={() => this.createTask()} class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2">Найти</button>
                     </div>
                   </div>
-                  <div class="ml-5 items-center justify-between hidden w-full md:flex md:w-auto md:order-1" id="navbar-sticky">
+                  <div class="ml-5 grow items-center justify-between hidden w-full md:flex md:w-auto md:order-1" id="navbar-sticky">
                     <ul class="nav nav-pills" id="myTab" role="tablist">
                       <li class="nav-item mr-2" role="presentation">
                         <button class="nav-link inline-block px-4 py-2 text-white bg-blue-600 rounded-lg active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab" aria-controls="home" aria-selected="false">Результаты поиска</button>
@@ -666,6 +809,9 @@ export class TematicReview extends Component {
                         <button class="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100" id="contact-tab" data-bs-toggle="tab" data-bs-target="#contact" type="button" role="tab" aria-controls="contact" aria-selected="false" >Схема</button>
                       </li>
                     </ul>
+                    <button id="toggleSidebar" aria-expanded="true" aria-controls="sidebar2" class="order-last hidden p-2 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700" data-bs-toggle="collapse" data-bs-target="#sidebar2" aria-label="Toggle navigation">
+                      <svg class="w-6 h-6 rotate-180" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -973,36 +1119,37 @@ export class TematicReview extends Component {
                     </div>
                   </aside>
                   <section class="col p-3 m-3 border rounded-3 bg-white h-screen overflow-auto">
-                    <div class="accordion accordion-flush" id="accordion">
-                      <div class="accordion-item">
-                        <h2 class="accordion-header" id="">
-                          {message?
-                              messageStatus > 299?
-                                <p class="pb-2 mb-3 border-bottom" style={{ color: 'red' }}>{message}. </p>
-                                : messageStatus === 200 ?
-                                <p class="pb-2 mb-3 border-bottom" style={{ color: 'green' }}>{message}.</p>
-                                :
-                                <p class="pb-2 mb-3 border-bottom" style={{ color: 'black' }}>{message}.</p>
-                              :null
-                          }
-                          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseEleven" aria-expanded="false" aria-controls="flush-collapseSeven">
-                            По запросу найдено {count} источников.
-                          </button>
-                        </h2>
-                        <div id="flush-collapseEleven" class="collapse multi-collapse" aria-labelledby="flush-headingEleven" data-bs-target="#accordionFlushExample">
-                          <div class="accordion-body">
-                            <p class="pb-2 mb-3 border-bottom"> Запрос {short_query} .</p>
-                            <p class="pb-2 mb-3 border-bottom"> Запрос автоматически расширен до следующего вида - {full_query}.</p>
-                            <p class="pb-2 mb-3 border-bottom"> Служебная информация для анализа : {translation_stack}.</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <input className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Начать обработку" onClick={() => this.startAnalise()} />
                     <div class="bd-example">
                       <div class="tab-content" id="myTabContent">
                         <div class="tab-pane fade active show" id="home" role="tabpanel" aria-labelledby="home-tab">
                           <div class="container-fluid g-0">
+                            <div class="accordion accordion-flush" id="accordion">
+                              <div class="accordion-item">
+                                <h2 class="accordion-header" id="">
+                                  {message?
+                                      messageStatus > 299?
+                                        <p class="pb-2 mb-3 border-bottom" style={{ color: 'red' }}>{message}. </p>
+                                        : messageStatus === 200 ?
+                                        <p class="pb-2 mb-3 border-bottom" style={{ color: 'green' }}>{message}.</p>
+                                        :
+                                        <p class="pb-2 mb-3 border-bottom" style={{ color: 'black' }}>{message}.</p>
+                                      :null
+                                  }
+                                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseEleven" aria-expanded="false" aria-controls="flush-collapseSeven">
+                                    По запросу найдено {count} источников.
+                                  </button>
+                                </h2>
+                                <div id="flush-collapseEleven" class="collapse multi-collapse" aria-labelledby="flush-headingEleven" data-bs-target="#accordionFlushExample">
+                                  <div class="accordion-body">
+                                    <p class="pb-2 mb-3 border-bottom"> Запрос {short_query} .</p>
+                                    <p class="pb-2 mb-3 border-bottom"> Запрос автоматически расширен до следующего вида - {full_query}.</p>
+                                    <p class="pb-2 mb-3 border-bottom"> Служебная информация для анализа : {translation_stack}.</p>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <input className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Начать обработку" onClick={() => this.startAnalise()} />
+
                             <div className="ag-theme-alpine ag-theme-acmecorp" style={{ height: 700 }}>
                               <AgGridReact
                                 ref={this.gridRef}
@@ -1010,6 +1157,7 @@ export class TematicReview extends Component {
                                 columnDefs={articlesInfo}
                                 pagination={true}
                                 onSelectionChanged={this.onSelectionAnalise}
+                                autoGroupColumnDef={this.autoGroupColumnDef}
                                 onChange={this.externalFilterChanged}
                                 rowSelection={'single'}
                                 sideBar={{
@@ -1044,6 +1192,17 @@ export class TematicReview extends Component {
                         </div>
                         <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
                           <div>
+                            <h2 class="accordion-header" id="">
+                                  {messageAnalise?
+                                      messageStatusAnalise > 299?
+                                        <p class="pb-2 mb-3 border-bottom" style={{ color: 'red' }}>{messageAnalise}. </p>
+                                        : messageStatusAnalise === 200 ?
+                                        <p class="pb-2 mb-3 border-bottom" style={{ color: 'green' }}>{messageAnalise}.</p>
+                                        :
+                                        <p class="pb-2 mb-3 border-bottom" style={{ color: 'black' }}>{messageAnalise}.</p>
+                                      :null
+                                  }
+                            </h2>
                             <p>Выбрана тема: {current_topic === -2 ? "Выбраны все" : `№ ${current_topic} из ${topics.length}`}</p>
                             <Slider
                               axis="x"
@@ -1052,68 +1211,58 @@ export class TematicReview extends Component {
                               xmin={-2}
                               onChange={this.externalFilterChanged}
                             />
-                            {/*<Select
-                                            className="basic-single"
-                                            classNamePrefix="select"
-                                            value={current_topic}
-                                            isSearchable
-                                            placeholder="Выберите класс"
-                                            name="topic"
-                                            options={topics}
-                                            getOptionLabel={(option) => `${option.label}`}
-                                            getOptionValue={(option) => `${option.value}`}
-                                          />
-                                        */}
                           </div>
-                          <div className="accordion-item">
-                            <h2 className="accordion-header" id="flush-headingTwo">
-                              <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseSix" aria-expanded="false" aria-controls="flush-collapseTwo">
-                                Таблица
-                              </button>
-                            </h2>
-                            <div id="flush-collapseSix" className="collapse show multi-collapse" aria-labelledby="flush-headingTwo" data-bs-target="#accordionFlushExample">
-                              <div className="accordion-body">
-                                <div className="ag-theme-alpine ag-theme-acmecorp" style={{ height: 700 }}>
-                                  <AgGridReact
-                                    ref={this.gridAnaliseRef}
-                                    rowData={analise_articles}
-                                    columnDefs={analise_info}
-                                    pagination={true}
-                                    rowSelection={'single'}
-                                    onSelectionChanged={this.onSelectionChanged}
-                                    animateRows={true}
-                                    isExternalFilterPresent={this.isExternalFilterPresent}
-                                    doesExternalFilterPass={this.doesExternalFilterPass}
-                                    sideBar={{
-                                      toolPanels: [
-                                        {
-                                          id: 'columns',
-                                          labelDefault: 'Columns',
-                                          labelKey: 'columns',
-                                          iconKey: 'columns',
-                                          toolPanel: 'agColumnsToolPanel',
-                                          minWidth: 225,
-                                          width: 225,
-                                          maxWidth: 225,
-                                        },
-                                        {
-                                          id: 'filters',
-                                          labelDefault: 'Filters',
-                                          labelKey: 'filters',
-                                          iconKey: 'filter',
-                                          toolPanel: 'agFiltersToolPanel',
-                                          minWidth: 180,
-                                          maxWidth: 400,
-                                          width: 250,
-                                        },
-                                      ],
-                                      position: 'left',
-                                    }}
-                                  >
-                                  </AgGridReact>
+                          <div class="accordion accordion-flush" id="accordion">
+                              <div className="accordion-item">
+                                <h2 className="accordion-header" id="flush-headingTwo">
+                                  <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseSix" aria-expanded="false" aria-controls="flush-collapseTwo">
+                                    Таблица
+                                  </button>
+                                </h2>
+                                <div id="flush-collapseSix" className="collapse show multi-collapse" aria-labelledby="flush-headingTwo" data-bs-target="#accordionFlushExample">
+                                  <div className="accordion-body">
+                                    <div className="ag-theme-alpine ag-theme-acmecorp" style={{ height: 700 }}>
+                                      <AgGridReact
+                                        ref={this.gridAnaliseRef}
+                                        rowData={analise_articles}
+                                        columnDefs={analise_info}
+                                        pagination={true}
+                                        rowSelection={'single'}
+                                        onSelectionChanged={this.onSelectionChanged}
+                                        animateRows={true}
+                                        isExternalFilterPresent={this.isExternalFilterPresent}
+                                        doesExternalFilterPass={this.doesExternalFilterPass}
+                                        sideBar={{
+                                          toolPanels: [
+                                            {
+                                              id: 'columns',
+                                              labelDefault: 'Columns',
+                                              labelKey: 'columns',
+                                              iconKey: 'columns',
+                                              toolPanel: 'agColumnsToolPanel',
+                                              minWidth: 225,
+                                              width: 225,
+                                              maxWidth: 225,
+                                            },
+                                            {
+                                              id: 'filters',
+                                              labelDefault: 'Filters',
+                                              labelKey: 'filters',
+                                              iconKey: 'filter',
+                                              toolPanel: 'agFiltersToolPanel',
+                                              minWidth: 180,
+                                              maxWidth: 400,
+                                              width: 250,
+                                            },
+                                          ],
+                                          position: 'left',
+                                        }}
+                                      >
+                                      </AgGridReact>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
                           </div>
                           <div class="accordion accordion-flush" id="accordion">
                             <div className="accordion-item">
@@ -1136,6 +1285,7 @@ export class TematicReview extends Component {
                                 </div>
                               </div>
                             </div>
+
                             <div className="accordion-item">
                               <h2 className="accordion-header" id="flush-headingTwo">
                                 <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseEight" aria-expanded="false" aria-controls="flush-collapseTwo">
@@ -1179,10 +1329,30 @@ export class TematicReview extends Component {
                             <div className="accordion-item">
                               <h2 className="accordion-header" id="flush-headingTwo">
                                 <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseTen" aria-expanded="false" aria-controls="flush-collapseTwo">
-                                  Суммаризация
+                                  Распределение по датам
                                 </button>
                               </h2>
                               <div id="flush-collapseTen" className="collapse show multi-collapse" aria-labelledby="flush-headingTwo" data-bs-target="#accordionFlushExample">
+                                <div className="accordion-body">
+                                  <div>
+                                    {DTM ?
+                                      <Plot
+                                        data={DTM.data}
+                                        layout={DTM.layout}
+                                      />
+                                      : null
+                                    }
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="accordion-item">
+                              <h2 className="accordion-header" id="flush-headingTwo">
+                                <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseEleven" aria-expanded="false" aria-controls="flush-collapseTwo">
+                                  Суммаризация
+                                </button>
+                              </h2>
+                              <div id="flush-collapseEleven" className="collapse show multi-collapse" aria-labelledby="flush-headingTwo" data-bs-target="#accordionFlushExample">
                                 <div className="accordion-body">
                                   <div>
                                     {summarise ?
@@ -1199,10 +1369,38 @@ export class TematicReview extends Component {
                         </div>
                         <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">
                           <div class="container-fluid g-0">
+                            <Select
+                                className="basic-single"
+                                classNamePrefix="select"
+                                value={current_graph}
+                                isSearchable
+                                placeholder="Выберите класс"
+                                name="topic"
+                                options={list_of_graphs}
+                                getOptionLabel={(option) => option.label}
+                                getOptionValue={(option) => option.label}
+                                onChange={(x) => this.setState({current_graph: x})}
+                            />
                             <div id="mynetwork" style={{ width: "100%", height: "600px" }}>
-                              {infoGraphData ?
-                                <VOSviewerOnline data={infoGraphData} />
-                                : null}
+                            {current_graph.label === 'authors'?
+                                infoAuthorsData ?
+                                    <VOSviewerOnline data={infoAuthorsData} />
+                                : null
+                            :null
+                            }
+                            {
+                            current_graph.label === 'journals'?
+                                infoJournalsData ?
+                                    <VOSviewerOnline data={infoJournalsData} />
+                                : null
+                            :null
+                            }
+                            {current_graph.label === 'countries'?
+                                infoCountryData ?
+                                    <VOSviewerOnline data={infoCountryData} />
+                                : null
+                            :null
+                            }
                             </div>
                           </div>
                         </div>
@@ -1221,13 +1419,17 @@ export class TematicReview extends Component {
                             <p class="card-text">Авторы :  {DetailArticle.auth} </p>
                             <p class="card-text">---------------------------------- </p>
                             <p class="card-text">Аннотация :  </p>
-                            <p class="card-text"> {DetailArticle.tiab} </p>
+                            <p class="card-text" dangerouslySetInnerHTML={{ __html: markup_text(DetailArticle.tiab, DetailArticle.annotations) }} />
                             <p class="card-text">---------------------------------- </p>
                             <p class="card-text"><small class="text-success">Дата публикации : {DetailArticle.pdat} </small></p>
                             <p class="card-text"><small class="text-success">Издание : {DetailArticle.jour}</small></p>
                             <p class="card-text"><small class="text-success">Вид публикации : {DetailArticle.pt}</small></p>
                             <p class="card-text"><small class="text-success">Страна : {DetailArticle.pl} </small></p>
                             <p class="card-text"><small class="text-success">{DetailArticle.mesh} </small></p>
+                            {loading ?
+                                <p>Loading...</p>
+                            : <input className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Разметить" onClick={() => this.markUpArticle(DetailArticle)} />
+                            }
                           </div>
                         </div>
                         : null}
