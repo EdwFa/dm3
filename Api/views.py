@@ -1,5 +1,6 @@
 import json
 from flask import Blueprint, current_app, jsonify, request
+from flask import send_file
 from Bio import Entrez, Medline
 
 from .model_analise import *
@@ -29,7 +30,7 @@ def analise_records():
     if not ('articles' in data):
         return jsonify({'status': 'Error', 'message': 'No one article id'}), 500
     IdList = data['articles']
-    print(len)
+    filters = data['filters']
     handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
     records = [parse_record(record) for record in Medline.parse(handle) if not (record is None)]
     handle.close()
@@ -38,34 +39,37 @@ def analise_records():
     articles = create_clear_articles(records)
 
     current_app.logger.info(f'Start analise clear articles...')
-    topics, props, embeddings = analise_articles(articles)
+    current_app.logger.info(f'Bild Bert...')
+    current_app.logger.info(filters)
+    topic_model = bild_bert(**filters)
+    topics, props, embeddings = analise_articles(topic_model, articles)
     records = return_results(records, topics, props)
 
     current_app.logger.info(f'Plot graphics for results...')
     current_app.logger.info(f'Plot clust graph')
-    graph = return_clust_graph([rec['titl'] for rec in records], embeddings)
+    graph = return_clust_graph(topic_model, [rec['titl'] for rec in records], embeddings, **filters)
 
     current_app.logger.info(f'Plot heapmap')
     count_topics = len(set(topics))
     current_app.logger.info(f"Count topic = {count_topics}")
-    n_clusters = 10
+    n_clusters = int(filters.get('n_clusters', 10))
     if count_topics > 1:
         if n_clusters >= count_topics - 2:
             n_clusters = int(count_topics / 2)
-        heapmap = return_heapmap(n_clusters=n_clusters)
+        heapmap = return_heapmap(topic_model, top_n_topics=int(filters.get('top_n_topics', 40)), n_clusters=n_clusters)
         heapmap = json.loads(heapmap)
     else:
         heapmap = None
 
     current_app.logger.info(f'Plot heirarchy')
     try:
-        heirarchy = return_heirarchy()
+        heirarchy = return_heirarchy(topic_model)
     except:
         heirarchy = None
 
     current_app.logger.info(f'Plot DTM')
     try:
-        DTM = return_DTM([rec['titl'] for rec in records], [int(record['pdat'].split(' ')[0]) for record in records])
+        DTM = return_DTM(topic_model, [rec['titl'] for rec in records], [int(record['pdat'].split(' ')[0]) for record in records])
     except:
         DTM = None
 
@@ -74,9 +78,28 @@ def analise_records():
         'heapmap': heapmap,
         'clust_graph': json.loads(graph),
         'heirarchy': json.loads(heirarchy),
-        'DTM': json.loads(DTM)
+        'DTM': json.loads(DTM),
+        'embeddings': embeddings.tolist()
     }
 
     current_app.logger.info(f'Done analise!')
 
     return jsonify(data), 200
+
+@analise.route('/download_vectors', methods=['GET'])
+def downloadVerctors():
+    data = request.json
+    if 'user' not in data:
+        return jsonify({'status': 'Error', 'message': 'No found user!'}), 500
+    user_id = data['user'].id
+    path = f"/{user_id}/vectors_OR.tsv"
+    return send_file(path, as_attachment=True)
+
+@analise.route('/download_vectors', methods=['GET'])
+def downloadMetaData():
+    data = request.json
+    if 'user' not in data:
+        return jsonify({'status': 'Error', 'message': 'No found user!'}), 500
+    user_id = data['user'].id
+    path = f"/{user_id}/metadata_OR.tsv"
+    return send_file(path, as_attachment=True)
