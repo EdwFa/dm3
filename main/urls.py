@@ -12,4 +12,7 @@ urlpatterns = [
     path('ddi_review', EmbeddingTaskView.as_view(), name='ddi'),
     path('summarise_emb', SummariseEmbApi.as_view(), name='summarise'),
     path('markup', MartUpApi.as_view(), name='markup'),
+
+    path('download_vectors', DownloadVectors.as_view(), name='download_vectors'),
+    path('download_metadata', DownloadMetaData.as_view(), name='download_metadata'),
 ]

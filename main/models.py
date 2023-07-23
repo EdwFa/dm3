@@ -12,6 +12,7 @@ task_statuses = (
 task_analise = (
     (0, 'tematic'),
     (1, 'markup'),
+    (2, 'graph'),
 )
 
 # Create your models here.

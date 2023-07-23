@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.core.exceptions import ObjectDoesNotExist
+from django.http import HttpResponse
 
 from celery.result import AsyncResult
 from django_celery_results.models import TaskResult
@@ -211,7 +212,7 @@ class TematicAnaliseView(BaseTaskView):
             return self.response_data(400, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
 
         new_task = self.create_task(user=request.user, type_analise=0)
-        task = analise_records.delay(pk=request.user.id, IdList=request.data['articles'], new_task_id=new_task.id)
+        task = analise_records.delay(pk=request.user.id, params=request.data, new_task_id=new_task.id)
 
         new_task.task_id = task.id
         new_task.message = 'Начинаем обработку...'
@@ -275,6 +276,61 @@ class EmbeddingTaskView(BaseTaskView):
         data = {
             'data': None,
             'message': "Успешно очищено"
+        }
+        return self.response_data(200, data=data)
+
+
+class GetGraphData(BaseTaskView):
+    files = ['info_graph', 'info_graph_journals', 'info_graph_countries', 'info_graph_affiliations']
+    taskModel = TaskAnalise  # Начальная модель для поиска задачи
+    worker_func = plot_graph_associations
+    label = 'data'
+
+    # def get(self, request):
+    #     data = self.create_data_response(request.user.id)
+    #     return self.response_data(200, data=data)
+
+    def get(self, request):
+        current_task, current_worker = self.check_working_task(request, type_analise=2)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
+
+        if current_task is None:  # Если воркер отсутвует значит у пользователя сейчас свободна очередь запросов
+            data = self.create_data_response(request.user.id)
+            return self.response_data(200, data=data, message='Запросов нет')  # Выводим его последний запрос из базы
+
+        if current_worker is None:  # Пользователь отправил запрос но обработчик не принял его
+            current_task.delete()
+            return self.response_data(500, message='Запрос завершен с ошибкой!',
+                                      data={'tematic_review': None})  # Выводим ошибку об отсутвии обработки запросов
+
+        if current_worker.status == 'PROGRESS' or current_worker.status == 'STARTED':
+            return self.response_data(202, message=current_task.message, data={'tematic_analise': None})
+
+        if current_worker.status == 'FAILURE':
+            self.update_task(current_task, status=2, end_date=datetime.now(), message='Запрос завершен с ошибкой!')
+            return self.response_data(500, message=current_task.message)
+
+        if current_worker.status == 'SUCCESS':
+            self.update_task(current_task, status=1, end_date=datetime.now(), message='Запрос успешно завершен!')
+
+        data = self.create_data_response(request.user.id)
+        return self.response_data(200, data=data)
+
+    def post(self, request):
+        current_task, current_worker = self.check_working_task(request, type_analise=2)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
+        if (current_task is not None) and (current_worker is not None) and (current_worker.status == 'PROGRESS' or current_worker.status == 'STARTED'):
+            return self.response_data(403, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
+
+        if len(request.data['articles']) < 2:
+            return self.response_data(400, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
+
+        new_task = self.create_task(user=request.user, type_analise=2)
+        task = plot_graph_associations.delay(pk=request.user.id, IdList=request.data['articles'])
+
+        new_task.task_id = task.id
+        new_task.message = 'Начинаем обработку...'
+        new_task.save()
+        data = {
+            'data': TaskAnaliseSerializer(new_task, many=False).data,
         }
         return self.response_data(200, data=data)
 
@@ -365,10 +421,21 @@ class MartUpApi(APIView):
         }
         return Response(data=data, status=status.HTTP_200_OK)
 
-class GetGraphData(BaseTaskView):
-    files = ['info_graph', 'info_graph_journals', 'info_graph_countries']
 
+class DownloadVectors(APIView):
     def get(self, request):
-        data = self.create_data_response(request.user.id)
-        return self.response_data(200, data=data)
+        vectors = get_path_to_file(request.user.id, 'vectors_OR.tsv')
+        with open(vectors, 'r') as file:
+            response = HttpResponse(file, content_type='text/tsv')
+            response['Content-Disposition'] = 'attachment; vectors_OR.tsv'
+            return response
+
+
+class DownloadMetaData(APIView):
+    def get(self, request):
+        metadata = get_path_to_file(request.user.id, 'metadata_OR.tsv')
+        with open(metadata, 'r') as file:
+            response = HttpResponse(file, content_type='text/tsv')
+            response['Content-Disposition'] = 'attachment; filename=metadata_OR.tsv'
+            return response
 

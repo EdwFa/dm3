@@ -12,7 +12,10 @@ import json
 from .serializers import *
 
 
-needed_files = ['search_ncbi', 'tematic_analise', 'clust_graph', 'heapmap', 'heirarchy', 'embeddings', 'info_graph', 'info_graph_journals', 'info_graph_countries', 'DTM']
+needed_files = ['search_ncbi.json', 'tematic_analise.json', 'clust_graph.json',
+                'heapmap.json', 'heirarchy.json', 'embeddings.json', 'info_graph.json',
+                'info_graph_journals.json', 'info_graph_countries.json', 'DTM.json',
+                'info_graph_affiliations.json', 'vectors_OR.tsv', 'metadata_OR.tsv']
 
 
 def get_path_to_file(pk, file_name):
@@ -46,7 +49,7 @@ class LoginApi(APIView):
                 if not os.path.exists(f'datasets/{authenticated_user.id}'):
                     os.mkdir(f'datasets/{authenticated_user.id}')
                 for need_file in needed_files:
-                    get_path_to_file(authenticated_user.id, f'{need_file}.json')
+                    get_path_to_file(authenticated_user.id, f'{need_file}')
 
                 print(token)
                 return Response(data={'token': TokenSeriazliser(token).data,

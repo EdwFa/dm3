@@ -7,6 +7,7 @@ import time
 import json
 import os
 import math
+import io
 
 import oneai
 import requests
@@ -62,13 +63,29 @@ def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 
     return data
 
 
+# Удаление пробелов и Up-первого символа слов строки
+def move_space(inp_str):
+
+  new_str = inp_str.strip() # удаляем начальные и конечные пробелы из сроки
+  while True:
+     i = new_str.find(' ') # находим пробел
+     if (i < 0):
+      break
+     a = new_str[:i]
+     b = new_str[i+1:]
+     b = b.capitalize()
+     new_str = a + b
+
+  return new_str
+
+
 @shared_task(bind=True)
-def analise_records(self, pk, IdList, new_task_id):
+def analise_records(self, pk, params, new_task_id):
     new_task = TaskAnalise.objects.get(id=new_task_id)
     new_task.message = 'Запущен процесс анализа, пожайлуста подождите...'
     new_task.save()
 
-    response = requests.post(f'{BERTTOPICAPI_URL}/analise', json={'articles': IdList})
+    response = requests.post(f'{BERTTOPICAPI_URL}/analise', json=params)
     print(response.status_code)
     if response.status_code != 200:
         raise Exception('Api is failed!')
@@ -85,24 +102,32 @@ def analise_records(self, pk, IdList, new_task_id):
     with open(get_path_to_file(pk, 'DTM.json'), 'w') as f:
         json.dump(data['DTM'], f)
 
+    out_v = io.open(get_path_to_file(pk, 'vectors_OR.tsv'), 'w', encoding='utf-8')
+    out_m = io.open(get_path_to_file(pk, 'metadata_OR.tsv'), 'w', encoding='utf-8')
+    l = 0
+    print('Create embeddings vectors tsv...')
+    for emb in data['embeddings']:
+        str_v = ''
+        for e in emb:
+            str_v += '\t' + str(e)
+        str_v += "\n"
+        out_v.write(str_v)
+        l += 1
 
-    # Start plot graph on tematic analise
-    articles = data['tematic_analise']
-    max_size = 1000
-    if len(articles) > max_size:
-        articles = articles[:max_size]
-    f.close()
-    data = get_uniq_info_for_authors(articles)
-    f = open(get_path_to_file(pk, 'info_graph.json'), 'w')
-    json.dump(data, f)
-    f.close()
-    data = get_uniq_info_for_other(articles)
-    f = open(get_path_to_file(pk, 'info_graph_journals.json'), 'w')
-    json.dump(data[0], f)
-    f.close()
-    f = open(get_path_to_file(pk, 'info_graph_countries.json'), 'w')
-    json.dump(data[1], f)
-    f.close()
+    l = 0
+    print('Create embeddings metadata tsv...')
+    for record in data['tematic_analise']:
+        if (record['topic'] >= 0):
+            tpcs = str(record['topic'])
+        else:
+            tpcs = '#'
+        out_m.write(move_space(record['titl'][:90]) + '#T' + tpcs + '_D' + str(l + 1) + "\n")
+        l += 1
+
+    out_v.close()
+    out_m.close()
+    print('done!')
+
     return
 
 
@@ -219,5 +244,38 @@ def markup_artcile(self, record):
 
     return record
 
+@shared_task(bind=True)
+def plot_graph_associations(self, IdList, pk, max_size=200):
+    # Start plot graph on tematic analise
+
+    if len(IdList) > max_size:
+        IdList = IdList[:max_size - 1]
+
+    handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
+    articles = []
+
+    for record in Medline.parse(handle):
+        data = parse_record(record)
+        if data:
+            articles.append(data)
+
+    handle.close()
+
+    data = get_uniq_info_for_authors(articles)
+    f = open(get_path_to_file(pk, 'info_graph.json'), 'w')
+    json.dump(data, f)
+    f.close()
+    data = get_uniq_info_for_institutes(articles)
+    f = open(get_path_to_file(pk, 'info_graph_affiliations.json'), 'w')
+    json.dump(data, f)
+    f.close()
+    data = get_uniq_info_for_other(articles)
+    f = open(get_path_to_file(pk, 'info_graph_journals.json'), 'w')
+    json.dump(data[0], f)
+    f.close()
+    f = open(get_path_to_file(pk, 'info_graph_countries.json'), 'w')
+    json.dump(data[1], f)
+    f.close()
+    return
 
 
