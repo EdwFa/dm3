@@ -420,7 +420,7 @@ export class DDIReview extends Component {
                 <div class="flex justify-start items-center">
                   <a href="" class="flex mr-4">
                     <img src="https://flowbite.s3.amazonaws.com/logo.svg" class="mr-3 h-8" alt="FlowBite Logo" />
-                    <span class="self-center text-2xl font-semibold whitespace-nowrap">EBM DаtaMed</span>
+                    <span class="self-center text-2xl font-semibold whitespace-nowrap">EBM Sechenov DataMed.AI</span>
                   </a>
                   {allow_page === 2 ?
                     <ul class="flex font-medium flex-row space-x-8">

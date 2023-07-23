@@ -21,6 +21,8 @@ import Select from 'react-select';
 
 import Slider from 'react-input-slider';
 
+import update from 'immutability-helper';
+
 import { variables } from '../Variables.js';
 
 
@@ -41,6 +43,7 @@ var topicFilterParams = {
 };
 
 var ErrorMessage = 0
+var Topic = 'Все';
 
 const obj_color = {
   'disease': "#fdbbbb",
@@ -94,6 +97,7 @@ export class TematicReview extends Component {
         { field: 'titl', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450, resizable: true},
         { field: 'pdat', filter: 'agTextColumnFilter', enableRowGroup: true, enableValue: true, resizable: true},
         { field: 'auth', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450, resizable: true},
+        { field: 'affl', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450, resizable: true},
         { field: 'jour', filter: 'agTextColumnFilter', enableRowGroup: true, enableValue: true, resizable: true},
         { field: 'pt', filter: 'agTextColumnFilter', enableRowGroup: true, enableValue: true, resizable: true},
         { field: 'mesh', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450, resizable: true},
@@ -119,12 +123,30 @@ export class TematicReview extends Component {
       messageAnalise: null,
       messageStatusAnalise: 200,
 
+      // Analise filters
+      rangeMin: 1,
+      rangeMax: 3,
+      min_TOPIC_SIZE: 10,
+      top_N_WORDS: 10,
+
+      top_n_topics: 40,
+      n_clusters: 10,
+
+      n_neighbors: 10,
+      n_components: 2,
+      min_dist: 0.0,
+      metric: {label: 'cosine'},
+      list_of_metrics: [{label: 'euclidean'}, {label: 'manhattan'}, {label: 'chebyshev'}, {label: 'minkowski'}, {label: 'canberra'}, {label: 'braycurtis'}, {label: 'mahalanobis'}, {label: 'wminkowski'},
+      {label: 'seuclidean'}, {label: 'cosine'}, {label: 'correlation'}, {label: 'haversine'}, {label: 'hamming'}, {label: 'jaccard'}, {label: 'dice'}, {label: 'russelrao'}, {label: 'kulsinski'}, {label: 'll_dirichlet'},
+      {label: 'hellinger'}, {label: 'rogerstanimoto'}, {label: 'sokalmichener'}, {label: 'sokalsneath'}, {label: 'yule'}],
+
       // Analise table
       analise_articles: [],
       analise_info: [
         { field: 'titl', filter: 'agTextColumnFilter', minWidth: 300, width: 450, resizable: true},
         { field: 'pdat', filter: 'agTextColumnFilter', resizable: true},
         { field: 'auth', filter: 'agTextColumnFilter', minWidth: 300, width: 450, resizable: true},
+        { field: 'affl', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450, resizable: true},
         { field: 'jour', filter: 'agTextColumnFilter', resizable: true},
         { field: 'pt', filter: 'agTextColumnFilter', resizable: true},
         { field: 'mesh', filter: 'agTextColumnFilter', minWidth: 300, width: 450, resizable: true},
@@ -138,9 +160,11 @@ export class TematicReview extends Component {
       heapmap: null,
       heirarchy: null,
       DTM: null,
+      plotlyWidth: 800,
 
       // Filter topic
-      current_topic: -2,
+      current_topic: 'Все',
+      topicObject: {label: 'Все'},
       topics: new Set(),
 
       //Summirise
@@ -151,11 +175,12 @@ export class TematicReview extends Component {
       messageStatusGraph: 200,
 
       current_graph: {label: 'authors'},
-      list_of_graphs: [{label: 'authors'}, {label: 'journals'}, {label: 'countries'}],
+      list_of_graphs: [{label: 'authors'}, {label: 'affiliations'}, {label: 'journals'}, {label: 'countries'}],
 
       infoAuthorsData: null,
       infoJournalsData: null,
-      infoCountryData: null
+      infoCountryData: null,
+      infoAffiliationsData: null
     }
   }
 
@@ -343,6 +368,36 @@ export class TematicReview extends Component {
     this.setState({ useAll: !this.state.useAll })
   }
 
+  changeModelRangeMin = (e) => {
+    if (e.target.value > 5) {
+        this.setState({ rangeMin: 5 });
+    } else if (e.target.value < 1) {
+        this.setState({ rangeMin: 1 });
+    } else {
+        this.setState({ rangeMin: e.target.value });
+    }
+  }
+
+  changeModelRangeMax = (e) => {
+    if (e.target.value > 5) {
+        this.setState({ rangeMax: 5 });
+    } else if (e.target.value < 1) {
+        this.setState({ rangeMax: 1 });
+    } else {
+        this.setState({ rangeMax: e.target.value });
+    }
+  }
+
+  changeMinDist = (e) => {
+    if (e.target.value > 0.99) {
+        this.setState({ min_dist: 0.99 });
+    } else if (e.target.value < 0.0) {
+        this.setState({ min_dist: 0.0 });
+    } else {
+        this.setState({ min_dist: e.target.value });
+    }
+  }
+
   RoundPersent(number) {
     return number.toFixed(2);
   }
@@ -358,7 +413,19 @@ export class TematicReview extends Component {
         'Authorization': `Token ${variables.token}`,
       },
       body: JSON.stringify({
-        articles: analise_data
+        articles: analise_data,
+        filters: {
+            rangeMin: this.state.rangeMin,
+            rangeMax: this.state.rangeMax,
+            min_TOPIC_SIZE: this.state.min_TOPIC_SIZE,
+            top_N_WORDS: this.state.top_N_words,
+            top_n_topics: this.state.top_n_topics,
+            n_clusters: this.state.n_clusters,
+            n_neighbors: this.state.n_neighbors,
+            n_components: this.state.n_components,
+            min_dist: this.state.min_dist,
+            metric: this.state.metric,
+        }
       })
     })
       .then(response => {
@@ -423,23 +490,28 @@ export class TematicReview extends Component {
           }
           if (data.data.heapmap !== null)
             if (data.data.heapmap.length !== 0) {
-                delete data.data.heapmap.layout.width;
+                data.data.heapmap.layout.width = 800;
             }
           if (data.data.heirarchy !== null)
             if (data.data.heirarchy.length !== 0) {
-                delete data.data.heirarchy.layout.width;
+                data.data.heirarchy.layout.width = 800;
             }
           if (data.data.DTM !== null)
             if (data.data.DTM.length !== 0) {
-                delete data.data.DTM.layout.width;
+                data.data.DTM.layout.width = 800;
             }
-          var topics = new Set()
+          var topicSet = new Set()
           if (data.data.tematic_analise.length !== 0) {
               for (let record of data.data.tematic_analise) {
-                if (!topics.has(record.topic)) {
-                  topics.add(record.topic)
+                if (!topicSet.has(record.topic)) {
+                  topicSet.add(record.topic)
                 }
               }
+          }
+          let topics = new Array();
+          topics.push({label: 'Все'});
+          for (let el of topicSet) {
+            topics.push({label: el})
           }
           console.log(topics)
           this.setState({
@@ -452,9 +524,8 @@ export class TematicReview extends Component {
             loading: false,
             messageAnalise: "Запрос успешно обработан",
             messageStatusAnalise: 200,
-            topics: [...topics],
+            topics: topics,
           });
-          this.getGraphInfo()
         }
       })
       .catch((error) => {
@@ -469,19 +540,47 @@ export class TematicReview extends Component {
       });
   }
 
+  changePlotlyWidth(newWidth) {
+    const heapmap = update(this.state.heapmap, {
+                        layout: {width: {$set: newWidth}}
+    })
+
+    const heirarchy = update(this.state.heirarchy, {
+                        layout: {width: {$set: newWidth}}
+    })
+
+    const clust_graph = update(this.state.clust_graph, {
+                        layout: {width: {$set: newWidth}}
+    })
+
+    const DTM = update(this.state.DTM, {
+                        layout: {width: {$set: newWidth}}
+    })
+
+    this.setState({
+        plotlyWidth: newWidth,
+        heapmap: heapmap,
+        heirarchy: heirarchy,
+        clust_graph: clust_graph,
+        DTM: DTM
+    })
+  }
+
   externalFilterChanged = (newValue) => {
-    this.setState({ current_topic: newValue.x, summarise: null });
+    console.log(newValue)
+    this.setState({ current_topic: newValue.label, summarise: null, topicObject: newValue });
+    Topic = newValue.label;
     this.gridAnaliseRef.current.api.onFilterChanged();
   }
 
   isExternalFilterPresent = () => {
     // if ageType is not everyone, then we are filtering
-    return this.state.current_topic !== -2;
+    return Topic !== 'Все';
   }
 
   doesExternalFilterPass = (node) => {
     if (node.data) {
-      if (node.data.topic === this.state.current_topic) {
+      if (node.data.topic === Topic) {
         return true
       }
     }
@@ -496,7 +595,7 @@ export class TematicReview extends Component {
 
   getGraphData = () => {
     var current_topic = this.state.current_topic.toString();
-    if (current_topic === '-2') {
+    if (current_topic === 'Все') {
       return this.state.clust_graph.data
     }
 
@@ -548,7 +647,7 @@ export class TematicReview extends Component {
   }
 
   createSummariseQuery() {
-    if (this.state.current_topic === -2) {
+    if (this.state.current_topic === 'Все') {
       var data = this.state.analise_articles
     } else {
       var data = []
@@ -589,13 +688,59 @@ export class TematicReview extends Component {
   }
 
   // Graphs authors, countries, jornals
-  getGraphInfo() {
+
+  getGraphInfo = (url, interval = 1000) => {
+    fetch(variables.API_URL + '/api/graphs/',
+      {
+        headers: {
+          'Content-Type': 'application/json;charset=utf-8',
+          'Authorization': `Token ${variables.token}`,
+        },
+      }
+    )
+      .then(response => {
+        console.log(response.status);
+        ErrorMessage = response.status
+        if (response.ok) {
+          return response.json()
+        } else {
+          throw Error(response.status)
+        }
+      })
+      .then(data => {
+        if (ErrorMessage === 202) {
+          this.setState({ loading: true, messageAnalise: data.message, messageStatusAnalise: 202 });
+          console.log(data.message);
+          setTimeout(() => {
+            return this.getGraphInfo(url, interval)
+          }, interval);
+        } else {
+            console.log('This graph work')
+            this.setState({ infoAuthorsData: data.data.info_graph, infoAffiliationsData: data.data.info_graph_affiliations,  infoJournalsData: data.data.info_graph_journals, infoCountryData: data.data.info_graph_countries, messageAnalise: 'Граф успешно отрисован, перейдите во вкладку графы для просмотра', messageStatusAnalise: 200})
+        }
+      })
+      .catch(error => {
+        if (ErrorMessage === 500) {
+            this.setState({ articles: [], DetailArticle: null, loading: false, messageAnalise: 'Ошибка сервера', messageStatusAnalise: 500 });
+        } else {
+            this.setState({ articles: [], DetailArticle: null, loading: false, messageAnalise: 'Что-то пошло не так', messageStatusAnalise: 400 });
+        }
+      })
+  }
+
+  createGraph() {
+    let analise_data = [];
+    this.gridAnaliseRef.current.api.forEachNodeAfterFilter((rowNode) => analise_data.push(rowNode.data.uid));
     fetch(variables.API_URL + '/api/graphs/', {
+      method: 'POST',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json;charset=utf-8',
         'Authorization': `Token ${variables.token}`,
-      }
+      },
+      body: JSON.stringify({
+        articles: analise_data
+      })
     })
       .then(response => {
         console.log(response.status);
@@ -607,10 +752,17 @@ export class TematicReview extends Component {
         }
       })
       .then((data) => {
-        this.setState({ infoAuthorsData: data.data.info_graph, infoJournalsData: data.data.info_graph_journals, infoCountryData: data.data.info_graph_countries})
+        this.setState({ messageAnalise: "Ваш запрос в очереди. Пожайлуста дождитесь результата", messageStatusAnalise: 201 })
+        this.getGraphInfo();
       })
       .catch((error) => {
-        console.log(error)
+        if (ErrorMessage === 500) {
+            this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, messageAnalise: 'Ошибка сервера', messageStatusAnalise: 500 });
+        } else if (ErrorMessage === 403) {
+            this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, messageAnalise: 'Дождитесь окончания предыдушего запроса', messageStatusAnalise: 403 });
+        } else {
+            this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, messageAnalise: 'Что=то пошло не так', messageStatusAnalise: 400 });
+        }
       })
   }
 
@@ -690,6 +842,64 @@ export class TematicReview extends Component {
       });
   }
 
+  // Скачивание embeddings
+  downloadEmbeddings() {
+        fetch(variables.API_URL + '/api/download_vectors', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Token ${this.state.token}`,
+          },
+          responseType: 'blob',
+        })
+          .then((res) => {
+                if (res.status == 200) {
+                    console.log(res)
+                    res.blob().then(blob => {
+                    let url = window.URL.createObjectURL(blob);
+                    let a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'vectors_OR.tsv';
+                    a.click();
+                });
+                } else { throw Error(res.statusText) }
+            })
+          .catch(error => {
+                    alert('Ошибка');
+                    console.log(error);
+                });
+    }
+
+    downloadMetadata() {
+        fetch(variables.API_URL + '/api/download_metadata', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Token ${this.state.token}`,
+          },
+          responseType: 'blob',
+        })
+          .then((res) => {
+                if (res.status == 200) {
+                    console.log(res)
+                    res.blob().then(blob => {
+                    let url = window.URL.createObjectURL(blob);
+                    let a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'metadata_OR.tsv';
+                    a.click();
+                });
+                } else { throw Error(res.statusText) }
+            })
+          .catch(error => {
+                    alert('Ошибка');
+                    console.log(error);
+                });
+    }
+
+    downloadAll() {
+        this.downloadMetadata();
+        this.downloadEmbeddings();
+    }
+
   render() {
     const {
       token,
@@ -710,6 +920,18 @@ export class TematicReview extends Component {
       queryEndDate,
       queryStartDate,
 
+      rangeMin,
+      rangeMax,
+      top_n_topics,
+      n_components,
+      n_neighbors,
+      n_clusters,
+      min_TOPIC_SIZE,
+      top_N_WORDS,
+      min_dist,
+      metric,
+      list_of_metrics,
+
       analise_articles,
       analise_info,
       clust_graph,
@@ -718,6 +940,7 @@ export class TematicReview extends Component {
       DTM,
       current_topic,
       topics,
+      topicObject,
       summarise,
       allow_page,
 
@@ -725,7 +948,12 @@ export class TematicReview extends Component {
       list_of_graphs,
       infoAuthorsData,
       infoCountryData,
-      infoJournalsData
+      infoJournalsData,
+      infoAffiliationsData,
+
+      messageGraph,
+      messageStatusGraph,
+      plotlyWidth,
     } = this.state;
 
     if (!token) {
@@ -741,7 +969,7 @@ export class TematicReview extends Component {
                 <div class="flex justify-start items-center">
                   <a href="" class="flex mr-4">
                     <img src="https://flowbite.s3.amazonaws.com/logo.svg" class="mr-3 h-8" alt="FlowBite Logo" />
-                    <span class="self-center text-2xl font-semibold whitespace-nowrap">EBM DаtaMed</span>
+                    <span class="self-center text-2xl font-semibold whitespace-nowrap">EBM Sechenov DataMed.AI</span>
                   </a>
                   {allow_page === 2?
                       <ul class="flex font-medium flex-row space-x-8 ml-10">
@@ -810,7 +1038,7 @@ export class TematicReview extends Component {
                         <button class="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="true">Тематическое описание коллекции</button>
                       </li>
                       <li class="nav-item mr-2" role="presentation">
-                        <button class="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100" id="contact-tab" data-bs-toggle="tab" data-bs-target="#contact" type="button" role="tab" aria-controls="contact" aria-selected="false" >Схема</button>
+                        <button class="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100" id="contact-tab" data-bs-toggle="tab" data-bs-target="#contact" type="button" role="tab" aria-controls="contact" aria-selected="false" >Графы аффиляций</button>
                       </li>
                     </ul>
                     <button id="toggleSidebar" aria-expanded="true" aria-controls="sidebar2" class="order-last hidden p-2 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700" data-bs-toggle="collapse" data-bs-target="#sidebar2" aria-label="Toggle navigation">
@@ -1120,6 +1348,148 @@ export class TematicReview extends Component {
                           </div>
                         </div>
                       </div>
+                      <div className="accordion-item">
+                        <h2 className="accordion-header" id="flush-headingOne">
+                          <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseTwelve" aria-expanded="false" aria-controls="flush-collapseOne">
+                            Настройки Модели
+                          </button>
+                        </h2>
+                        <div id="flush-collapseTwelve" className="collapse show multi-collapse" aria-labelledby="flush-headingOne" data-bs-target="#accordionFlushExample">
+                          <div className="accordion-body">
+                            <div className="form-outline">
+                                <label class="form-label" for="typeNumber1">Range Min: </label>
+                                <input
+                                    min="1"
+                                    max="5"
+                                    type="number"
+                                    id="typeNumber1"
+                                    className="form-control"
+                                    value={rangeMin}
+                                    onChange={this.changeModelRangeMin}
+                                />
+                            </div>
+                            <div classNams="form-outline">
+                                <label class="form-label" for="typeNumber2">Range Max: </label>
+                                <input
+                                    min="1"
+                                    max="5"
+                                    type="number"
+                                    id="typeNumber2"
+                                    className="form-control"
+                                    value={rangeMax}
+                                    onChange={this.changeModelRangeMax}
+                                />
+                            </div>
+                            <div classNams="form-outline">
+                                <label class="form-label" for="typeNumber3">min_TOPIC_SIZE:</label>
+                                <input
+                                    type="number"
+                                    id="typeNumber3"
+                                    className="form-control"
+                                    value={min_TOPIC_SIZE}
+                                    onChange={(x) => this.setState({min_TOPIC_SIZE: x.target.value})}
+                                />
+                            </div>
+                            <div classNams="form-outline">
+                                <label class="form-label" for="typeNumber4">top_N_WORDS: </label>
+                                <input
+                                    type="number"
+                                    id="typeNumber4"
+                                    className="form-control"
+                                    value={top_N_WORDS}
+                                    onChange={(x) => this.setState({top_N_WORDS: x.target.value})}
+                                />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="accordion-item">
+                        <h2 className="accordion-header" id="flush-headingOne">
+                          <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseThirteen" aria-expanded="false" aria-controls="flush-collapseOne">
+                            Матрица связаности
+                          </button>
+                        </h2>
+                        <div id="flush-collapseThirteen" className="collapse show multi-collapse" aria-labelledby="flush-headingOne" data-bs-target="#accordionFlushExample">
+                          <div className="accordion-body">
+                            <div classNams="form-outline">
+                                <label class="form-label" for="typeNumber5">top_n_topics: </label>
+                                <input
+                                    type="number"
+                                    id="typeNumber5"
+                                    className="form-control"
+                                    value={top_n_topics}
+                                    onChange={(x) => this.setState({top_n_topics: x.target.value})}
+                                />
+                            </div>
+                            <div classNams="form-outline">
+                                <label class="form-label" for="typeNumber6">n_clusters: </label>
+                                <input
+                                    type="number"
+                                    id="typeNumber6"
+                                    className="form-control"
+                                    value={n_clusters}
+                                    onChange={(x) => this.setState({n_clusters: x.target.value})}
+                                />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="accordion-item">
+                        <h2 className="accordion-header" id="flush-headingOne">
+                          <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseFourteen" aria-expanded="false" aria-controls="flush-collapseOne">
+                            UMAP группировка
+                          </button>
+                        </h2>
+                        <div id="flush-collapseFourteen" className="collapse show multi-collapse" aria-labelledby="flush-headingOne" data-bs-target="#accordionFlushExample">
+                          <div className="accordion-body">
+                            <div classNams="form-outline">
+                                <label class="form-label" for="typeNumber7">n_neighbors: </label>
+                                <input
+                                    type="number"
+                                    id="typeNumber7"
+                                    className="form-control"
+                                    value={n_neighbors}
+                                    onChange={(x) => this.setState({n_neighbors: x.target.value})}
+                                />
+                            </div>
+                            <div classNams="form-outline">
+                                <label class="form-label" for="typeNumber8">n_components: </label>
+                                <input
+                                    type="number"
+                                    id="typeNumber8"
+                                    className="form-control"
+                                    value={n_components}
+                                    onChange={(x) => this.setState({n_components: x.target.value})}
+                                />
+                            </div>
+                            <div classNams="form-outline">
+                                <label class="form-label" for="typeNumber9">min_dist: </label>
+                                <input
+                                    type="number"
+                                    id="typeNumber9"
+                                    className="form-control"
+                                    value={min_dist}
+                                    onChange={this.changeMinDist}
+                                />
+                            </div>
+                            <div classNams="form-outline">
+                                <label class="form-label" for="typeNumber9">metric: </label>
+                                <Select
+                                    className="basic-single"
+                                    classNamePrefix="select"
+                                    value={metric}
+                                    isSearchable
+                                    placeholder="Выберите класс"
+                                    name="topic"
+                                    options={list_of_metrics}
+                                    getOptionLabel={(option) => option.label}
+                                    getOptionValue={(option) => option.label}
+                                    onChange={(x) => this.setState({metric: x})}
+                                />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </aside>
                   <section class="col p-3 m-3 border rounded-3 bg-white h-screen overflow-auto">
@@ -1207,14 +1577,21 @@ export class TematicReview extends Component {
                                       :null
                                   }
                             </h2>
-                            <p>Выбрана тема: {current_topic === -2 ? "Выбраны все" : `№ ${current_topic} из ${topics.length}`}</p>
-                            <Slider
-                              axis="x"
-                              x={current_topic}
-                              xmax={topics.length - 2}
-                              xmin={-2}
-                              onChange={this.externalFilterChanged}
+                            <p>Выбрана тема: {current_topic}</p>
+                            <Select
+                                className="basic-single"
+                                classNamePrefix="select"
+                                value={topicObject}
+                                isSearchable
+                                placeholder="Выберите класс"
+                                name="topic"
+                                options={topics}
+                                getOptionLabel={(option) => option.label}
+                                getOptionValue={(option) => option.label}
+                                onChange={this.externalFilterChanged}
                             />
+                            <br />
+                            <input className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Отрисовать граф" onClick={() => this.createGraph()} />
                           </div>
                           <div class="accordion accordion-flush" id="accordion">
                               <div className="accordion-item">
@@ -1268,6 +1645,15 @@ export class TematicReview extends Component {
                                 </div>
                               </div>
                           </div>
+                          <label class="form-label">Ширина = {plotlyWidth}</label>
+                          <Slider
+                              axis="x"
+                              x={plotlyWidth}
+                              xmax={2000}
+                              xmin={200}
+                              xstep={100}
+                              onChange={({ x }) => this.changePlotlyWidth(x)}
+                            />
                           <div class="accordion accordion-flush" id="accordion">
                             <div className="accordion-item">
                               <h2 className="accordion-header" id="flush-headingTwo">
@@ -1282,6 +1668,8 @@ export class TematicReview extends Component {
                                       <Plot
                                         data={this.getGraphData()}
                                         layout={clust_graph.layout}
+                                        style={{width: "100%", height: "100%"}}
+                                        useResizeHandler={true}
                                       />
                                       : null
                                     }
@@ -1369,10 +1757,36 @@ export class TematicReview extends Component {
                                 </div>
                               </div>
                             </div>
+                            <div className="accordion-item">
+                              <h2 className="accordion-header" id="flush-headingTwo">
+                                <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseZero" aria-expanded="false" aria-controls="flush-collapseTwo">
+                                  Проектор
+                                </button>
+                              </h2>
+                              <div id="flush-collapseZero" className="collapse show multi-collapse" aria-labelledby="flush-headingTwo" data-bs-target="#accordionFlushExample">
+                                <div className="accordion-body">
+                                  <div>
+                                    <a href="http://projector.tensorflow.org/" class="card-title link-primary text-decoration-none h6" target="_blank"> Перейти на проектор </a>
+                                    <input className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Скачать" onClick={() => this.downloadAll()} />
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                         <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">
                           <div class="container-fluid g-0">
+                            <h2 class="accordion-header" id="">
+                                  {messageGraph?
+                                      messageStatusGraph > 299?
+                                        <p class="pb-2 mb-3 border-bottom" style={{ color: 'red' }}>{messageGraph}. </p>
+                                        : messageStatusGraph === 200 ?
+                                        <p class="pb-2 mb-3 border-bottom" style={{ color: 'green' }}>{messageGraph}.</p>
+                                        :
+                                        <p class="pb-2 mb-3 border-bottom" style={{ color: 'black' }}>{messageGraph}.</p>
+                                      :null
+                                  }
+                            </h2>
                             <Select
                                 className="basic-single"
                                 classNamePrefix="select"
@@ -1389,6 +1803,13 @@ export class TematicReview extends Component {
                             {current_graph.label === 'authors'?
                                 infoAuthorsData ?
                                     <VOSviewerOnline data={infoAuthorsData} />
+                                : null
+                            :null
+                            }
+                            {
+                            current_graph.label === 'affiliations'?
+                                infoAffiliationsData ?
+                                    <VOSviewerOnline data={infoAffiliationsData} />
                                 : null
                             :null
                             }
@@ -1418,7 +1839,7 @@ export class TematicReview extends Component {
                       {DetailArticle ?
                         <div class="card mb-3">
                           <div class="card-body">
-                            <a href={DetailArticle.url} class="card-title link-primary text-decoration-none h5"> {DetailArticle.titl} </a>
+                            <a href={DetailArticle.url} class="card-title link-primary text-decoration-none h5" target="_blank"> {DetailArticle.titl} </a>
                             <p class="card-text">---------------------------------- </p>
                             <p class="card-text">Авторы :  {DetailArticle.auth} </p>
                             <p class="card-text">---------------------------------- </p>
