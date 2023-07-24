@@ -256,6 +256,8 @@ export class DDIReview extends Component {
   }
 
   createSummariseQuery() {
+    let summarise_data = [];
+    this.gridRef.current.api.forEachNodeAfterFilter((rowNode) => summarise_data.push(rowNode.data.text));
     fetch(variables.API_URL + '/api/summarise_emb', {
       method: 'POST',
       headers: {
@@ -264,11 +266,11 @@ export class DDIReview extends Component {
         'Authorization': `Token ${variables.token}`,
       },
       body: JSON.stringify({
-        articles: 'some'
+        articles: summarise_data
       })
     })
       .then((res) => {
-        if (res.status == 200) { return res.json() }
+        if (res.ok) { return res.json() }
         else { throw Error(res.statusText) }
       })
       .then((result) => {
