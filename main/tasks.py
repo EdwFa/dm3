@@ -13,7 +13,7 @@ import oneai
 import requests
 
 from .serializers import *
-from dm.settings import PARSER_EMAIL, MEDIA_URL, BERTTOPICAPI_URL
+from dm.settings import PARSER_EMAIL, MEDIA_URL, BERTTOPICAPI_URL, SUMMARISEAPI_URL
 from Funcs import *
 
 
@@ -135,30 +135,28 @@ def analise_records(self, pk, params, new_task_id):
 def summarise_text(self, records):
     text = ' '.join([rec['titl'] + rec['tiab'] for rec in records])
     print(len(text), text)
-    api_key = "0f4f9d19-644d-4577-94af-48abb689be60"
-    oneai.api_key = api_key
-    pipeline = oneai.Pipeline(steps=[
-        oneai.skills.Summarize(min_length=20),
-    ])
+    response = requests.post(f'{SUMMARISEAPI_URL}/summarise', json={'text': text})
+    print(response.status_code)
+    if response.status_code != 200:
+        raise Exception('Api is failed!')
 
-    output = pipeline.run(text)
-    return output.summary.text
+    sentences = ' '.join(response.json()['summary'])
+
+    return sentences
 
 
 @shared_task(bind=True)
-def summarise_emb(self, pk):
-    with open(get_path_to_file(pk, 'embeddings.json'), 'r') as f:
-        data = json.load(f)['data']
-    text = ' '.join([rec['text'] for rec in data])
+def summarise_emb(self, pk, strings):
+    text = ' '.join([rec for rec in strings])
     print(len(text), text)
-    api_key = "0f4f9d19-644d-4577-94af-48abb689be60"
-    oneai.api_key = api_key
-    pipeline = oneai.Pipeline(steps=[
-        oneai.skills.Summarize(min_length=20),
-    ])
+    response = requests.post(f'{SUMMARISEAPI_URL}/summarise', json={'text': text})
+    print(response.status_code)
+    if response.status_code != 200:
+        raise Exception('Api is failed!')
 
-    output = pipeline.run(text)
-    return output.summary.text
+    sentences = ' '.join(response.json()['summary'])
+
+    return sentences
 
 
 def current_record(record, **filters):

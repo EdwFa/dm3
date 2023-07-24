@@ -386,7 +386,7 @@ class SummariseEmbApi(APIView):
 
     def post(self, request):
         print(request.data)
-        task = summarise_emb.delay(pk=request.user.id)
+        task = summarise_emb.delay(pk=request.user.id, strings=request.data['articles'])
         data = {
             'data': task.id,
         }

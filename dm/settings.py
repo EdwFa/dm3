@@ -235,6 +235,9 @@ MAX_COUNT = os.getenv('MAX_COUNT')
 # настройки для api bertTopic
 BERTTOPICAPI_URL = os.getenv('BERTTOPICAPI_URL')
 
+# настройки для api Summarise
+SUMMARISEAPI_URL = os.getenv('SUMMARISEAPI_URL')
+
 # Пользовтель
 AUTH_USER_MODEL = "accounts.User"
 
