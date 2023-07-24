@@ -5,6 +5,9 @@
 /.pnp
 .pnp.js
 
+# variables
+src/Sections/Variables.js
+
 # testing
 /coverage
 
