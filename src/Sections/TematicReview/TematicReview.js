@@ -620,7 +620,7 @@ export class TematicReview extends Component {
     )
       .then((res) => {
         if (res.status == 202) {
-          this.setState({ loading: true, messageStatus: 202, message: "Отправлено на суммаризацию..." })
+          this.setState({ loading: true, messageStatusAnalise: 202, messageAnalise: "Отправлено на суммаризацию..." })
           setTimeout(() => {
             return this.getSummarise(task_id, interval)
           }, interval);
@@ -636,13 +636,17 @@ export class TematicReview extends Component {
         this.setState({
           summarise: data.data,
            loading: false,
-          message: 'Суммаризация прошла успешно',
-          messageStatus: 200
+          messageAnalise: 'Суммаризация прошла успешно',
+          messageStatusAnalise: 200
         });
       })
       .catch((err) => {
         console.log(err);
-        this.setState({ summarise: null, message: 'Произошла ошибка при суммаризации', messageStatus: 500 });
+        if (ErrorMessage === 202) {
+            this.setState({ loading: true, messageStatusAnalise: 202, messageAnalise: "Отправлено на суммаризацию..." })
+        } else {
+            this.setState({ summarise: null, messageAnalise: 'Произошла ошибка при суммаризации', messageStatusAnalise: 500 });
+        }
       });
   }
 
@@ -653,7 +657,7 @@ export class TematicReview extends Component {
       var data = []
       for (let article of this.state.analise_articles) {
         if (this.state.current_topic === article.topic) {
-          data.push(article);
+          data.push(article.uid);
         }
       }
     }
@@ -679,11 +683,11 @@ export class TematicReview extends Component {
       })
       .then((result) => {
         var task_id = result.data;
-        this.setState({ message: 'Отправлено на суммаризацию пожайлуста дождитесь ответа', messageStatus: 201 })
+        this.setState({ messageAnalise: 'Отправлено на суммаризацию пожайлуста дождитесь ответа', messageStatusAnalise: 201 })
         this.getSummarise(task_id);
       })
       .catch((error) => {
-        this.setState({ message: 'Ошибка при суммаризации', messageStatus: 500 })
+        this.setState({ messageAnalise: 'Ошибка при суммаризации', messageStatusAnalise: 500 })
       })
   }
 
