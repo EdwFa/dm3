@@ -3,6 +3,7 @@ import os
 from flask import Flask
 import nltk
 import logging
+from Bio import Entrez
 
 from Api import sum, check_device
 
@@ -10,7 +11,7 @@ from Api import sum, check_device
 app = Flask(__name__, static_url_path='')
 app.register_blueprint(sum)
 app.logger.name = 'SummariseApi'
-# Entrez.email = os.getenv('PARSER_EMAIL')  # Говорю NCBI кто я есть
+Entrez.email = os.getenv('PARSER_EMAIL')  # Говорю NCBI кто я есть
 address_host = os.getenv('HOST')
 address_port = os.getenv('PORT')
 

@@ -2,8 +2,10 @@ import json
 from flask import Blueprint, current_app, jsonify, request
 from flask import send_file
 import nltk
+from Bio import Entrez, Medline
 
 from .summarise import *
+from .parsing import parse_record
 
 
 sum = Blueprint('sum', __name__)
@@ -25,9 +27,13 @@ def summarise_records():
     current_app.logger.info(f'Start summarise text...')
 
     data = request.json
-    if not ('text' in data):
+    if not ('IdList' in data):
         return jsonify({'status': 'Error', 'message': 'Text not found'}), 500
-    raw_text = data['text']
+    IdList = data['IdList']
+    handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
+    records = [parse_record(record) for record in Medline.parse(handle) if not (record is None)]
+    raw_text = ' '.join([rec['titl'] + rec['tiab'] for rec in records])
+    handle.close()
 
     current_app.logger.info(f'Делим документ на предложения...')
     sentences = nltk.sent_tokenize(raw_text)

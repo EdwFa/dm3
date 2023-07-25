@@ -1,3 +1,4 @@
+biopython==1.81
 blinker==1.6.2
 certifi==2023.7.22
 charset-normalizer==3.2.0
