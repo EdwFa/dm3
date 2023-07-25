@@ -3,3 +3,4 @@ dump.rdb
 logs
 datasets
 *.pyc
+dm/settings.py

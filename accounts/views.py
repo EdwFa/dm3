@@ -55,7 +55,7 @@ class LoginApi(APIView):
                 return Response(data={'token': TokenSeriazliser(token).data,
                                       'email': authenticated_user.email,
                                       'allow': authenticated_user.allow_status}, status=200)
-            return Response(serializer.errors, status=403)
+            return Response(data={'error': 'User is not current!'}, status=403)
         else:
             return Response(serializer.errors, status=400)
 

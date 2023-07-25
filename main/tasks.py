@@ -133,9 +133,7 @@ def analise_records(self, pk, params, new_task_id):
 
 @shared_task(bind=True)
 def summarise_text(self, records):
-    text = ' '.join([rec['titl'] + rec['tiab'] for rec in records])
-    print(len(text), text)
-    response = requests.post(f'{SUMMARISEAPI_URL}/summarise', json={'text': text})
+    response = requests.post(f'{SUMMARISEAPI_URL}/summarise', json={'IdList': records})
     print(response.status_code)
     if response.status_code != 200:
         raise Exception('Api is failed!')
@@ -146,10 +144,9 @@ def summarise_text(self, records):
 
 
 @shared_task(bind=True)
-def summarise_emb(self, pk, strings):
-    text = ' '.join([rec for rec in strings])
-    print(len(text), text)
-    response = requests.post(f'{SUMMARISEAPI_URL}/summarise', json={'text': text})
+def summarise_emb(self, pk, text):
+    text = ' '.join([s for s in text])
+    response = requests.post(f'{SUMMARISEAPI_URL}/summarise_emb', json={'text': text})
     print(response.status_code)
     if response.status_code != 200:
         raise Exception('Api is failed!')
