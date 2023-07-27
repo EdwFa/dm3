@@ -94,13 +94,13 @@ export class TematicReview extends Component {
       articles: [],
       DetailArticle: null,
       articlesInfo: [
-        { field: 'titl', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450, resizable: true},
-        { field: 'pdat', filter: 'agTextColumnFilter', enableRowGroup: true, enableValue: true, resizable: true},
-        { field: 'auth', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450, resizable: true},
-        { field: 'affl', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450, resizable: true},
-        { field: 'jour', filter: 'agTextColumnFilter', enableRowGroup: true, enableValue: true, resizable: true},
-        { field: 'pt', filter: 'agTextColumnFilter', enableRowGroup: true, enableValue: true, resizable: true},
-        { field: 'mesh', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450, resizable: true},
+        { field: 'titl', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, minWidth: 300, width: 450, resizable: true},
+        { field: 'pdat', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, resizable: true},
+        { field: 'auth', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, minWidth: 300, width: 450, resizable: true},
+        { field: 'affl', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, minWidth: 300, width: 450, resizable: true},
+        { field: 'jour', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, resizable: true},
+        { field: 'pt', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, resizable: true},
+        { field: 'mesh', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, minWidth: 300, width: 450, resizable: true},
       ],
       translation_stack: null,
       full_query: null,
@@ -143,15 +143,15 @@ export class TematicReview extends Component {
       // Analise table
       analise_articles: [],
       analise_info: [
-        { field: 'titl', filter: 'agTextColumnFilter', minWidth: 300, width: 450, resizable: true},
-        { field: 'pdat', filter: 'agTextColumnFilter', resizable: true},
-        { field: 'auth', filter: 'agTextColumnFilter', minWidth: 300, width: 450, resizable: true},
-        { field: 'affl', filter: 'agTextColumnFilter', enableValue: true, minWidth: 300, width: 450, resizable: true},
-        { field: 'jour', filter: 'agTextColumnFilter', resizable: true},
-        { field: 'pt', filter: 'agTextColumnFilter', resizable: true},
-        { field: 'mesh', filter: 'agTextColumnFilter', minWidth: 300, width: 450, resizable: true},
+        { field: 'titl', filter: 'agTextColumnFilter', sortable: true, minWidth: 300, width: 450, resizable: true},
+        { field: 'pdat', filter: 'agTextColumnFilter', sortable: true, resizable: true},
+        { field: 'auth', filter: 'agTextColumnFilter', sortable: true, minWidth: 300, width: 450, resizable: true},
+        { field: 'affl', filter: 'agTextColumnFilter', sortable: true, enableValue: true, minWidth: 300, width: 450, resizable: true},
+        { field: 'jour', filter: 'agTextColumnFilter', sortable: true, resizable: true},
+        { field: 'pt', filter: 'agTextColumnFilter', sortable: true, resizable: true},
+        { field: 'mesh', filter: 'agTextColumnFilter', sortable: true, minWidth: 300, width: 450, resizable: true},
         { field: 'topic', filter: 'agNumberColumnFilter', sortable: true, filterParams: topicFilterParams, resizable: true},
-        { field: 'prop', filter: 'agNumberColumnFilter', resizable: true},
+        { field: 'prop', filter: 'agNumberColumnFilter', sortable: true, resizable: true},
       ],
       DetailArticle: null,
 
@@ -182,13 +182,6 @@ export class TematicReview extends Component {
       infoCountryData: null,
       infoAffiliationsData: null
     }
-  }
-
-
-  componentDidMount() {
-    this.getArticles();
-    this.getGraphInfo();
-    console.log('start');
   }
 
   // Search
@@ -298,16 +291,17 @@ export class TematicReview extends Component {
         } else if (ErrorMessage === 403) {
             this.setState({ task: null, loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 400 });
         } else {
-            this.setState({ task: null, loading: false, message: 'Что=то пошло не так', messageStatus: 400 });
+            this.setState({ task: null, loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
         }
       })
   }
 
   componentDidMount() {
+    this.setState({ message: 'Запрашиваем данные с сервера', messageStatus: 202, loading: true, messageAnalise: 'Запрашиваем данные с сервера', messageStatusAnalise: 202 });
     this.getArticles();
     this.getAnalise();
     this.getGraphInfo();
-    console.log('start search');
+    console.log('start');
   }
 
   onSelectionAnalise = () => {
