@@ -70,10 +70,10 @@ export class DDIReview extends Component {
       messageStatus: 200,
       articles: [],
       articlesInfo: [
-        { field: 'text', filter: 'agTextColumnFilter', editable: true, minWidth: 300, width: 450, resizable: true},
-        { field: 'score', filter: 'agNumberColumnFilter', sortable: true, editable: true, resizable: true},
-        { field: 'query_number', editable: true, resizable: true},
-        { field: 'section', filter: 'agTextColumnFilter', editable: true, resizable: true},
+        { field: 'text', filter: 'agTextColumnFilter', editable: true, enableRowGroup: true, minWidth: 300, width: 450, resizable: true},
+        { field: 'score', filter: 'agNumberColumnFilter', sortable: true, enableRowGroup: true, editable: true, resizable: true},
+        { field: 'query_number', editable: true, resizable: true, enableRowGroup: true,},
+        { field: 'section', filter: 'agTextColumnFilter', editable: true, resizable: true, enableRowGroup: true,},
       ],
       summarise: null,
       task_id: null,
@@ -257,7 +257,7 @@ export class DDIReview extends Component {
 
   createSummariseQuery() {
     let summarise_data = [];
-    this.gridRef.current.api.forEachNodeAfterFilter((rowNode) => summarise_data.push(rowNode.data.text));
+    this.gridRef.current.api.forEachNodeAfterFilter((rowNode) => summarise_data.push(rowNode.data.textы));
     fetch(variables.API_URL + '/api/summarise_emb', {
       method: 'POST',
       headers: {
