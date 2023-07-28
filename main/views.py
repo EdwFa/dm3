@@ -281,7 +281,7 @@ class EmbeddingTaskView(BaseTaskView):
 
 
 class GetGraphData(BaseTaskView):
-    files = ['info_graph', 'info_graph_journals', 'info_graph_countries', 'info_graph_affiliations']
+    files = ['info_graph', 'info_graph_countries', 'info_graph_affiliations']
     taskModel = TaskAnalise  # Начальная модель для поиска задачи
     worker_func = plot_graph_associations
     label = 'data'

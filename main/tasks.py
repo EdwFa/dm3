@@ -265,11 +265,8 @@ def plot_graph_associations(self, IdList, pk, max_size=200):
     json.dump(data, f)
     f.close()
     data = get_uniq_info_for_other(articles)
-    f = open(get_path_to_file(pk, 'info_graph_journals.json'), 'w')
-    json.dump(data[0], f)
-    f.close()
     f = open(get_path_to_file(pk, 'info_graph_countries.json'), 'w')
-    json.dump(data[1], f)
+    json.dump(data, f)
     f.close()
     return
 
