@@ -175,10 +175,9 @@ export class TematicReview extends Component {
       messageStatusGraph: 200,
 
       current_graph: {label: 'authors'},
-      list_of_graphs: [{label: 'authors'}, {label: 'affiliations'}, {label: 'journals'}, {label: 'countries'}],
+      list_of_graphs: [{label: 'authors'}, {label: 'affiliations'}, {label: 'countries'}],
 
       infoAuthorsData: null,
-      infoJournalsData: null,
       infoCountryData: null,
       infoAffiliationsData: null
     }
@@ -714,7 +713,7 @@ export class TematicReview extends Component {
           }, interval);
         } else {
             console.log('This graph work')
-            this.setState({ infoAuthorsData: data.data.info_graph, infoAffiliationsData: data.data.info_graph_affiliations,  infoJournalsData: data.data.info_graph_journals, infoCountryData: data.data.info_graph_countries, messageAnalise: 'Граф успешно отрисован, перейдите во вкладку графы для просмотра', messageStatusAnalise: 200})
+            this.setState({ infoAuthorsData: data.data.info_graph, infoAffiliationsData: data.data.info_graph_affiliations, infoCountryData: data.data.info_graph_countries, messageAnalise: 'Граф успешно отрисован, перейдите во вкладку графы для просмотра', messageStatusAnalise: 200})
         }
       })
       .catch(error => {
@@ -946,7 +945,6 @@ export class TematicReview extends Component {
       list_of_graphs,
       infoAuthorsData,
       infoCountryData,
-      infoJournalsData,
       infoAffiliationsData,
 
       messageGraph,
@@ -1808,13 +1806,6 @@ export class TematicReview extends Component {
                             current_graph.label === 'affiliations'?
                                 infoAffiliationsData ?
                                     <VOSviewerOnline data={infoAffiliationsData} />
-                                : null
-                            :null
-                            }
-                            {
-                            current_graph.label === 'journals'?
-                                infoJournalsData ?
-                                    <VOSviewerOnline data={infoJournalsData} />
                                 : null
                             :null
                             }

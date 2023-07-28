@@ -257,7 +257,7 @@ export class DDIReview extends Component {
 
   createSummariseQuery() {
     let summarise_data = [];
-    this.gridRef.current.api.forEachNodeAfterFilter((rowNode) => summarise_data.push(rowNode.data.textы));
+    this.gridRef.current.api.forEachNodeAfterFilter((rowNode) => summarise_data.push(rowNode.data.text));
     fetch(variables.API_URL + '/api/summarise_emb', {
       method: 'POST',
       headers: {
