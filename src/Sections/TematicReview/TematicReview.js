@@ -431,7 +431,7 @@ export class TematicReview extends Component {
         }
       })
       .then((data) => {
-        this.setState({ messageAnalise: "Ваш запрос в очереди. Пожайлуста дождитесь результата", messageStatusAnalise: 201 })
+        this.setState({ messageAnalise: "Ваш запрос в очереди. Пожайлуста дождитесь результата", messageStatusAnalise: 201, loading: true })
         this.getAnalise();
       })
       .catch((error) => {
@@ -638,7 +638,7 @@ export class TematicReview extends Component {
         if (ErrorMessage === 202) {
             this.setState({ loading: true, messageStatusAnalise: 202, messageAnalise: "Отправлено на суммаризацию..." })
         } else {
-            this.setState({ summarise: null, messageAnalise: 'Произошла ошибка при суммаризации', messageStatusAnalise: 500 });
+            this.setState({ loading: false, summarise: null, messageAnalise: 'Произошла ошибка при суммаризации', messageStatusAnalise: 500 });
         }
       });
   }
@@ -676,11 +676,11 @@ export class TematicReview extends Component {
       })
       .then((result) => {
         var task_id = result.data;
-        this.setState({ messageAnalise: 'Отправлено на суммаризацию пожайлуста дождитесь ответа', messageStatusAnalise: 201 })
+        this.setState({ messageAnalise: 'Отправлено на суммаризацию пожайлуста дождитесь ответа', messageStatusAnalise: 201, loading: true })
         this.getSummarise(task_id);
       })
       .catch((error) => {
-        this.setState({ messageAnalise: 'Ошибка при суммаризации', messageStatusAnalise: 500 })
+        this.setState({ messageAnalise: 'Ошибка при суммаризации', messageStatusAnalise: 500, loading: false })
       })
   }
 
@@ -713,7 +713,7 @@ export class TematicReview extends Component {
           }, interval);
         } else {
             console.log('This graph work')
-            this.setState({ infoAuthorsData: data.data.info_graph, infoAffiliationsData: data.data.info_graph_affiliations, infoCountryData: data.data.info_graph_countries, messageAnalise: 'Граф успешно отрисован, перейдите во вкладку графы для просмотра', messageStatusAnalise: 200})
+            this.setState({ loading: false, infoAuthorsData: data.data.info_graph, infoAffiliationsData: data.data.info_graph_affiliations, infoCountryData: data.data.info_graph_countries, messageAnalise: 'Граф успешно отрисован, перейдите во вкладку графы для просмотра', messageStatusAnalise: 200})
         }
       })
       .catch(error => {
@@ -749,7 +749,7 @@ export class TematicReview extends Component {
         }
       })
       .then((data) => {
-        this.setState({ messageAnalise: "Ваш запрос в очереди. Пожайлуста дождитесь результата", messageStatusAnalise: 201 })
+        this.setState({ messageAnalise: "Ваш запрос в очереди. Пожайлуста дождитесь результата", messageStatusAnalise: 201, loading: true})
         this.getGraphInfo();
       })
       .catch((error) => {
@@ -776,6 +776,7 @@ export class TematicReview extends Component {
     )
       .then((res) => {
         if (res.status == 202) {
+          this.setState({ loading: true });
           setTimeout(() => {
             return this.getMarkUp(task_id, interval)
           }, interval);
@@ -826,7 +827,7 @@ export class TematicReview extends Component {
       })
       .then((result) => {
         var task_id = result.data;
-        this.setState({ message: 'Отправлено на суммаризацию пожайлуста дождитесь ответа', messageStatus: 201 })
+        this.setState({ message: 'Отправлено на суммаризацию пожайлуста дождитесь ответа', messageStatus: 201, loading: true })
         this.getMarkUp(task_id);
       })
       .catch((err) => {

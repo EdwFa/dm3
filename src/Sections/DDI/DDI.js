@@ -170,7 +170,8 @@ export class DDIReview extends Component {
         this.setState({
           task_id: data.data,
           message: "Ваш запрос в очереди. Пожайлуста дождитесь результата",
-          messageStatus: 201
+          messageStatus: 201,
+          loading: true
         });
         this.getArticles(data.data, query_number)
       })
@@ -246,12 +247,13 @@ export class DDIReview extends Component {
         this.setState({
           summarise: data.data,
           message: 'Суммаризация прошла успешно',
-          messageStatus: 200
+          messageStatus: 200,
+          loading: false
         });
       })
       .catch((err) => {
         console.log(err);
-        this.setState({ message: 'Ошибка при суммаризации', messageStatus: 500, summarise: null })
+        this.setState({ message: 'Ошибка при суммаризации', messageStatus: 500, summarise: null, loading: false })
       });
   }
 
@@ -275,11 +277,11 @@ export class DDIReview extends Component {
       })
       .then((result) => {
         var task_id = result.data;
-        this.setState({ message: 'Отправлено на суммаризацию пожайлуста дождитесь ответа', messageStatus: 201 })
+        this.setState({ message: 'Отправлено на суммаризацию пожайлуста дождитесь ответа', messageStatus: 201, loading: true })
         this.getSummarise(task_id);
       })
       .catch((error) => {
-        this.setState({ message: 'Ошибка при суммаризации', messageStatus: 500, summarise: null })
+        this.setState({ message: 'Ошибка при суммаризации', messageStatus: 500, summarise: null, loading: false })
       })
   }
 
@@ -346,7 +348,7 @@ export class DDIReview extends Component {
       })
       .then((result) => {
         var task_id = result.data;
-        this.setState({ message: 'Отправлено на суммаризацию пожайлуста дождитесь ответа', messageStatus: 201 })
+        this.setState({ message: 'Отправлено на суммаризацию пожайлуста дождитесь ответа', messageStatus: 201, loading: true })
         this.getMarkUp(task_id);
       })
       .catch((err) => {
