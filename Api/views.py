@@ -43,7 +43,7 @@ def summarise_records():
     embeddings = model.encode(sentences, convert_to_tensor=True)
 
     current_app.logger.info(f'Считаем косинусную близость для пар предложений...')
-    cos_scores = util.cos_sim(embeddings, embeddings).numpy()
+    cos_scores = util.cos_sim(embeddings, embeddings).cpu().numpy()
 
     current_app.logger.info(f'Центральные метрики предложений...')
     centrality_scores = degree_centrality_scores(cos_scores, threshold=None)
