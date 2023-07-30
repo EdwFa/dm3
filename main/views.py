@@ -187,7 +187,7 @@ class TematicAnaliseView(BaseTaskView):
 
         if current_worker is None:  # Пользователь отправил запрос но обработчик не принял его
             current_task.delete()
-            return self.response_data(500, message='Запрос завершен с ошибкой!', data={'tematic_review': None})  # Выводим ошибку об отсутвии обработки запросов
+            return self.response_data(400, message='Запрос завершен с ошибкой!', data={'tematic_review': None})  # Выводим ошибку об отсутвии обработки запросов
 
         if current_worker.status == 'PROGRESS' or current_worker.status == 'STARTED':
              return self.response_data(202, message=current_task.message, data={'tematic_analise': None})
