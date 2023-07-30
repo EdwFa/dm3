@@ -440,7 +440,7 @@ export class TematicReview extends Component {
         } else if (ErrorMessage === 403) {
             this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, messageAnalise: 'Дождитесь окончания предыдушего запроса', messageStatusAnalise: 403 });
         } else {
-            this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, messageAnalise: 'Что=то пошло не так', messageStatusAnalise: 400 });
+            this.setState({ data: [], dataInfo: [], DetailArticle: null, loading: false, messageAnalise: 'Вы пока не можете отправить запрос', messageStatusAnalise: 400 });
         }
       })
   }
