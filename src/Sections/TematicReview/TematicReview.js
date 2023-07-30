@@ -417,7 +417,7 @@ export class TematicReview extends Component {
             n_neighbors: this.state.n_neighbors,
             n_components: this.state.n_components,
             min_dist: this.state.min_dist,
-            metric: this.state.metric,
+            metric: this.state.metric.label,
         }
       })
     })
