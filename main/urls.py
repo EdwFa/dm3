@@ -15,4 +15,7 @@ urlpatterns = [
 
     path('download_vectors', DownloadVectors.as_view(), name='download_vectors'),
     path('download_metadata', DownloadMetaData.as_view(), name='download_metadata'),
+
+    path('permissions', GetPermissions.as_view(), name='permissions'),
+    path('translate', TranslateQuery.as_view(), name='translate'),
 ]

@@ -168,11 +168,14 @@ def get_uniq_info_for_institutes(articles, author_on_article=10, count_of_rel=0)
         authors = article.affl.split(';;; ')
         if len(authors) > author_on_article:
             authors = authors[:author_on_article]
+        used_affls = set()
 
         for author in authors:
             current_node = nodes[author]
-            current_node.cluster_group = article.pl
-            edges[current_node._id][current_node._id] += 1
+            if not (author in used_affls):
+                used_affls.add(author)
+                current_node.cluster_group = article.pl
+                edges[current_node._id][current_node._id] += 1
             for a in authors:
                 current_node2 = nodes[a]
                 if current_node2._id == current_node._id:
@@ -216,7 +219,7 @@ def get_uniq_info_for_institutes(articles, author_on_article=10, count_of_rel=0)
     }
     return data
 
-def get_uniq_info_for_other(articles, author_on_article=10, count_of_rel=0):
+def get_uniq_info_for_countries(articles, author_on_article=10, count_of_rel=0):
     """
     return json file formated
     data = {
@@ -275,11 +278,14 @@ def get_uniq_info_for_other(articles, author_on_article=10, count_of_rel=0):
         authors = article.affl.split(';;; ')
         if len(authors) > author_on_article:
             authors = authors[:author_on_article]
+        used_countries = set()
 
         for author in authors:
             author = parse_affil(author)['country']
             current_node = nodes[author]
-            edges[current_node._id][current_node._id] += 1
+            if not (author in used_countries):
+                used_countries.add(author)
+                edges[current_node._id][current_node._id] += 1
             for a in authors:
                 a = parse_affil(a)['country']
                 current_node2 = nodes[a]
@@ -318,4 +324,100 @@ def get_uniq_info_for_other(articles, author_on_article=10, count_of_rel=0):
             'links': new_edges,
         }
     }
+    return data
+
+
+def get_uniq_info_for_other(articles, count_of_rel=0):
+    """
+    return json file formated for journals
+    data = {
+        'networks': {
+            "items": [
+                {
+                    "id": pk :int,
+                    "label": journal name :str,
+                    "x": x coord :float,
+                    "y": y coord :float,
+                    "weights": {
+                        "Documents": count of apperance: int,
+                    },
+                },
+                ...
+            ]
+            "links": [
+                {
+                    "source_id": id item first: pk int,
+                    "target_id": id item second: pk int,
+                    "strength": count of pub together there same author: int > 0,
+                },
+                ...
+            ]
+        }
+    }
+    """
+    authors = []
+    journals = []
+    print('Get authors...')
+    for article in articles:
+        article_authors = article.auth.split('; ')
+        for aa in article_authors:
+            authors.append(aa)
+        journals.append(article.jour)
+
+    authors = set(authors)
+    journals = set(journals)
+    size = len(journals)
+    print('Count of journals = ', size)
+    print('Create nodes...')
+    nodes = dict()
+    for i, jorn in enumerate(journals):
+        new_node = Node()
+        new_node._id = i
+        nodes[jorn] = new_node
+
+    print('Getting info of journal`s edges...')
+    edges = numpy.zeros((size, size), dtype='uint8')
+    for author in authors:
+        list_of_journals = []
+        for article in articles:
+            authors = article.auth.split('; ')
+            if author in authors:
+                list_of_journals.append(article.jour)
+        list_of_journals = set(list_of_journals)
+        for journal in list_of_journals:
+            for j in list_of_journals:
+                edges[nodes[journal]._id][nodes[j]._id] += 1
+
+    print(edges[:20, :20])
+    print('Convert numpy massive to list of dicts...')
+
+    new_edges_1 = []
+    random.seed(20)
+
+    print('Convert journals...')
+    nodes_1 = [{'id': node._id, 'label': k, 'x': random.uniform(-10., 10.), 'y': random.uniform(-10., 10.), 'weights': {'Documents': 1}} for k, node in nodes.items()]
+    nodes_1.sort(key=sort_key)
+    start_time = time.time()
+    for i in range(size):
+        j = i
+        while (j < size):
+            if i == j:
+                nodes_1[i]['weights']['Documents'] = int(edges[i][i])
+            else:
+                if edges[i][j] > count_of_rel:
+                    new_edges_1.append({'source_id': i, 'target_id': j, 'strength': int(edges[i][j])})
+
+            j += 1
+        if (i % 1000) == 0:
+            print(f'Pass {i} row after {time.time() - start_time }')
+
+
+    print('Done!')
+    data = {
+            'network': {
+                'items': nodes_1,
+                'links': new_edges_1,
+            }
+        }
+
     return data

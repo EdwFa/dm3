@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from Bio import Entrez
 from Bio import Medline
 from celery import shared_task
@@ -25,17 +25,32 @@ def get_path_to_file(pk, file_name):
 
     return path_to_file
 
+def check_permission(user_permission, IdList):
+    allow_records = user_permission.all_records - user_permission.used_records
+    print(f'Allow analise records = {allow_records}, Len recieved data = {len(IdList)}')
+    if user_permission.used_records is not None:
+        if not (len(IdList) > allow_records):
+            user_permission.used_records += len(IdList)
+        else:
+            IdList = IdList[:allow_records]
+            user_permission.used_records = user_permission.all_records
+        user_permission.save()
+    return IdList
+
 
 @shared_task(bind=True)
-def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 10000):
+def parse_records(self, query: str, count: int, new_task_id: int, permission_id: int, retmax: int = 10000):
     # Парсим полученные записи
     print("Start parsing...")
     print(f"Count={count}, Task id={new_task_id}")
     new_task = TaskSearch.objects.get(id=new_task_id)
+    user_permission = UserPermissions.objects.get(id=permission_id)
 
     handle = Entrez.esearch(db="pubmed", sort='relevance', term=query, retmax=retmax)
     f = Entrez.read(handle)
     IdList = f['IdList']
+    IdList = check_permission(user_permission, IdList)
+
     handle.close()
 
     handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
@@ -80,7 +95,7 @@ def move_space(inp_str):
 
 
 @shared_task(bind=True)
-def analise_records(self, pk, params, new_task_id):
+def analise_records(self, pk, params, new_task_id, user_permission_id):
     new_task = TaskAnalise.objects.get(id=new_task_id)
     new_task.message = 'Запущен процесс анализа, пожайлуста подождите...'
     new_task.save()
@@ -94,6 +109,8 @@ def analise_records(self, pk, params, new_task_id):
     with open(get_path_to_file(pk, 'heapmap.json'), 'w') as f:
         json.dump(data['heapmap'], f)
     with open(get_path_to_file(pk, 'tematic_analise.json'), 'w') as f:
+        user_permission = UserPermissions.objects.get(id=user_permission_id)
+        check_permission(user_permission, data['tematic_analise'])
         json.dump(data['tematic_analise'], f)
     with open(get_path_to_file(pk, 'clust_graph.json'), 'w') as f:
         json.dump(data['clust_graph'], f)
@@ -101,6 +118,8 @@ def analise_records(self, pk, params, new_task_id):
         json.dump(data['heirarchy'], f)
     with open(get_path_to_file(pk, 'DTM.json'), 'w') as f:
         json.dump(data['DTM'], f)
+    with open(get_path_to_file(pk, 'topics.json'), 'w') as f:
+        json.dump(data['topics'], f)
 
     out_v = io.open(get_path_to_file(pk, 'vectors_OR.tsv'), 'w', encoding='utf-8')
     out_m = io.open(get_path_to_file(pk, 'metadata_OR.tsv'), 'w', encoding='utf-8')
@@ -183,14 +202,17 @@ def filter_record(record, **filters):
 
 
 @shared_task(bind=True)
-def get_ddi_articles(self, query, new_task_id, **kwargs):
+def get_ddi_articles(self, query, new_task_id, user_permission_id, **kwargs):
 
     url = f'https://www.ncbi.nlm.nih.gov/research/litsense-api/api/?query={query}&rerank=true'
     r = requests.get(url)
     print(r.status_code)
     if (r.status_code > 299 or r.status_code < 200):
         raise ConnectionError(f'Подключение к эмбедингам ncbi прошло неудачно с {r.status_code} ошибкой')
-    records_id = {record['pmid']: [round(record['score'], 2), record['section'], record['text']] for record in json.loads(r.text) if current_record(record, **kwargs)}
+
+    user_permission = UserPermissions.objects.get(id=user_permission_id)
+    records = check_permission(user_permission, json.loads(r.text))
+    records_id = {record['pmid']: [round(record['score'], 2), record['section'], record['text']] for record in records if current_record(record, **kwargs)}
 
     handle = Entrez.efetch(db="pubmed", id=[k for k in records_id], rettype="medline", retmode="text")
 
@@ -264,8 +286,12 @@ def plot_graph_associations(self, IdList, pk, max_size=200):
     f = open(get_path_to_file(pk, 'info_graph_affiliations.json'), 'w')
     json.dump(data, f)
     f.close()
-    data = get_uniq_info_for_other(articles)
+    data = get_uniq_info_for_countries(articles)
     f = open(get_path_to_file(pk, 'info_graph_countries.json'), 'w')
+    json.dump(data, f)
+    f.close()
+    data = get_uniq_info_for_other(articles)
+    f = open(get_path_to_file(pk, 'info_graph_journals.json'), 'w')
     json.dump(data, f)
     f.close()
     return

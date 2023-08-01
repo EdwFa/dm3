@@ -15,7 +15,9 @@ from .serializers import *
 needed_files = ['search_ncbi.json', 'tematic_analise.json', 'clust_graph.json',
                 'heapmap.json', 'heirarchy.json', 'embeddings.json', 'info_graph.json',
                 'info_graph_journals.json', 'info_graph_countries.json', 'DTM.json',
-                'info_graph_affiliations.json', 'vectors_OR.tsv', 'metadata_OR.tsv']
+                'info_graph_affiliations.json', 'vectors_OR.tsv', 'metadata_OR.tsv',
+                'topics.json'
+                ]
 
 
 def get_path_to_file(pk, file_name):
@@ -54,7 +56,8 @@ class LoginApi(APIView):
                 print(token)
                 return Response(data={'token': TokenSeriazliser(token).data,
                                       'email': authenticated_user.email,
-                                      'allow': authenticated_user.allow_status}, status=200)
+                                      'allow': authenticated_user.allow_status,
+                                      'is_admin': authenticated_user.is_admin}, status=200)
             return Response(data={'error': 'User is not current!'}, status=403)
         else:
             return Response(serializer.errors, status=400)

@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from datetime import datetime
 
 
 allow_statuses = (
@@ -8,8 +9,14 @@ allow_statuses = (
     (2, 'all'),
 )
 
+topic_number = (
+    (0, 'search_tematic'),
+    (1, 'analise_tematic'),
+    (2, 'search_ddi'),
+)
 
 class UserManager(BaseUserManager):
+
     def create_user(self, email, password=None):
         """
         Creates and saves a User with the given email and password.
@@ -98,3 +105,19 @@ class User(AbstractBaseUser):
     def is_admin(self):
         "Is the user a admin member?"
         return self.admin
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        for topic in [0, 1, 2]:
+            UserPermissions.objects.create(topic=topic, user=self)
+
+class UserPermissions(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='permissions')
+    all_records = models.IntegerField(null=True, default=9999)
+    used_records = models.IntegerField(null=True, default=0)
+    topic = models.IntegerField(choices=topic_number, default=0)
+    start_time = models.DateTimeField(default=datetime.now())
+
+    def __str__(self):
+        return f'{self.user.email}: {topic_number[self.topic][1]} -- {self.used_records}/{self.all_records} [{self.start_time}]'
+

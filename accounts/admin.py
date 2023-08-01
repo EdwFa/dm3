@@ -7,6 +7,8 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
+from .models import UserPermissions
+
 
 class UserCreationForm(UserChangeForm):
     """A form for creating new users. Includes all the required
@@ -82,3 +84,4 @@ class CustomUserAdmin(UserAdmin):
 
 
 admin.site.register(User, CustomUserAdmin)
+admin.site.register(UserPermissions)

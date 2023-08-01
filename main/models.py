@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth import get_user_model
+
+from datetime import datetime
+
 User = get_user_model()
 
 
@@ -14,6 +17,7 @@ task_analise = (
     (1, 'markup'),
     (2, 'graph'),
 )
+
 
 # Create your models here.
 class Article(models.Model):
@@ -105,6 +109,9 @@ class TaskSearch(models.Model):
     count = models.IntegerField()
     message = models.TextField(default='')
 
+    def __str__(self):
+        return f'{self.user.email}: {self.query} ---> ({task_statuses[self.status][1]})'
+
 
 class TaskAnalise(models.Model):
     task_id = models.CharField(max_length=150, null=True)
@@ -114,3 +121,6 @@ class TaskAnalise(models.Model):
     status = models.IntegerField(choices=task_statuses, default=0)
     type_analise = models.IntegerField(choices=task_analise, default=0)
     message = models.TextField(default='')
+
+    def __str__(self):
+        return f'{self.user.email}: {task_analise[self.type_analise][1]} ---> ({task_statuses[self.status][1]})'

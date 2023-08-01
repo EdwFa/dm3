@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Article, TaskSearch, TaskAnalise
+from accounts.models import UserPermissions
 
 
 class ArticleSerializer(serializers.ModelSerializer):
@@ -17,4 +18,10 @@ class TaskSearchSerializer(serializers.ModelSerializer):
 class TaskAnaliseSerializer(serializers.ModelSerializer):
     class Meta:
         model = TaskAnalise
+        fields = '__all__'
+
+
+class UserPermissionsSerialiser(serializers.ModelSerializer):
+    class Meta:
+        model = UserPermissions
         fields = '__all__'

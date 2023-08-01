@@ -18,6 +18,18 @@ class BaseTaskView(APIView):
     worker_func = parse_records
     label = 'data'
     retmax = RETMAX # RETMAX
+    topic_number = 0
+
+    def check_allow(self, request):
+        permissions = request.user.permissions.get(topic=self.topic_number)
+        print(permissions)
+        today = datetime.now(timezone.utc)
+        print(f'Days after create permission = {(today - permissions.start_time).days}')
+        if (today - permissions.start_time).days > 0:
+            permissions.start_time = today
+            permissions.used_records = 0
+            permissions.save()
+        return permissions
 
     def check_working_task(self, request, **kwargs):
         # Модуль проверки наличии уже запущенных запросов в поиске данному пользователю
@@ -110,6 +122,7 @@ class SearchTaskView(BaseTaskView):
     files = ['search_ncbi']  #
     worker_func = parse_records
     label = 'search_ncbi'
+    topic_number = 0
 
     def get(self, request):
         current_task, current_worker = self.check_working_task(request)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
@@ -154,12 +167,16 @@ class SearchTaskView(BaseTaskView):
         current_task, current_worker = self.check_working_task(request)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
         if (current_task is not None) and (current_worker is not None) and (current_worker.status == 'PROGRESS' or current_worker.status == 'STARTED'):
             return self.response_data(403, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
-
+        permissions = self.check_allow(request)
+        allow_search_records = permissions.all_records - permissions.used_records
+        print(f'Осталось {allow_search_records} до ограничения пользования...')
+        if allow_search_records == 0:
+            return self.response_data(403, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
         query = create_query(**request.data)
         full_query, translation_stack, count = get_records(query)
         new_task = self.create_task(query=query, count=count, full_query=full_query, user=request.user,
                                translation_stack=translation_stack)
-        task = parse_records.delay(query=query, count=count, new_task_id=new_task.id, retmax=self.retmax)
+        task = parse_records.delay(query=query, count=count, new_task_id=new_task.id, retmax=self.retmax, permission_id=permissions.id)
         new_task.message = 'Запрос получен'
         new_task.task_id = task.id
         new_task.save()
@@ -171,9 +188,10 @@ class SearchTaskView(BaseTaskView):
 
 class TematicAnaliseView(BaseTaskView):
     taskModel = TaskAnalise  # Начальная модель для поиска задачи
-    files = ['tematic_analise', 'clust_graph', 'heapmap', 'heirarchy', 'DTM']
+    files = ['tematic_analise', 'clust_graph', 'heapmap', 'heirarchy', 'DTM', 'topics']
     worker_func = analise_records
     label = 'tematic_analise'
+    topic_number = 1
 
     def save_data(self, current_worker, id):
         return None
@@ -211,8 +229,15 @@ class TematicAnaliseView(BaseTaskView):
         if len(request.data['articles']) < 2:
             return self.response_data(400, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
 
+        permissions = self.check_allow(request)
+        allow_search_records = permissions.all_records - permissions.used_records
+        print(f'Осталось {allow_search_records} до ограничения пользования...')
+        if allow_search_records == 0:
+            return self.response_data(403, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
+
+        request.data['allow_records'] = allow_search_records
         new_task = self.create_task(user=request.user, type_analise=0)
-        task = analise_records.delay(pk=request.user.id, params=request.data, new_task_id=new_task.id)
+        task = analise_records.delay(pk=request.user.id, params=request.data, new_task_id=new_task.id, user_permission_id=permissions.id)
 
         new_task.task_id = task.id
         new_task.message = 'Начинаем обработку...'
@@ -228,6 +253,7 @@ class EmbeddingTaskView(BaseTaskView):
     files = ['embeddings']
     worker_func = get_ddi_articles
     label = 'data'
+    topic_number = 2
 
     def get(self, request):
         current_task, current_worker = self.check_working_task(request, type_analise=1)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
@@ -256,8 +282,15 @@ class EmbeddingTaskView(BaseTaskView):
         if (current_task is not None) and (current_worker is not None) and (current_worker.status == 'PROGRESS' or current_worker.status == 'STARTED'):
             return self.response_data(403, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
 
+        permissions = self.check_allow(request)
+        allow_search_records = permissions.all_records - permissions.used_records
+        print(f'Осталось {allow_search_records} до ограничения пользования...')
+        if allow_search_records == 0:
+            return self.response_data(403, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
+
+        request.data['allow_records'] = allow_search_records
         new_task = self.create_task(user=request.user, type_analise=1)
-        task = get_ddi_articles.delay(new_task_id=new_task.id, **request.data)
+        task = get_ddi_articles.delay(new_task_id=new_task.id, user_permission_id=permissions.id, **request.data)
 
         new_task.task_id = task.id
         new_task.message = 'Начало обработки...'
@@ -281,7 +314,7 @@ class EmbeddingTaskView(BaseTaskView):
 
 
 class GetGraphData(BaseTaskView):
-    files = ['info_graph', 'info_graph_countries', 'info_graph_affiliations']
+    files = ['info_graph', 'info_graph_countries', 'info_graph_affiliations', 'info_graph_journals']
     taskModel = TaskAnalise  # Начальная модель для поиска задачи
     worker_func = plot_graph_associations
     label = 'data'
@@ -438,4 +471,41 @@ class DownloadMetaData(APIView):
             response = HttpResponse(file, content_type='text/tsv')
             response['Content-Disposition'] = 'attachment; filename=metadata_OR.tsv'
             return response
+
+
+class GetPermissions(APIView):
+    def get(self, request):
+        permissions = request.user.permissions
+        today = datetime.now(timezone.utc)
+        for permission in permissions.all():
+            print(f'Days after create permission = {(today - permission.start_time).days}')
+            if (today - permission.start_time).days > 0:
+                permission.start_time = today
+                permission.used_records = 0
+                permission.save()
+        permissions = UserPermissionsSerialiser(permissions, many=True).data
+        data = {
+            'permissions': permissions
+        }
+        return Response(data=data, status=status.HTTP_200_OK)
+
+class TranslateQuery(APIView):
+    def post(self, request):
+        headers = {
+            'Authorization': 'Api-Key aje7v4car2n76avd6kuh',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json;charset=utf-8',
+        }
+        body = {
+            'targetLanguageCode': 'en',
+            'format': "PLAIN_TEXT",
+            'texts': [
+                request.data['query']
+            ],
+            'speller': True
+        }
+        response = requests.post('https://translate.api.cloud.yandex.net/translate/v2/translate', headers=headers, json=body)
+        print(response.json())
+        return Response(data=response.json(), status=status.HTTP_200_OK)
+
 
