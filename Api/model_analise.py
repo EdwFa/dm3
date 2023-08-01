@@ -52,8 +52,6 @@ def clear_text(text):
 def create_clear_articles(records):
     clear_articles = numpy.array(['no one' for i in records], dtype=object)
     for i, record in enumerate(records):
-        print("RECORD ===>")
-        print(record)
         clear_articles[i] = clear_text(record['titl'] + " " + record['tiab'])
     return clear_articles
 
@@ -76,7 +74,7 @@ def return_clust_graph(topic_model, docs_title, embeddings, **params):
     min_dist = float(params.get('min_dist', 0.0))
     metric = params.get('metric', 'cosine')
     reduced_embeddings = UMAP(n_neighbors=n_neighbors, n_components=n_components, min_dist=min_dist, metric=metric).fit_transform(embeddings)
-    fig = topic_model.visualize_documents(docs_title, embeddings=reduced_embeddings, width=1000, height=1000)
+    fig = topic_model.visualize_documents(docs_title, reduced_embeddings=reduced_embeddings, width=1000, height=1000)
     graphJSON = plotly.io.to_json(fig, pretty=True)
     return graphJSON
 
@@ -95,3 +93,6 @@ def return_DTM(topic_model, docs_title, dates):
     fig = topic_model.visualize_topics_over_time(topics_over_time)
     graphJSON = plotly.io.to_json(fig, pretty=True)
     return graphJSON
+
+def return_topic_label(topic_model):
+    return topic_model.generate_topic_labels(nr_words=10, topic_prefix=True, word_length=None, separator='_')

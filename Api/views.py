@@ -30,6 +30,11 @@ def analise_records():
     if not ('articles' in data):
         return jsonify({'status': 'Error', 'message': 'No one article id'}), 500
     IdList = data['articles']
+
+    current_app.logger.info(f'Get limit on analise package ({data["allow_records"]})...')
+    if len(IdList) > data['allow_records']:
+        IdList = IdList[:data['allow_records']]
+
     filters = data['filters']
     handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
     records = [parse_record(record) for record in Medline.parse(handle) if not (record is None)]
@@ -79,7 +84,8 @@ def analise_records():
         'clust_graph': json.loads(graph),
         'heirarchy': json.loads(heirarchy),
         'DTM': json.loads(DTM),
-        'embeddings': embeddings.tolist()
+        'embeddings': embeddings.tolist(),
+        'topics': return_topic_label(topic_model)
     }
 
     current_app.logger.info(f'Done analise!')
