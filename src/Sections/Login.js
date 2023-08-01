@@ -57,6 +57,7 @@ export class Login extends Component {
         variables.token = data.token.key
         variables.email = data.email
         variables.allow = data.allow
+        variables.admin = data.is_admin
       })
       .catch((err) => {
         console.log(err);

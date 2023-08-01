@@ -14,11 +14,12 @@ import 'ag-grid-community/styles/ag-theme-alpine.css';
 import '../ag-theme-acmecorp.css';
 
 
-import { variables } from '../Variables.js';
+import { variables, AG_GRID_LOCALE_RU } from '../Variables.js';
 
 import Slider from 'react-input-slider';
 
 var ErrorMessage = 0
+const per_topics = ['Поиск в pubmed', 'Тематический анализ', 'Поиск в векторном представлении']
 
 const obj_color = {
   'disease': "#fdbbbb",
@@ -83,7 +84,37 @@ export class DDIReview extends Component {
       queryDate: null,
       queryScore: 0.8,
       queryTypes: new Set(),
+
+      permissions: [],
     }
+  }
+
+  // Permissions
+  getPermissions() {
+    fetch(variables.API_URL + '/api/permissions',
+      {
+        headers: {
+          'Content-Type': 'application/json;charset=utf-8',
+          'Authorization': `Token ${variables.token}`,
+        },
+      }
+    )
+      .then(response => {
+        console.log(response.status);
+        ErrorMessage = response.status
+        if (response.ok) {
+          return response.json()
+        } else {
+          throw Error(response.status)
+        }
+      })
+      .then(data => {
+        console.log(data)
+        this.setState({permissions: data.permissions})
+      })
+      .catch(error => {
+        console.log(error)
+      })
   }
 
   getArticles = (task_id, query_number = 0, interval = 1000) => {
@@ -123,18 +154,19 @@ export class DDIReview extends Component {
       .catch(error => {
         console.log(error);
         if (ErrorMessage === 500) {
-          this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Ошибка сервера', messageStatus: 500});
+          this.setState({ loading: false, message: 'Ошибка сервера', messageStatus: 500});
         } else if (ErrorMessage === 403) {
-          this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 403 });
+          this.setState({ loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 403 });
         } else if (ErrorMessage === 404) {
-          this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Сделайте запрос', messageStatus: 202 });
+          this.setState({ loading: false, message: 'Сделайте запрос', messageStatus: 202 });
         } else {
-          this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
+          this.setState({ loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
         }
         if (query_number !== 0) {
           this.state.query_list[query_number - 1].status = 2;
         }
       })
+
   }
 
   createTask() {
@@ -178,11 +210,11 @@ export class DDIReview extends Component {
       .catch(error => {
         console.log(error);
         if (ErrorMessage === 500) {
-          this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Ошибка сервера', messageStatus: 500 });
+          this.setState({ loading: false, message: 'Ошибка сервера', messageStatus: 500 });
         } else if (ErrorMessage === 403) {
-          this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 403 });
+          this.setState({ loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 403 });
         } else {
-          this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
+          this.setState({ loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
         }
       }
       )
@@ -195,6 +227,7 @@ export class DDIReview extends Component {
 
   componentDidMount() {
     this.getArticles();
+    this.getPermissions();
     console.log('start');
   }
 
@@ -282,6 +315,30 @@ export class DDIReview extends Component {
       })
       .catch((error) => {
         this.setState({ message: 'Ошибка при суммаризации', messageStatus: 500, summarise: null, loading: false })
+      })
+  }
+
+  translateQuery() {
+    fetch(variables.API_URL + '/api/translate', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json;charset=utf-8',
+        'Authorization': `Token ${variables.token}`,
+      },
+      body: JSON.stringify({
+        query: this.state.queryText,
+      })
+    })
+    .then((res) => {
+        if (res.ok) { return res.json() }
+        else { throw Error(res.statusText) }
+      })
+      .then((result) => {
+        console.log(result.translations)
+      })
+      .catch((error) => {
+        console.log(error)
       })
   }
 
@@ -408,6 +465,8 @@ export class DDIReview extends Component {
       queryScore,
       allow_page,
       messageStatus,
+
+      permissions,
     } = this.state;
 
     if (!token) {
@@ -438,8 +497,27 @@ export class DDIReview extends Component {
                           <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0" aria-current="page">Факты для EBM</a>
                         </li>
                       </Link>
+                      {variables.admin?
+                        <Link to="/admin">
+                          <li>
+                            <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Админ панель</a>
+                          </li>
+                        </Link>
+                      :null}
                     </ul>
                     : null}
+                </div>
+                <div class="flex items-center lg:order-3">
+                  <div class="flex-shrink-0 dropdown">
+                    <a href="#" class="d-block link-body-emphasis text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                      <img src="https://github.com/mdo.png" alt="mdo" width="32" height="32" class="rounded-circle" />
+                    </a>
+                    <ul class="dropdown-menu text-small shadow">
+                      {permissions?.map(per =>
+                        <li><a class="dropdown-item" href="#">{per_topics[per.topic]} {per.used_records}/{per.all_records}</a></li>
+                      )}
+                    </ul>
+                  </div>
                 </div>
                 <div class="flex items-center lg:order-2">
                   <button type="button" class="hidden sm:inline-flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-xs px-3 py-1.5 mr-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"><svg aria-hidden="true" class="mr-1 -ml-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"></path></svg> Действие</button>
@@ -470,7 +548,8 @@ export class DDIReview extends Component {
                         value={queryText}
                         onChange={this.changeQueryText}
                         aria-label="Search" />
-                      <button type="submit" value="Найти" onClick={() => this.createTask()} class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2">Найти</button>
+                      {/*<button type="submit" disabled={loading} value="Перевести" onClick={() => this.translateQuery()} class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-2">Перевести</button>*/}
+                      <button type="submit" disabled={loading} value="Найти" onClick={() => this.createTask()} class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2">Найти</button>
                     </div>
                   </div>
                   <button id="toggleSidebar" aria-expanded="true" aria-controls="sidebar2" class="order-last hidden p-2 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700" data-bs-toggle="collapse" data-bs-target="#sidebar2" aria-label="Toggle navigation">
@@ -699,7 +778,7 @@ export class DDIReview extends Component {
                             <p>Summarise</p>
                             <p>{summarise}</p>
                           </>
-                          : <input className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Суммаризовать" onClick={() => this.createSummariseQuery()} />}
+                          : <input className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Суммаризовать" disabled={loading} onClick={() => this.createSummariseQuery()} />}
                       </div>
                     </div>
                     <div>
@@ -718,7 +797,7 @@ export class DDIReview extends Component {
                                   suppressCutToClipboard={this.suppressCutToClipboard}
                                   onCellValueChanged={this.onCellValueChanged}
                                   onCutStart={this.onCutStart}
-
+                                  localeText={AG_GRID_LOCALE_RU}
                                   onCutEnd={this.onCutEnd}
                                   sideBar={{
                                     toolPanels: [
@@ -781,7 +860,7 @@ export class DDIReview extends Component {
                               </>
                               : loading ?
                                 <p>Loading...</p>
-                                : <input className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Разметить" onClick={() => this.markUpArticle(DetailArticle)} />
+                                : <input className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Разметить" disabled={loading} onClick={() => this.markUpArticle(DetailArticle)} />
                             }
                             <input className="text-white right-2.5 my-4 bottom-2.5 bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Удалить" onClick={() => this.onRemoveSelected()} />
                           </div>

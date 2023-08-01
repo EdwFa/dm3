@@ -23,7 +23,7 @@ import Slider from 'react-input-slider';
 
 import update from 'immutability-helper';
 
-import { variables } from '../Variables.js';
+import { variables, AG_GRID_LOCALE_RU } from '../Variables.js';
 
 
 
@@ -42,7 +42,10 @@ var topicFilterParams = {
   },
 };
 
-var ErrorMessage = 0
+const per_topics = ['Поиск в pubmed', 'Тематический анализ', 'Поиск в векторном представлении']
+
+var ErrorMessage = 200
+var ErrorMessageText = ''
 var Topic = 'Все';
 
 const obj_color = {
@@ -175,12 +178,43 @@ export class TematicReview extends Component {
       messageStatusGraph: 200,
 
       current_graph: {label: 'authors'},
-      list_of_graphs: [{label: 'authors'}, {label: 'affiliations'}, {label: 'countries'}],
+      list_of_graphs: [{label: 'authors'}, {label: 'affiliations'}, {label: 'journals'}, {label: 'countries'}],
 
       infoAuthorsData: null,
       infoCountryData: null,
-      infoAffiliationsData: null
+      infoJournalData: null,
+      infoAffiliationsData: null,
+
+      permissions: [],
     }
+  }
+
+  // Permissions
+  getPermissions() {
+    fetch(variables.API_URL + '/api/permissions',
+      {
+        headers: {
+          'Content-Type': 'application/json;charset=utf-8',
+          'Authorization': `Token ${variables.token}`,
+        },
+      }
+    )
+      .then(response => {
+        console.log(response.status);
+        ErrorMessage = response.status
+        if (response.ok) {
+          return response.json()
+        } else {
+          throw Error(response.status)
+        }
+      })
+      .then(data => {
+        console.log(data)
+        this.setState({permissions: data.permissions})
+      })
+      .catch(error => {
+        console.log(error)
+      })
   }
 
   // Search
@@ -227,13 +261,14 @@ export class TematicReview extends Component {
               queryText: data.task.query.split(' AND')[0]
 
             });
+            this.getPermissions()
         }
       })
       .catch(error => {
         if (ErrorMessage === 500) {
             this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Ошибка сервера', messageStatus: 500 });
-        } else {
-            this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
+        } else if (ErrorMessage > 399) {
+            this.setState({ articles: [], DetailArticle: null, loading: false, message: 'Что-то пошло не так A', messageStatus: 400 });
         }
       })
   }
@@ -493,17 +528,9 @@ export class TematicReview extends Component {
             if (data.data.DTM.length !== 0) {
                 data.data.DTM.layout.width = 800;
             }
-          var topicSet = new Set()
-          if (data.data.tematic_analise.length !== 0) {
-              for (let record of data.data.tematic_analise) {
-                if (!topicSet.has(record.topic)) {
-                  topicSet.add(record.topic)
-                }
-              }
-          }
           let topics = new Array();
           topics.push({label: 'Все'});
-          for (let el of topicSet) {
+          for (let el of data.data.topics) {
             topics.push({label: el})
           }
           console.log(topics)
@@ -519,6 +546,7 @@ export class TematicReview extends Component {
             messageStatusAnalise: 200,
             topics: topics,
           });
+          this.getPermissions()
         }
       })
       .catch((error) => {
@@ -561,8 +589,13 @@ export class TematicReview extends Component {
 
   externalFilterChanged = (newValue) => {
     console.log(newValue)
-    this.setState({ current_topic: newValue.label, summarise: null, topicObject: newValue });
-    Topic = newValue.label;
+    this.setState({ current_topic: newValue.label.split('_')[0], summarise: null, topicObject: newValue });
+    if (newValue.label !== 'Все') {
+        Topic = Number(newValue.label.split('_')[0]);
+    } else {
+        Topic = newValue.label
+    }
+    console.log(Topic);
     this.gridAnaliseRef.current.api.onFilterChanged();
   }
 
@@ -587,7 +620,7 @@ export class TematicReview extends Component {
   }
 
   getGraphData = () => {
-    var current_topic = this.state.current_topic.toString();
+    var current_topic = this.state.current_topic;
     if (current_topic === 'Все') {
       return this.state.clust_graph.data
     }
@@ -713,7 +746,7 @@ export class TematicReview extends Component {
           }, interval);
         } else {
             console.log('This graph work')
-            this.setState({ loading: false, infoAuthorsData: data.data.info_graph, infoAffiliationsData: data.data.info_graph_affiliations, infoCountryData: data.data.info_graph_countries, messageAnalise: 'Граф успешно отрисован, перейдите во вкладку графы для просмотра', messageStatusAnalise: 200})
+            this.setState({ loading: false, infoAuthorsData: data.data.info_graph, infoAffiliationsData: data.data.info_graph_affiliations, infoJournalData: data.data.info_graph_journals, infoCountryData: data.data.info_graph_countries, messageAnalise: 'Граф успешно отрисован, перейдите во вкладку графы для просмотра', messageStatusAnalise: 200})
         }
       })
       .catch(error => {
@@ -946,11 +979,14 @@ export class TematicReview extends Component {
       list_of_graphs,
       infoAuthorsData,
       infoCountryData,
+      infoJournalData,
       infoAffiliationsData,
 
       messageGraph,
       messageStatusGraph,
       plotlyWidth,
+
+      permissions,
     } = this.state;
 
     if (!token) {
@@ -980,6 +1016,13 @@ export class TematicReview extends Component {
                             <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Факты для EBM</a>
                           </li>
                         </Link>
+                        {variables.admin?
+                        <Link to="/admin">
+                          <li>
+                            <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Админ панель</a>
+                          </li>
+                        </Link>
+                        :null}
                       </ul>
                   :null}
 
@@ -990,10 +1033,9 @@ export class TematicReview extends Component {
                       <img src="https://github.com/mdo.png" alt="mdo" width="32" height="32" class="rounded-circle" />
                     </a>
                     <ul class="dropdown-menu text-small shadow">
-                      <li><a class="dropdown-item" href="#">New project...</a></li>
-                      <li><a class="dropdown-item" href="#">Settings</a></li>
-                      <li><a class="dropdown-item" href="#">Profile</a></li>
-                      <li><a class="dropdown-item" href="#">Sign out</a></li>
+                      {permissions?.map(per =>
+                        <li><a class="dropdown-item" href="#">{per_topics[per.topic]} {per.used_records}/{per.all_records}</a></li>
+                      )}
                     </ul>
                   </div>
                 </div>
@@ -1023,7 +1065,7 @@ export class TematicReview extends Component {
                         value={queryText}
                         onChange={this.changeQueryText}
                         aria-label="Search" />
-                      <button type="submit" value="Найти" onClick={() => this.createTask()} class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2">Найти</button>
+                      <button type="submit" value="Найти" disabled={loading} onClick={() => this.createTask()} class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2">Найти</button>
                     </div>
                   </div>
                   <div class="ml-5 grow items-center justify-between hidden w-full md:flex md:w-auto md:order-1" id="navbar-sticky">
@@ -1519,7 +1561,7 @@ export class TematicReview extends Component {
                                 </div>
                               </div>
                             </div>
-                            <input className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Начать обработку" onClick={() => this.startAnalise()} />
+                            <input className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Начать обработку" disabled={loading} onClick={() => this.startAnalise()} />
 
                             <div className="ag-theme-alpine ag-theme-acmecorp" style={{ height: 700 }}>
                               <AgGridReact
@@ -1531,6 +1573,7 @@ export class TematicReview extends Component {
                                 autoGroupColumnDef={this.autoGroupColumnDef}
                                 onChange={this.externalFilterChanged}
                                 rowSelection={'single'}
+                                localeText={AG_GRID_LOCALE_RU}
                                 sideBar={{
                                   toolPanels: [
                                     {
@@ -1574,7 +1617,6 @@ export class TematicReview extends Component {
                                       :null
                                   }
                             </h2>
-                            <p>Выбрана тема: {current_topic}</p>
                             <Select
                                 className="basic-single"
                                 classNamePrefix="select"
@@ -1603,6 +1645,7 @@ export class TematicReview extends Component {
                                       <AgGridReact
                                         ref={this.gridAnaliseRef}
                                         rowData={analise_articles}
+                                        localeText={AG_GRID_LOCALE_RU}
                                         columnDefs={analise_info}
                                         pagination={true}
                                         rowSelection={'single'}
@@ -1749,7 +1792,7 @@ export class TematicReview extends Component {
                                         <p>Summarise</p>
                                         <p>{summarise}</p>
                                       </>
-                                      : <input className="btn btn-primary" type="submit" value="Суммаризовать" onClick={() => this.createSummariseQuery()} />}
+                                      : <input disabled={loading} className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Суммаризовать" onClick={() => this.createSummariseQuery()} />}
                                   </div>
                                 </div>
                               </div>
@@ -1816,6 +1859,11 @@ export class TematicReview extends Component {
                                 : null
                             :null
                             }
+                            {current_graph.label === 'journals'?
+                                infoCountryData ?
+                                    <VOSviewerOnline data={infoJournalData} />
+                                : null
+                            :null}
                             </div>
                           </div>
                         </div>
@@ -1843,7 +1891,7 @@ export class TematicReview extends Component {
                             <p class="card-text"><small class="text-success">{DetailArticle.mesh} </small></p>
                             {loading ?
                                 <p>Loading...</p>
-                            : <input className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Разметить" onClick={() => this.markUpArticle(DetailArticle)} />
+                            : <input className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Разметить" disabled={loading} onClick={() => this.markUpArticle(DetailArticle)} />
                             }
                           </div>
                         </div>
