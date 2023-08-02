@@ -514,7 +514,7 @@ export class DDIReview extends Component {
                     </a>
                     <ul class="dropdown-menu text-small shadow">
                       {permissions?.map(per =>
-                        <li><a class="dropdown-item" href="#">{per.topic} {per.used_records}/{per.all_records}</a></li>
+                        <li><a class="dropdown-item" href="#">{per.topic} {per.all_records? `${per.used_records}/${per.all_records}`: 'безлимитно'}</a></li>
                       )}
                     </ul>
                   </div>
