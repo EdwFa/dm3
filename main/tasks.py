@@ -26,9 +26,11 @@ def get_path_to_file(pk, file_name):
     return path_to_file
 
 def check_permission(user_permission, IdList):
-    allow_records = user_permission.all_records - user_permission.used_records
-    print(f'Allow analise records = {allow_records}, Len recieved data = {len(IdList)}')
-    if user_permission.used_records is not None:
+    if user_permission.all_records is None:
+        print('User has unlimited access!')
+    else:
+        allow_records = user_permission.all_records - user_permission.used_records
+        print(f'Allow analise records = {allow_records}, Len recieved data = {len(IdList)}')
         if not (len(IdList) > allow_records):
             user_permission.used_records += len(IdList)
         else:
@@ -109,8 +111,9 @@ def analise_records(self, pk, params, new_task_id, user_permission_id):
     with open(get_path_to_file(pk, 'heapmap.json'), 'w') as f:
         json.dump(data['heapmap'], f)
     with open(get_path_to_file(pk, 'tematic_analise.json'), 'w') as f:
-        user_permission = UserPermissions.objects.get(id=user_permission_id)
-        check_permission(user_permission, data['tematic_analise'])
+        if params['allow_records'] is not None:
+            user_permission = UserPermissions.objects.get(id=user_permission_id)
+            check_permission(user_permission, data['tematic_analise'])
         json.dump(data['tematic_analise'], f)
     with open(get_path_to_file(pk, 'clust_graph.json'), 'w') as f:
         json.dump(data['clust_graph'], f)
