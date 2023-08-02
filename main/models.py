@@ -112,6 +112,18 @@ class TaskSearch(models.Model):
     def __str__(self):
         return f'{self.user.email}: {self.query} ---> ({task_statuses[self.status][1]})'
 
+    def get_user(self):
+        return self.user.email
+
+    def get_status(self):
+        return task_statuses[self.status][1]
+
+    def time_delta(self):
+        if self.end_date is None:
+            return None
+        delta_time = (self.end_date - self.start_date).seconds
+        return delta_time
+
 
 class TaskAnalise(models.Model):
     task_id = models.CharField(max_length=150, null=True)
@@ -124,3 +136,23 @@ class TaskAnalise(models.Model):
 
     def __str__(self):
         return f'{self.user.email}: {task_analise[self.type_analise][1]} ---> ({task_statuses[self.status][1]})'
+
+    def get_user(self):
+        return self.user.email
+
+    def get_type_analise(self):
+        if self.type_analise == 0:
+            return 'Тематическое моделирование'
+        if self.type_analise == 1:
+            return 'Факты EBM'
+        if self.type_analise == 2:
+            return 'Отрисовка графа'
+
+    def get_status(self):
+        return task_statuses[self.status][1]
+
+    def time_delta(self):
+        if self.end_date is None:
+            return None
+        delta_time = (self.end_date - self.start_date).seconds
+        return delta_time

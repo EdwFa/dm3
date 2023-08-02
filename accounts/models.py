@@ -15,6 +15,12 @@ topic_number = (
     (2, 'search_ddi'),
 )
 
+topic_number_label = (
+    (0, 'Поиск в pubmed'),
+    (1, 'Тематический анализ'),
+    (2, 'Поиск в векторном представлении'),
+)
+
 class UserManager(BaseUserManager):
 
     def create_user(self, email, password=None):
@@ -109,7 +115,16 @@ class User(AbstractBaseUser):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         for topic in [0, 1, 2]:
-            UserPermissions.objects.create(topic=topic, user=self)
+            UserPermissions.objects.get_or_create(topic=topic, user=self)
+
+    def get_allow(self):
+        if self.allow_status == 0:
+            return 'Тематическое моделирование'
+        if self.allow_status == 1:
+            return 'Факты EBM'
+        if self.allow_status == 2:
+            return 'Все'
+
 
 class UserPermissions(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='permissions')
@@ -120,4 +135,7 @@ class UserPermissions(models.Model):
 
     def __str__(self):
         return f'{self.user.email}: {topic_number[self.topic][1]} -- {self.used_records}/{self.all_records} [{self.start_time}]'
+
+    def get_topic(self):
+        return topic_number_label[self.topic][1]
 

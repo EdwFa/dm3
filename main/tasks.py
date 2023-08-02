@@ -63,7 +63,7 @@ def parse_records(self, query: str, count: int, new_task_id: int, permission_id:
         if data:
             records.append(data)
 
-        if i % 100 == 0:
+        if i % 1000 == 0:
             new_task.message = f'On {i}/{count} step...'
             new_task.save()
 

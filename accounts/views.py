@@ -74,5 +74,40 @@ class LogoutApi(APIView):
             return Response({'Status': 'Unknowed user'}, status=403)
 
 
+class CreateUserApi(APIView):
+    def post(self, request):
+        print(request.data)
+        if request.user.is_admin and request.user.is_active:
+            new_user = User.objects.create_user(**request.data)
+            users = User.objects.prefetch_related("permissions")
+            data = {
+                'users': AdminPanelUsersSerialiser(users, many=True).data
+            }
+            return Response(data=data, status=201)
+        return Response(data={'data': 'forbidden'}, status=403)
+
+    def put(self, request):
+        print(request.data)
+        user = User.objects.get(email=request.data['user'])
+        user.allow_status = request.data.get('allow_type', 2)
+        user.save()
+        for topic, value in request.data.items():
+            try:
+                topic = int(topic)
+            except:
+                continue
+            else:
+                print(topic)
+                per = UserPermissions.objects.get(topic=topic, user=user)
+                if value == '':
+                    value = None
+                per.all_records = value
+                per.save()
+        data = {
+            'user': AdminPanelUsersSerialiser(user, many=False).data
+        }
+        return Response(data=data, status=201)
+
+
 
 

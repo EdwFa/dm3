@@ -509,3 +509,19 @@ class TranslateQuery(APIView):
         return Response(data=response.json(), status=status.HTTP_200_OK)
 
 
+class AdminPanelApi(APIView):
+    def get(self, request):
+        if not request.user.is_admin:
+            return Response(data='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.', status=status.HTTP_403_FORBIDDEN)
+
+        users = User.objects.prefetch_related("permissions")
+        search = TaskSearch.objects.all().select_related('user')
+        analise = TaskAnalise.objects.all().select_related('user')
+
+        data = {
+            'users': AdminPanelUsersSerialiser(users, many=True).data,
+            'search': AdminPanelSearchSerialiser(search, many=True).data,
+            'analise': AdminPanelAnaliseSerialiser(analise, many=True).data,
+        }
+        return Response(data=data, status=status.HTTP_200_OK)
+
