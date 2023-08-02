@@ -31,8 +31,8 @@ def summarise_records():
         return jsonify({'status': 'Error', 'message': 'Text not found'}), 500
     IdList = data['IdList']
     handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
-    records = [parse_record(record) for record in Medline.parse(handle) if not (record is None)]
-    raw_text = ' '.join([rec.titl + rec.tiab for rec in records])
+    records = [parse_record(record) for record in Medline.parse(handle) if (record is not None)]
+    raw_text = ' '.join([rec.titl + ' ' + rec.tiab for rec in records])
     handle.close()
 
     current_app.logger.info(f'Делим документ на предложения...')

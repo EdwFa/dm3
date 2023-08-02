@@ -21,6 +21,7 @@ class Article:
 def parse_record(record):
     # Парсим полученный словарь записи
     data = Article()
+    print(record)
 
     if 'TI' in record:
         data.titl = record['TI']
