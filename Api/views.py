@@ -32,7 +32,7 @@ def summarise_records():
     IdList = data['IdList']
     handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
     records = [parse_record(record) for record in Medline.parse(handle) if not (record is None)]
-    raw_text = ' '.join([rec['titl'] + rec['tiab'] for rec in records])
+    raw_text = ' '.join([rec.titl + rec.tiab for rec in records])
     handle.close()
 
     current_app.logger.info(f'Делим документ на предложения...')
