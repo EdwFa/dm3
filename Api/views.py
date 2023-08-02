@@ -32,8 +32,9 @@ def analise_records():
     IdList = data['articles']
 
     current_app.logger.info(f'Get limit on analise package ({data["allow_records"]})...')
-    if len(IdList) > data['allow_records']:
-        IdList = IdList[:data['allow_records']]
+    if data['allow_records'] is not None:
+        if len(IdList) > data['allow_records']:
+            IdList = IdList[:data['allow_records']]
 
     filters = data['filters']
     handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
@@ -68,13 +69,13 @@ def analise_records():
 
     current_app.logger.info(f'Plot heirarchy')
     try:
-        heirarchy = return_heirarchy(topic_model)
+        heirarchy = json.loads(return_heirarchy(topic_model))
     except:
         heirarchy = None
 
     current_app.logger.info(f'Plot DTM')
     try:
-        DTM = return_DTM(topic_model, [rec['titl'] for rec in records], [int(record['pdat'].split(' ')[0]) for record in records])
+        DTM = json.loads(return_DTM(topic_model, [rec['titl'] for rec in records], [int(record['pdat'].split(' ')[0]) for record in records]))
     except:
         DTM = None
 
@@ -82,8 +83,8 @@ def analise_records():
         'tematic_analise': records,
         'heapmap': heapmap,
         'clust_graph': json.loads(graph),
-        'heirarchy': json.loads(heirarchy),
-        'DTM': json.loads(DTM),
+        'heirarchy': heirarchy,
+        'DTM': DTM,
         'embeddings': embeddings.tolist(),
         'topics': return_topic_label(topic_model)
     }
