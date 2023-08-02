@@ -97,13 +97,13 @@ export class TematicReview extends Component {
       articles: [],
       DetailArticle: null,
       articlesInfo: [
-        { field: 'titl', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, minWidth: 300, width: 450, resizable: true},
-        { field: 'pdat', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, resizable: true},
-        { field: 'auth', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, minWidth: 300, width: 450, resizable: true},
-        { field: 'affl', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, minWidth: 300, width: 450, resizable: true},
-        { field: 'jour', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, resizable: true},
-        { field: 'pt', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, resizable: true},
-        { field: 'mesh', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, minWidth: 300, width: 450, resizable: true},
+        { field: 'titl', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, minWidth: 300, width: 450, resizable: true, headerName: 'Заголовок'},
+        { field: 'pdat', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, resizable: true, headerName: 'Дата выхода'},
+        { field: 'auth', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, minWidth: 300, width: 450, resizable: true, headerName: 'Авторы'},
+        { field: 'affl', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, minWidth: 300, width: 450, resizable: true, headerName: 'Аффилиации'},
+        { field: 'jour', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, resizable: true, headerName: 'Журнал'},
+        { field: 'pt', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, resizable: true, headerName: 'Тип статьи'},
+        { field: 'mesh', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, minWidth: 300, width: 450, resizable: true, headerName: 'MESH термины'},
       ],
       translation_stack: null,
       full_query: null,
@@ -146,15 +146,15 @@ export class TematicReview extends Component {
       // Analise table
       analise_articles: [],
       analise_info: [
-        { field: 'titl', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, minWidth: 300, width: 450, resizable: true},
-        { field: 'pdat', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, resizable: true},
-        { field: 'auth', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, minWidth: 300, width: 450, resizable: true},
-        { field: 'affl', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, minWidth: 300, width: 450, resizable: true},
-        { field: 'jour', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, resizable: true},
-        { field: 'pt', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, resizable: true},
-        { field: 'mesh', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, minWidth: 300, width: 450, resizable: true},
-        { field: 'topic', filter: 'agNumberColumnFilter', sortable: true, enableRowGroup: true, filterParams: topicFilterParams, resizable: true},
-        { field: 'prop', filter: 'agNumberColumnFilter', sortable: true, enableRowGroup: true, resizable: true},
+        { field: 'titl', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, minWidth: 300, width: 450, resizable: true, headerName: 'Заголовок'},
+        { field: 'pdat', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, resizable: true, headerName: 'Дата выхода'},
+        { field: 'auth', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, minWidth: 300, width: 450, resizable: true, headerName: 'Авторы'},
+        { field: 'affl', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, minWidth: 300, width: 450, resizable: true, headerName: 'Аффилиации'},
+        { field: 'jour', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, resizable: true, headerName: 'Журнал'},
+        { field: 'pt', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, resizable: true, headerName: 'Тип статьи'},
+        { field: 'mesh', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, minWidth: 300, width: 450, resizable: true, headerName: 'MESH теримны'},
+        { field: 'topic', filter: 'agNumberColumnFilter', sortable: true, enableRowGroup: true, filterParams: topicFilterParams, resizable: true, headerName: 'Тема'},
+        { field: 'prop', filter: 'agNumberColumnFilter', sortable: true, enableRowGroup: true, resizable: true, headerName: 'Точность'},
       ],
       DetailArticle: null,
 
@@ -186,6 +186,11 @@ export class TematicReview extends Component {
       infoAffiliationsData: null,
 
       permissions: [],
+
+      // Tabs
+      useSearch: true,
+      useAnalise: false,
+      useGraphs: false,
     }
   }
 
@@ -677,16 +682,8 @@ export class TematicReview extends Component {
   }
 
   createSummariseQuery() {
-    if (this.state.current_topic === 'Все') {
-      var data = this.state.analise_articles
-    } else {
-      var data = []
-      for (let article of this.state.analise_articles) {
-        if (this.state.current_topic === article.topic) {
-          data.push(article.uid);
-        }
-      }
-    }
+    let data = [];
+    this.gridAnaliseRef.current.api.forEachNodeAfterFilter((rowNode) => data.push(rowNode.data.uid));
     fetch(variables.API_URL + '/api/summarise', {
       method: 'POST',
       headers: {
@@ -987,6 +984,10 @@ export class TematicReview extends Component {
       plotlyWidth,
 
       permissions,
+
+      useSearch,
+      useAnalise,
+      useGraphs
     } = this.state;
 
     if (!token) {
@@ -1034,7 +1035,7 @@ export class TematicReview extends Component {
                     </a>
                     <ul class="dropdown-menu text-small shadow">
                       {permissions?.map(per =>
-                        <li><a class="dropdown-item" href="#">{per_topics[per.topic]} {per.used_records}/{per.all_records}</a></li>
+                        <li><a class="dropdown-item" href="#">{per.topic} {per.used_records}/{per.all_records}</a></li>
                       )}
                     </ul>
                   </div>
@@ -1049,7 +1050,7 @@ export class TematicReview extends Component {
                   </button>
                   <label for="topbar-search" class="sr-only">Поисковый запрос</label>
                   <div>
-                    <label for="search" class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Поисковый запрос</label>
+                    <label for="search" class="mb-4 text-sm font-medium text-gray-900 sr-only dark:text-white">Поисковый запрос</label>
                     <div class="relative mt-1 grow lg:w-96">
                       <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
@@ -1071,13 +1072,13 @@ export class TematicReview extends Component {
                   <div class="ml-5 grow items-center justify-between hidden w-full md:flex md:w-auto md:order-1" id="navbar-sticky">
                     <ul class="nav nav-pills" id="myTab" role="tablist">
                       <li class="nav-item mr-2" role="presentation">
-                        <button class="nav-link inline-block px-4 py-2 text-white bg-blue-600 rounded-lg active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab" aria-controls="home" aria-selected="false">Результаты поиска</button>
+                        <button class="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100 active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab" aria-controls="home" aria-selected={useSearch} onClick={() => this.setState({useGraphs: false, useSearch: true, useAnalise: false})}>Результаты поиска</button>
                       </li>
                       <li class="nav-item mr-2" role="presentation">
-                        <button class="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected="true">Тематическое описание коллекции</button>
+                        <button class="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected={useAnalise} onClick={() => this.setState({useGraphs: false, useSearch: false, useAnalise: true})}>Тематическое описание коллекции</button>
                       </li>
                       <li class="nav-item mr-2" role="presentation">
-                        <button class="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100" id="contact-tab" data-bs-toggle="tab" data-bs-target="#contact" type="button" role="tab" aria-controls="contact" aria-selected="false" >Графы аффиляций</button>
+                        <button class="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100" id="contact-tab" data-bs-toggle="tab" data-bs-target="#contact" type="button" role="tab" aria-controls="contact" aria-selected={useGraphs} onClick={() => this.setState({useGraphs: true, useSearch: false, useAnalise: false})}>Графы аффиляций</button>
                       </li>
                     </ul>
                     <button id="toggleSidebar" aria-expanded="true" aria-controls="sidebar2" class="order-last hidden p-2 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700" data-bs-toggle="collapse" data-bs-target="#sidebar2" aria-label="Toggle navigation">

@@ -12,44 +12,13 @@ import 'ag-grid-community/styles/ag-grid.css';
 import 'ag-grid-community/styles/ag-theme-alpine.css';
 import './ag-theme-acmecorp.css';
 
+import Select from 'react-select';
 
 import { variables, AG_GRID_LOCALE_RU } from './Variables.js';
 
-import Slider from 'react-input-slider';
 
 var ErrorMessage = 0
 const per_topics = ['Поиск в pubmed', 'Тематический анализ', 'Поиск в векторном представлении']
-
-const obj_color = {
-  'disease': "#fdbbbb",
-  'drug': "#ECC58B",
-  'gene': "#E2DB8C",
-  'chemical': "#21c354",
-  'species': "#A6EFDC",
-  'mutation': "#B2DDEA",
-  'cell_type': "#C6DEF5",
-  'cell_line': "#A3B3D2",
-  'DNA': "#C9B9E8",
-  'RNA': "#D7DBE8",
-}
-
-function markup_text(text, annotations) {
-  if (!annotations) {
-    return text
-  }
-  let markup_text = ''
-  let last_position = 0
-  for (let annotation of annotations) {
-    let start = annotation.span.begin
-    let end = annotation.span.end
-    if (!annotation.prop) { console.log('This') }
-    let markup_str = `<span style=\"color: ${obj_color[annotation.obj]}\">${text.slice(start, end)}<sub>${annotation.prob ? annotation.prob.toFixed(2) : ""}</sub></span>`
-    markup_text = `${markup_text}${text.slice(last_position, start)}${markup_str}`
-
-    last_position = end
-  }
-  return markup_text
-}
 
 
 export class AdminPanel extends Component {
@@ -58,37 +27,60 @@ export class AdminPanel extends Component {
     super(props);
 
     this.gridRef = createRef();
-    this.gridAnaliseRef = createRef();
+    this.searchgridRef = createRef();
+    this.analisegridRef = createRef();
     this.state = {
       token: variables.token,
       loading: false,
-      allow_page: variables.allow,
 
-      //queries
-      query_list: [],
-      message: null,
-      messageStatus: 200,
-      articles: [],
-      articlesInfo: [
-        { field: 'text', filter: 'agTextColumnFilter', editable: true, enableRowGroup: true, minWidth: 300, width: 450, resizable: true},
-        { field: 'score', filter: 'agNumberColumnFilter', sortable: true, enableRowGroup: true, editable: true, resizable: true},
-        { field: 'query_number', editable: true, resizable: true, enableRowGroup: true,},
-        { field: 'section', filter: 'agTextColumnFilter', editable: true, resizable: true, enableRowGroup: true,},
-      ],
-      summarise: null,
-      task_id: null,
-
-      // Filters
-      queryText: 'What methods are available to measure anti-mullerian hormone concentrations in young women?',
-      queryDate: null,
-      queryScore: 0.8,
-      queryTypes: new Set(),
+      useUsers: true,
+      useSearch: false,
+      useAnalise: false,
 
       permissions: [],
+      users: null,
+      DetailUser: null,
+      usersInfo: [
+        { field: 'email', filter: 'agTextColumnFilter', enableRowGroup: true, minWidth: 100, width: 300, resizable: true},
+        { field: 'allow_status', filter: 'agNumberColumnFilter', sortable: true, enableRowGroup: true, resizable: true},
+        { field: 'is_admin', sortable: true, enableRowGroup: true, resizable: true},
+        { field: 'last_login', sortable: true, enableRowGroup: true, resizable: true}
+      ],
+      search_queries: null,
+      DetailSearch: null,
+      searchInfo: [
+        { field: 'query', filter: 'agTextColumnFilter', enableRowGroup: true, minWidth: 100, width: 300, resizable: true},
+        { field: 'full_query', filter: 'agTextColumnFilter', enableRowGroup: true, minWidth: 100, width: 300, resizable: true},
+        { field: 'translation_stack', filter: 'agTextColumnFilter', enableRowGroup: true, minWidth: 100, width: 300, resizable: true},
+        { field: 'status', filter: 'agNumberColumnFilter', sortable: true, enableRowGroup: true, resizable: true},
+        { field: 'user', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, resizable: true},
+        { field: 'start_date', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, resizable: true},
+        { field: 'work_time', filter: 'agNumberColumnFilter', sortable: true, enableRowGroup: true, resizable: true},
+      ],
+      analise_queries: null,
+      DetailAnalise: null,
+      analiseInfo: [
+        { field: 'type_analise', filter: 'agTextColumnFilter', enableRowGroup: true, minWidth: 100, width: 300, resizable: true},
+        { field: 'status', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, resizable: true},
+        { field: 'user', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, resizable: true},
+        { field: 'start_date', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, resizable: true},
+        { field: 'work_time', filter: 'agNumberColumnFilter', sortable: true, enableRowGroup: true, resizable: true},
+      ],
+
+      Email: '',
+      Password: '',
+      DualPassword: '',
+
+      max_search: 9999,
+      max_analise: 9999,
+      max_ddi: 9999,
+      changedUser: null,
+      allow_type: {label: 'Все', value: 2},
+      allow_types: [{label: 'Тематический анализ', value: 0}, {label: 'Факты EBM', value: 1}, {label: 'Все', value: 2}]
     }
   }
 
-  // Permissions
+   // Permissions
   getPermissions() {
     fetch(variables.API_URL + '/api/permissions',
       {
@@ -116,274 +108,82 @@ export class AdminPanel extends Component {
       })
   }
 
-  getArticles = (task_id, query_number = 0, interval = 1000) => {
-    fetch(variables.API_URL + `/api/ddi_review`,
-      {
-        headers: {
-          'Content-Type': 'application/json;charset=utf-8',
-          'Authorization': `Token ${variables.token}`,
-        },
-      }
-    )
-      .then(response => {
-        console.log(query_number)
-        console.log(response.status);
-        ErrorMessage = response.status
-        if (response.ok) {
-          return response.json()
-        } else {
-          throw Error(response.statusText)
-        }
-      })
-      .then(data => {
-        if (ErrorMessage === 202) {
-          this.setState({ loading: true, message: data.message, messageStatus: 202 });
-          setTimeout(() => {
-            return this.getArticles(task_id, query_number, interval)
-          }, interval);
-        } else {
-          this.setState({
-            articles: [...this.state.articles, ...data.data], DetailArticle: data.data[0], loading: false, message: 'Запрос успешно обработан', messageStatus: 200
-          });
-          if (query_number !== 0) {
-            this.state.query_list[query_number - 1].status = 1;
-          }
-        }
-      })
-      .catch(error => {
-        console.log(error);
-        if (ErrorMessage === 500) {
-          this.setState({ loading: false, message: 'Ошибка сервера', messageStatus: 500});
-        } else if (ErrorMessage === 403) {
-          this.setState({ loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 403 });
-        } else if (ErrorMessage === 404) {
-          this.setState({ loading: false, message: 'Сделайте запрос', messageStatus: 202 });
-        } else {
-          this.setState({ loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
-        }
-        if (query_number !== 0) {
-          this.state.query_list[query_number - 1].status = 2;
-        }
-      })
-
-  }
-
-  createTask() {
-    // Отправляем запрос на сервер для получения статей
-    this.state.query_list.push({ query: this.state.queryText, status: 0 });
-    const query_number = this.state.query_list.length;
-    fetch(variables.API_URL + '/api/ddi_review', {
-      method: 'POST',
+  getInfo() {
+    fetch(variables.API_URL + '/api/admin', {
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json;charset=utf-8',
         'Authorization': `Token ${variables.token}`,
-      },
-      body: JSON.stringify({
-        query: this.state.queryText,
-        score: this.state.queryScore,
-        number_of_query: query_number,
-        date: this.state.queryDate,
-        type: [...this.state.queryTypes],
-      })
-    })
-      .then(response => {
-        console.log(query_number)
-        console.log(response.status);
-        if (response.ok) {
-          return response.json()
-        } else {
-          ErrorMessage = response.status
-          throw Error(response.statusText)
-        }
-      })
-      .then(data => {
-        this.setState({
-          task_id: data.data,
-          message: "Ваш запрос в очереди. Пожайлуста дождитесь результата",
-          messageStatus: 201,
-          loading: true
-        });
-        this.getArticles(data.data, query_number)
-      })
-      .catch(error => {
-        console.log(error);
-        if (ErrorMessage === 500) {
-          this.setState({ loading: false, message: 'Ошибка сервера', messageStatus: 500 });
-        } else if (ErrorMessage === 403) {
-          this.setState({ loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 403 });
-        } else {
-          this.setState({ loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
-        }
       }
-      )
-  }
-
-  clearTask() {
-    this.setState({ query_list: [], articles: [], DetailArticle: null })
-    alert("Таблица очищена!");
-  }
-
-  componentDidMount() {
-    this.getArticles();
-    this.getPermissions();
-    console.log('start');
-  }
-
-  onSelectionChanged = () => {
-    const selectedRows = this.gridRef.current.api.getSelectedRows();
-    this.setState({ DetailArticle: (selectedRows.length === 1 ? selectedRows[0] : null) })
-  }
-
-  changeQueryText = (e) => {
-    this.setState({ queryText: e.target.value });
-  }
-
-  changeQueryDate = (e) => {
-    this.setState({ queryDate: e });
-  }
-
-  changeQueryTypes(type) {
-    if (this.state.queryTypes.has(type)) {
-      this.state.queryTypes.delete(type)
-    } else {
-      this.state.queryTypes.add(type)
-    }
-    this.setState({ updateOr: !this.state.updateOr })
-  }
-
-  // Summarise
-
-  getSummarise = (task_id, interval = 1000) => {
-    fetch(variables.API_URL + `/api/summarise_emb?task_id=${task_id}`,
-      {
-        headers: {
-          'Content-Type': 'application/json;charset=utf-8',
-          'Authorization': `Token ${variables.token}`,
-        },
-      }
-    )
-      .then((res) => {
-        if (res.status == 202) {
-          this.setState({ loading: true })
-          setTimeout(() => {
-            return this.getSummarise(task_id, interval)
-          }, interval);
-        } else if (res.status == 200) {
-          return res.json()
-        } else {
-          throw Error(res.statusText)
-        }
-      })
-      .then((data) => {
-        this.setState({
-          summarise: data.data,
-          message: 'Суммаризация прошла успешно',
-          messageStatus: 200,
-          loading: false
-        });
-      })
-      .catch((err) => {
-        console.log(err);
-        this.setState({ message: 'Ошибка при суммаризации', messageStatus: 500, summarise: null, loading: false })
-      });
-  }
-
-  createSummariseQuery() {
-    let summarise_data = [];
-    this.gridRef.current.api.forEachNodeAfterFilter((rowNode) => summarise_data.push(rowNode.data.text));
-    fetch(variables.API_URL + '/api/summarise_emb', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json;charset=utf-8',
-        'Authorization': `Token ${variables.token}`,
-      },
-      body: JSON.stringify({
-        articles: summarise_data
-      })
-    })
-      .then((res) => {
-        if (res.ok) { return res.json() }
-        else { throw Error(res.statusText) }
-      })
-      .then((result) => {
-        var task_id = result.data;
-        this.setState({ message: 'Отправлено на суммаризацию пожайлуста дождитесь ответа', messageStatus: 201, loading: true })
-        this.getSummarise(task_id);
-      })
-      .catch((error) => {
-        this.setState({ message: 'Ошибка при суммаризации', messageStatus: 500, summarise: null, loading: false })
-      })
-  }
-
-  translateQuery() {
-    fetch(variables.API_URL + '/api/translate', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json;charset=utf-8',
-        'Authorization': `Token ${variables.token}`,
-      },
-      body: JSON.stringify({
-        query: this.state.queryText,
-      })
     })
     .then((res) => {
         if (res.ok) { return res.json() }
         else { throw Error(res.statusText) }
       })
       .then((result) => {
-        console.log(result.translations)
+        console.log(result.data)
+        this.setState({
+            users: result.users, DetailUser: result.users[0],
+            search_queries: result.search, DetailSearch: result.search[0],
+            analise_queries: result.analise, DetailAnalise: result.analise[0]
+        })
       })
       .catch((error) => {
         console.log(error)
       })
   }
 
-  // MarkUp article
-
-  getMarkUp = (task_id, interval = 1000) => {
-    fetch(variables.API_URL + `/api/markup?task_id=${task_id}`,
-      {
-        headers: {
-          'Content-Type': 'application/json;charset=utf-8',
-          'Authorization': `Token ${variables.token}`,
-        },
-      }
-    )
-      .then((res) => {
-        if (res.status == 202) {
-          setTimeout(() => {
-            return this.getMarkUp(task_id, interval)
-          }, interval);
-        } else if (res.status == 200) {
-          return res.json()
-        } else {
-          throw Error(res.statusText)
-        }
-      })
-      .then((data) => {
-        try {
-          this.setState({
-            DetailArticle: data.data,
-            message: 'Разметка прошла успешно',
-            messageStatus: 200,
-            loading: false,
-          });
-        } catch {
-          console.log('access')
-        }
-      })
-      .catch((err) => {
-        console.log(err);
-        this.setState({ message: 'Произошла ошибка при разметке', loading: false, messageStatus: 500 });
-      });
+  componentDidMount() {
+    this.getInfo();
+    this.getPermissions();
+    console.log('start');
   }
 
-  markUpArticle(DetailArticle) {
-    this.setState({ loading: true })
-    fetch(variables.API_URL + '/api/markup', {
+  onSelectionChanged = () => {
+    const selectedRows = this.gridRef.current.api.getSelectedRows();
+    this.setState({ DetailUser: (selectedRows.length === 1 ? selectedRows[0] : null) })
+  }
+
+  onSelectionSearchChanged = () => {
+    const selectedRows = this.searchgridRef.current.api.getSelectedRows();
+    this.setState({ DetailSearch: (selectedRows.length === 1 ? selectedRows[0] : null) })
+  }
+
+  onSelectionAnaliseChanged = () => {
+    const selectedRows = this.analisegridRef.current.api.getSelectedRows();
+    this.setState({ DetailAnalise: (selectedRows.length === 1 ? selectedRows[0] : null) })
+  }
+
+  setUserModal() {
+    this.setState({ Email: '', Password: '', DualPassword: '', message: '', messageStatus: 0 })
+  }
+
+  setUpdateModal(user) {
+    this.setState({
+        max_search: 9999,
+        max_analise: 9999,
+        max_ddi: 9999,
+        allow_type: {label: 'Все', value: 2},
+        changedUser: user,
+        message: '',
+        messageStatus: 0
+    })
+  }
+
+  createUserClick() {
+    if (this.state.Email === '') {
+        alert('Введите email!')
+        return
+    }
+    if (this.state.Password === '' || this.state.DualPassword === '') {
+        alert('Введите пароль!')
+        return
+    }
+    if (this.state.Password !== this.state.DualPassword) {
+        alert('Пароли не совпадают!')
+        return
+    }
+    fetch(variables.API_URL + '/accounts/create', {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
@@ -391,88 +191,99 @@ export class AdminPanel extends Component {
         'Authorization': `Token ${variables.token}`,
       },
       body: JSON.stringify({
-        article: DetailArticle
+        email: this.state.Email,
+        password: this.state.Password,
       })
     })
       .then((res) => {
-        console.log(res.status)
-        if (res.ok) {
-          return res.json()
-        } else {
-          throw Error(res.statusText)
-        }
+        if (res.ok) { return res.json() }
+        else { throw Error(res.statusText) }
       })
       .then((result) => {
-        var task_id = result.data;
-        this.setState({ message: 'Отправлено на суммаризацию пожайлуста дождитесь ответа', messageStatus: 201, loading: true })
-        this.getMarkUp(task_id);
+        this.setState({ message: 'Пользователь создан', messageStatus: 201, users: result.users, DetailUser: result.users[0]})
       })
-      .catch((err) => {
-        console.log(err);
-        this.setState({
-          message: 'ошибка при разметке',
-          messageStatus: 500,
-          loading: false,
-        });
-      });
+      .catch((error) => {
+        this.setState({ message: 'Ошибка при создании', messageStatus: 500})
+      })
   }
 
-  suppressCutToClipboard = false;
-
-  onRemoveSelected = () => {
-
-    const selectedData = this.gridRef.current.api.getSelectedRows();
-    console.log(selectedData)
-    const res = this.gridRef.current.api.applyTransaction({ remove: selectedData });
+  updateUserClick() {
+    fetch(variables.API_URL + '/accounts/create', {
+      method: 'PUT',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json;charset=utf-8',
+        'Authorization': `Token ${variables.token}`,
+      },
+      body: JSON.stringify({
+        user: this.state.changedUser.email,
+        allow_type: this.state.allow_type.value,
+        0: this.state.max_search,
+        1: this.state.max_analise,
+        2: this.state.max_ddi
+      })
+    })
+      .then((res) => {
+        if (res.ok) { return res.json() }
+        else { throw Error(res.statusText) }
+      })
+      .then((result) => {
+        this.setState({ message: 'Пользователь обновлен', messageStatus: 201, DetailUser: result.user })
+        this.gridRef.current.api.forEachNode((rowNode) => {
+            if (rowNode.data.email !== result.user.email) {
+              return;
+            }
+            console.log('some')
+            // arbitrarily update some data
+            const updated = result.user;
+            // directly update data in rowNode
+            rowNode.updateData(updated);
+          })
+      })
+      .catch((error) => {
+        this.setState({ message: 'Ошибка при обновлении', messageStatus: 500})
+      })
   }
-
-  onCellValueChanged = (params) => {
-    console.log('Callback onCellValueChanged:', params);
-    console.log(params.node)
-    const res = this.gridRef.current.api.applyTransaction({ remove: [params.node.data] });
-  }
-
-  onCutStart = (params) => {
-    console.log('Callback onCutStart:', params);
-  }
-
-  onCutEnd = (params) => {
-    console.log('Callback onCutEnd:', params);
-  }
-
-  getRowId = () => {
-    return (params) => {
-      console.log(params)
-      return params.data.code;
-    };
-  }
-
 
   render() {
     const {
       token,
       loading,
-      query_list,
-      articlesInfo,
-      articles,
-      DetailArticle,
-      message,
-      summarise,
+      permissions,
 
-      queryText,
-      queryDate,
-      queryScore,
-      allow_page,
+      users,
+      usersInfo,
+      DetailUser,
+
+      search_queries,
+      searchInfo,
+      DetailSearch,
+
+      analise_queries,
+      analiseInfo,
+      DetailAnalise,
+
+      useUsers,
+      useSearch,
+      useAnalise,
+
+      Email,
+      Password,
+      DualPassword,
+
+      message,
       messageStatus,
 
-      permissions,
+      max_analise,
+      max_search,
+      max_ddi,
+      allow_type,
+      allow_types,
+
     } = this.state;
 
     if (!token) {
       return <Navigate push to="/login" />
-
-    } else if (allow_page === 0) {
-      return <Navigate push to="/tematic_review" />
     } else {
       return (
         <>
@@ -509,7 +320,7 @@ export class AdminPanel extends Component {
                     </a>
                     <ul class="dropdown-menu text-small shadow">
                       {permissions?.map(per =>
-                        <li><a class="dropdown-item" href="#">{per_topics[per.topic]} {per.used_records}/{per.all_records}</a></li>
+                        <li><a class="dropdown-item" href="#">{per.topic} {per.used_records}/{per.all_records}</a></li>
                       )}
                     </ul>
                   </div>
@@ -519,9 +330,406 @@ export class AdminPanel extends Component {
                 </div>
               </div>
             </nav>
+            <nav class="bg-white border-gray-200 px-6">
+              <div class="w-full">
+                <div class="flex justify-between items-center">
+                  <button id="toggleSidebar" aria-expanded="true" aria-controls="sidebar" class="hidden p-2 mr-3 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700" data-bs-toggle="collapse" data-bs-target="#sidebar" aria-label="Toggle navigation">
+                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
+                  </button>
+                  <button id="toggleSidebar" aria-expanded="true" aria-controls="sidebar2" class="order-last hidden p-2 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700" data-bs-toggle="collapse" data-bs-target="#sidebar2" aria-label="Toggle navigation">
+                    <svg class="w-6 h-6 rotate-180" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
+                  </button>
+                </div>
+              </div>
+            </nav>
           </header >
           <main>
+            <div>
+              <div className="container-fluid">
+                <div className="row align-items-stretch b-height">
+                  <aside id="sidebar" className="h-screen col-md-2 my-3 bg-white collapse show width border rounded-3 g-0">
+                    <div className="accordion accordion-flush" id="accordionFlushExample">
+                        <div class="ml-5 grow items-center justify-between hidden w-full md:flex md:w-auto md:order-1" id="navbar-sticky">
+                            <ul class="nav nav-pills" id="myTab" role="tablist">
+                              <li class="nav-item mr-2" role="presentation">
+                                <button class="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100 active" id="home-tab" data-bs-toggle="tab" data-bs-target="#home" type="button" role="tab" aria-controls="home" aria-selected={useUsers} onClick={() => this.setState({useUsers: true, useSearch: false, useAnalise: false})}>Пользователи</button>
+                              </li>
+                              <li class="nav-item mr-2" role="presentation">
+                                <button class="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100" id="profile-tab" data-bs-toggle="tab" data-bs-target="#profile" type="button" role="tab" aria-controls="profile" aria-selected={useSearch} onClick={() => this.setState({useUsers: false, useSearch: true, useAnalise: false})}>Запросы на поиск</button>
+                              </li>
+                              <li class="nav-item mr-2" role="presentation">
+                                <button class="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100" id="contact-tab" data-bs-toggle="tab" data-bs-target="#contact" type="button" role="tab" aria-controls="contact" aria-selected={useAnalise} onClick={() => this.setState({useUsers: false, useSearch: false, useAnalise: true})}>Запросы на анализ</button>
+                              </li>
+                            </ul>
+                        </div>
+                    </div>
+                  </aside>
+                  <section class="col p-3 m-3 border rounded-3 bg-white overflow-auto">
+                    <div class="accordion accordion-flush" id="accordion">
+                      <div class="accordion-item">
+                        <div id="flush-collapseSeven" class="collapse multi-collapse" aria-labelledby="flush-headingSeven" data-bs-target="#accordionFlushExample">
+
+                        </div>
+                      </div>
+                      <div>
+                        </div>
+                    </div>
+                    <div>
+                      <div class="bd-example">
+                        <div class="tab-content" id="myTabContent">
+                          <div class="tab-pane fade active show" id="home" role="tabpanel" aria-labelledby="home-tab">
+                            <div class="container-fluid g-0">
+                              <div className="ag-theme-alpine ag-theme-acmecorp" style={{ height: 700 }}>
+                                <AgGridReact
+                                  ref={this.gridRef}
+                                  rowData={users}
+                                  columnDefs={usersInfo}
+                                  pagination={true}
+                                  rowSelection={'single'}
+                                  onSelectionChanged={this.onSelectionChanged}
+                                  localeText={AG_GRID_LOCALE_RU}
+                                  sideBar={{
+                                    toolPanels: [
+                                      {
+                                        id: 'columns',
+                                        labelDefault: 'Columns',
+                                        labelKey: 'columns',
+                                        iconKey: 'columns',
+                                        toolPanel: 'agColumnsToolPanel',
+                                        minWidth: 225,
+                                        width: 225,
+                                        maxWidth: 225,
+                                      },
+                                      {
+                                        id: 'filters',
+                                        labelDefault: 'Filters',
+                                        labelKey: 'filters',
+                                        iconKey: 'filter',
+                                        toolPanel: 'agFiltersToolPanel',
+                                        minWidth: 180,
+                                        maxWidth: 400,
+                                        width: 250,
+                                      },
+                                    ],
+                                    position: 'left',
+
+                                  }}
+                                >
+                                </AgGridReact>
+                              </div>
+                            </div>
+                            <div class="flex justify-center my-6">
+                                <button
+                                    type="button"
+                                    className="flex text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 ml-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 float-end"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#userModal"
+                                    onClick={() => this.setUserModal()}>
+                                    Создать пользователя
+                                </button>
+                            </div>
+                          </div>
+                          <div class="tab-pane fade" id="profile" role="tabpanel" aria-labelledby="profile-tab">
+                            <div class="container-fluid g-0">
+                              <div className="ag-theme-alpine ag-theme-acmecorp" style={{ height: 700 }}>
+                                <AgGridReact
+                                  ref={this.searchgridRef}
+                                  rowData={search_queries}
+                                  columnDefs={searchInfo}
+                                  pagination={true}
+                                  rowSelection={'single'}
+                                  onSelectionChanged={this.onSelectionSearchChanged}
+                                  localeText={AG_GRID_LOCALE_RU}
+                                  sideBar={{
+                                    toolPanels: [
+                                      {
+                                        id: 'columns',
+                                        labelDefault: 'Columns',
+                                        labelKey: 'columns',
+                                        iconKey: 'columns',
+                                        toolPanel: 'agColumnsToolPanel',
+                                        minWidth: 225,
+                                        width: 225,
+                                        maxWidth: 225,
+                                      },
+                                      {
+                                        id: 'filters',
+                                        labelDefault: 'Filters',
+                                        labelKey: 'filters',
+                                        iconKey: 'filter',
+                                        toolPanel: 'agFiltersToolPanel',
+                                        minWidth: 180,
+                                        maxWidth: 400,
+                                        width: 250,
+                                      },
+                                    ],
+                                    position: 'left',
+
+                                  }}
+                                >
+                                </AgGridReact>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="tab-pane fade" id="contact" role="tabpanel" aria-labelledby="contact-tab">
+                            <div class="container-fluid g-0">
+                              <div className="ag-theme-alpine ag-theme-acmecorp" style={{ height: 700 }}>
+                                <AgGridReact
+                                  ref={this.analisegridRef}
+                                  rowData={analise_queries}
+                                  columnDefs={analiseInfo}
+                                  pagination={true}
+                                  rowSelection={'single'}
+                                  onSelectionChanged={this.onSelectionAnaliseChanged}
+                                  localeText={AG_GRID_LOCALE_RU}
+                                  sideBar={{
+                                    toolPanels: [
+                                      {
+                                        id: 'columns',
+                                        labelDefault: 'Columns',
+                                        labelKey: 'columns',
+                                        iconKey: 'columns',
+                                        toolPanel: 'agColumnsToolPanel',
+                                        minWidth: 225,
+                                        width: 225,
+                                        maxWidth: 225,
+                                      },
+                                      {
+                                        id: 'filters',
+                                        labelDefault: 'Filters',
+                                        labelKey: 'filters',
+                                        iconKey: 'filter',
+                                        toolPanel: 'agFiltersToolPanel',
+                                        minWidth: 180,
+                                        maxWidth: 400,
+                                        width: 250,
+                                      },
+                                    ],
+                                    position: 'left',
+                                    filters: true
+                                  }}
+                                >
+                                </AgGridReact>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <aside id="sidebar2" class="col-md-4 h-screen collapse show width col p-3 my-3 border rounded-3 bg-white">
+                    {useUsers?
+                    <>
+                    <h3 class="pb-2 mb-3 border-bottom">Подробное описание Пользователя</h3>
+                        <nav class="small" id="toc">
+                            {DetailUser ?
+                            <div class="card mb-3">
+                              <div class="card-body">
+                                <p class="card-text">---------------------------------- </p>
+                                <p class="card-text">Email : {DetailUser.email}</p>
+                                <p class="card-text">---------------------------------- </p>
+                                <p class="card-text">Администратор : {DetailUser.is_admin? <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault" checked /> :null}</p>
+                                <p class="card-text">Доступ : {DetailUser.allow_status}</p>
+                                <p class="card-text">---------------------------------- </p>
+                                {DetailUser.permissions?.map(per =>
+                                    <>
+                                        <p class="card-text"><small class="text-success">{per.topic} : {per.all_records? `${per.used_records}/${per.all_records}`: 'безлимитно'} </small></p>
+                                        <p class="card-text"><small class="text-success">Начало использования: {per.start_time}</small></p>
+                                        <p class="card-text"><small class="text-success">---------------------------------- </small></p>
+                                    </>
+                                )}
+                              </div>
+                              <input
+                                className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
+                                value="Обновить"
+                                type='submit'
+                                data-bs-toggle="modal"
+                                data-bs-target="#updateModal"
+                                onClick={() => this.setUpdateModal(DetailUser)} />
+                            </div>
+                            : null}
+                        </nav>
+                    </>
+                    : useSearch?
+                    <>
+                        <h3 class="pb-2 mb-3 border-bottom">Подробное описание Поискового запроса</h3>
+                        <nav class="small" id="toc">
+                            {DetailSearch ?
+                            <div class="card mb-3">
+                              <div class="card-body">
+                                <p class="card-text">Query :  {DetailSearch.query} (Find {DetailSearch.count})</p>
+                                <p class="card-text">---------------------------------- </p>
+                                <p class="card-text">Full query :  </p>
+                                <p class="card-text">{DetailSearch.full_query}</p>
+                                <p class="card-text">---------------------------------- </p>
+                                <p class="card-text">Translation stack :  {DetailSearch.translation_stack}</p>
+                                <p class="card-text">---------------------------------- </p>
+                                <p class="card-text"><small class="text-success">Дата начала запроса : {DetailSearch.start_date} </small></p>
+                                <p class="card-text"><small class="text-success">Дата конца запроса : {DetailSearch.end_date}</small></p>
+                                <p class="card-text"><small class="text-success">Время выполнения : {DetailSearch.work_time} сек.</small></p>
+                                <p class="card-text"><small class="text-success">Пользователь : {DetailSearch.user}</small></p>
+                                <p class="card-text"><small class="text-success">Статус запроса : {DetailSearch.status} </small></p>
+                              </div>
+                            </div>
+                            : null}
+                        </nav>
+                    </>
+                    : useAnalise?
+                    <>
+                        <h3 class="pb-2 mb-3 border-bottom">Подробное описание запроса на анализ</h3>
+                        <nav class="small" id="toc">
+                            {DetailAnalise ?
+                            <div class="card mb-3">
+                              <div class="card-body">
+                                <p class="card-text">Type analise :  {DetailAnalise.type_analise}</p>
+                                <p class="card-text">---------------------------------- </p>
+                                <p class="card-text"><small class="text-success">Дата начала запроса : {DetailAnalise.start_date} </small></p>
+                                <p class="card-text"><small class="text-success">Дата конца запроса : {DetailAnalise.end_date}</small></p>
+                                <p class="card-text"><small class="text-success">Время выполнения : {DetailAnalise.work_time} сек.</small></p>
+                                <p class="card-text"><small class="text-success">Пользователь : {DetailAnalise.user}</small></p>
+                                <p class="card-text"><small class="text-success">Статус запроса : {DetailAnalise.status} </small></p>
+                              </div>
+                            </div>
+                            : null}
+                        </nav>
+                    </>
+                    :null}
+                  </aside>
+
+                </div>
+              </div>
+            </div>
           </main>
+          <div className="modal fade" id="userModal" tabIndex="-1" aria-hidden="true">
+            <div className="modal-dialog modal-lg modal-dialog-centered">
+                <div className="modal-content bg-slate-50 rounded-lg drop-shadow-md dark:bg-gray-800">
+                    <div className="modal-header">
+                        <h2 className="modal-title font-semibold text-gray-900 dark:text-white">Создать пользователя</h2>
+                        <button type="button" class="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-800 dark:hover:text-white" data-modal-hide="authentication-modal">
+                            <svg aria-hidden="true" class="w-5 h-5" data-bs-dismiss="modal" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                            <span class="sr-only">Закрыть диалог</span>
+                        </button>
+                    </div>
+
+                    <div className="modal-body">
+                        <div class="relative w-full mb-6 group">
+                            <label for="text" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
+                            <input
+                                type="email"
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                value={Email}
+                                onChange={(e) => this.setState({Email: e.target.value})}
+                                placeholder="email"
+                            />
+                            <label for="text" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
+                            <input
+                                type="password"
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                value={Password}
+                                onChange={(e) => this.setState({Password: e.target.value})}
+                                placeholder="**********"
+                            />
+                            <label for="text" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Dublicate Password</label>
+                            <input
+                                type="password"
+                                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                value={DualPassword}
+                                onChange={(e) => this.setState({DualPassword: e.target.value})}
+                                placeholder="**********"
+                            />
+                            <br />
+                            {message ?
+                                messageStatus > 299 ?
+                                  <p class="pb-2 mb-3 border-bottom" style={{ color: 'red' }}>{message}.</p>
+                                  : messageStatus === 201 ?
+                                    <p class="pb-2 mb-3 border-bottom" style={{ color: 'green' }}>{message}.</p>
+                                  :null
+                            : null}
+                            <button type="button"
+                                className="flex text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+                                onClick={() => this.createUserClick()}
+                            >Создать</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+          </div>
+          <div className="modal fade" id="updateModal" tabIndex="-1" aria-hidden="true">
+            <div className="modal-dialog modal-lg modal-dialog-centered">
+                <div className="modal-content bg-slate-50 rounded-lg drop-shadow-md dark:bg-gray-800">
+                    <div className="modal-header">
+                        <h2 className="modal-title font-semibold text-gray-900 dark:text-white">Обновить доступ пользователя</h2>
+                        <button type="button" class="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-800 dark:hover:text-white" data-modal-hide="authentication-modal">
+                            <svg aria-hidden="true" class="w-5 h-5" data-bs-dismiss="modal" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+                            <span class="sr-only">Закрыть диалог</span>
+                        </button>
+                    </div>
+
+                    <div className="modal-body">
+                        <div class="relative w-full mb-6 group">
+                            <label for="text" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Доступно записей для поиска в PubMed</label>
+                            <input
+                                type="number"
+                                id="replyNumber1"
+                                min="0"
+                                step="1"
+                                value={max_search}
+                                data-bind="value:replyNumber1"
+                                onChange={(e) => this.setState({max_search: e.target.value})}
+                            />
+                            <label for="text" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Доступно записей для тематического анализа</label>
+                            <input
+                                type="number"
+                                id="replyNumber2"
+                                min="0"
+                                step="1"
+                                value={max_analise}
+                                data-bind="value:replyNumber2"
+                                onChange={(e) => this.setState({max_analise: e.target.value})}
+                            />
+                            <label for="text" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Доступно записей для поиска фактов EBM</label>
+                            <input
+                                type="number"
+                                id="replyNumber3"
+                                min="0"
+                                step="1"
+                                value={max_ddi}
+                                data-bind="value:replyNumber3"
+                                onChange={(e) => this.setState({max_ddi: e.target.value})}
+                            />
+                            <label for="text" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Dublicate Password</label>
+                            <Select
+                                className="basic-single"
+                                classNamePrefix="select"
+                                value={allow_type}
+                                isSearchable
+                                placeholder="Выберите класс"
+                                name="topic"
+                                options={allow_types}
+                                getOptionLabel={(option) => option.label}
+                                getOptionValue={(option) => option.value}
+                                onChange={(x) => this.setState({allow_type: x})}
+                            />
+                            <br />
+                            {message ?
+                                messageStatus > 299 ?
+                                  <p class="pb-2 mb-3 border-bottom" style={{ color: 'red' }}>{message}.</p>
+                                  : messageStatus === 201 ?
+                                    <p class="pb-2 mb-3 border-bottom" style={{ color: 'green' }}>{message}.</p>
+                                  :null
+                            : null}
+                            <button type="button"
+                                className="flex text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800"
+                                onClick={() => this.updateUserClick()}
+                            >Обновить</button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+          </div>
         </>
       )
     }

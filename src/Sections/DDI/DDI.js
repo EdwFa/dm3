@@ -71,10 +71,10 @@ export class DDIReview extends Component {
       messageStatus: 200,
       articles: [],
       articlesInfo: [
-        { field: 'text', filter: 'agTextColumnFilter', editable: true, enableRowGroup: true, minWidth: 300, width: 450, resizable: true},
-        { field: 'score', filter: 'agNumberColumnFilter', sortable: true, enableRowGroup: true, editable: true, resizable: true},
-        { field: 'query_number', editable: true, resizable: true, enableRowGroup: true,},
-        { field: 'section', filter: 'agTextColumnFilter', editable: true, resizable: true, enableRowGroup: true,},
+        { field: 'text', filter: 'agTextColumnFilter', editable: true, enableRowGroup: true, minWidth: 300, width: 450, resizable: true, headerName: 'Результат'},
+        { field: 'score', filter: 'agNumberColumnFilter', sortable: true, enableRowGroup: true, editable: true, resizable: true, headerName: 'Точность'},
+        { field: 'query_number', editable: true, resizable: true, enableRowGroup: true, headerName: 'Номер запроса'},
+        { field: 'section', filter: 'agTextColumnFilter', editable: true, resizable: true, enableRowGroup: true, headerName: 'Секция'},
       ],
       summarise: null,
       task_id: null,
@@ -514,7 +514,7 @@ export class DDIReview extends Component {
                     </a>
                     <ul class="dropdown-menu text-small shadow">
                       {permissions?.map(per =>
-                        <li><a class="dropdown-item" href="#">{per_topics[per.topic]} {per.used_records}/{per.all_records}</a></li>
+                        <li><a class="dropdown-item" href="#">{per.topic} {per.used_records}/{per.all_records}</a></li>
                       )}
                     </ul>
                   </div>
