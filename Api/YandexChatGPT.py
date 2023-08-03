@@ -22,7 +22,7 @@ model = AutoGPTQForCausalLM.from_quantized(model_name,
 
 def getResponse(request):
     request = f'{request} \n1'
-    encoded_input = tokenizer(request, return_tensors='pt').to('cuda:0')
+    encoded_input = tokenizer(request, return_tensors='pt').to(device)
     output = model.generate(
         **encoded_input,
         num_beams=4,
