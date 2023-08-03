@@ -9,7 +9,6 @@ from Api import analise, check_device
 app = Flask(__name__, static_url_path='')
 app.register_blueprint(analise)
 app.logger.name = 'BertTopicApi'
-Entrez.email = os.getenv('PARSER_EMAIL')  # Говорю NCBI кто я есть
 address_host = os.getenv('HOST')
 address_port = os.getenv('PORT')
 
