@@ -238,6 +238,9 @@ BERTTOPICAPI_URL = os.getenv('BERTTOPICAPI_URL')
 # настройки для api Summarise
 SUMMARISEAPI_URL = os.getenv('SUMMARISEAPI_URL')
 
+# настройки для api Chat
+CHATAPI_URL = os.getenv('CHATAPI_URL')
+
 # Пользовтель
 AUTH_USER_MODEL = "accounts.User"
 

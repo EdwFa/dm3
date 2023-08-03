@@ -18,6 +18,7 @@ urlpatterns = [
 
     path('permissions', GetPermissions.as_view(), name='permissions'),
     path('translate', TranslateQuery.as_view(), name='translate'),
+    path('chat', ChatApi.as_view(), name='chat'),
 
     path('admin', AdminPanelApi.as_view(), name='admin'),
 ]

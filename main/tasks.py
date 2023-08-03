@@ -13,7 +13,7 @@ import oneai
 import requests
 
 from .serializers import *
-from dm.settings import PARSER_EMAIL, MEDIA_URL, BERTTOPICAPI_URL, SUMMARISEAPI_URL
+from dm.settings import PARSER_EMAIL, MEDIA_URL, BERTTOPICAPI_URL, SUMMARISEAPI_URL, CHATAPI_URL
 from Funcs import *
 
 
@@ -298,5 +298,17 @@ def plot_graph_associations(self, IdList, pk, max_size=200):
     json.dump(data, f)
     f.close()
     return
+
+
+@shared_task(bind=True)
+def send_message(self, message):
+    response = requests.post(f'{CHATAPI_URL}/analise', json={'message': message})
+    print(response.status_code)
+    if response.status_code != 200:
+        raise Exception('Api is failed!')
+
+    return response.json()['message']
+    # time.sleep(3)
+    # return 'Ответ'
 
 

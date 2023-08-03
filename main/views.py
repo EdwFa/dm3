@@ -434,8 +434,8 @@ class SummariseEmbApi(APIView):
 
 
 class MartUpApi(APIView):
-    def get(self, requset):
-        task_id = requset.GET.get('task_id')
+    def get(self, request):
+        task_id = request.GET.get('task_id')
         try:
             worker_id = TaskResult.objects.get(task_id=task_id)
         except ObjectDoesNotExist:
@@ -531,4 +531,35 @@ class AdminPanelApi(APIView):
             'analise': AdminPanelAnaliseSerialiser(analise, many=True).data,
         }
         return Response(data=data, status=status.HTTP_200_OK)
+
+
+class ChatApi(APIView):
+    def get(self, request):
+        task_id = request.GET.get('task_id')
+        try:
+            worker_id = TaskResult.objects.get(task_id=task_id)
+        except ObjectDoesNotExist:
+            return Response(data={'data': None, 'message': 'worker not found'}, status=status.HTTP_404_NOT_FOUND)
+
+        if worker_id.status == 'PROGRESS' or worker_id.status == 'STARTED':
+            return Response(data={'data': None, 'message': 'worker in progress'}, status=status.HTTP_202_ACCEPTED)
+
+        if worker_id.status == 'FAILURE':
+            return Response(data={'data': None, 'message': 'worker in failed'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        if worker_id.status == 'SUCCESS':
+            data = {
+                'data': AsyncResult(worker_id.task_id, app=summarise_emb).get()
+            }
+        return Response(data=data, status=status.HTTP_200_OK)
+
+    def post(self, request):
+        print(request.data)
+        task = send_message.delay(message=request.data['message'])
+        data = {
+            'data': task.id,
+        }
+        return Response(data=data, status=status.HTTP_200_OK)
+
 
