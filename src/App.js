@@ -6,6 +6,7 @@ import { Main } from './Sections/Main.js';
 import { Login } from './Sections/Login.js';
 import { TematicReview } from './Sections/TematicReview/TematicReview.js';
 import { DDIReview } from './Sections/DDI/DDI.js';
+import { Chat } from './Sections/Chat/Chat.js';
 import { AdminPanel } from './Sections/AdminPanel.js';
 
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
@@ -26,6 +27,7 @@ function App() {
         <Route path='/login' element={<Login />} />
         <Route path='/tematic_review' element={<TematicReview />} />
         <Route path='/ddi_review' element={<DDIReview />} />
+        <Route path='/chat' element={<Chat />} />
         <Route path='/admin' element={<AdminPanel />} />
       </Routes>
     </Router>

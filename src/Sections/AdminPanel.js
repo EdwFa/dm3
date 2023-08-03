@@ -301,6 +301,11 @@ export class AdminPanel extends Component {
                           <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Тематический анализ</a>
                         </li>
                       </Link>
+                      <Link to="/chat">
+                        <li>
+                          <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Поговорим</a>
+                        </li>
+                      </Link>
                       <Link to="/ddi_review">
                         <li>
                           <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Факты для EBM</a>

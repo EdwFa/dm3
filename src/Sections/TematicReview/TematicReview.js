@@ -284,6 +284,7 @@ export class TematicReview extends Component {
         alert('Пожайлуста заполните поле запроса!');
         return;
     }
+    this.setState({ loading: true })
     fetch(variables.API_URL + '/api/search/',
       {
         method: 'POST',
@@ -438,6 +439,7 @@ export class TematicReview extends Component {
   startAnalise() {
     let analise_data = [];
     this.gridRef.current.api.forEachNodeAfterFilter((rowNode) => analise_data.push(rowNode.data.uid));
+    this.setState({ loading: true })
     fetch(variables.API_URL + '/api/analise/', {
       method: 'POST',
       headers: {
@@ -684,6 +686,7 @@ export class TematicReview extends Component {
   createSummariseQuery() {
     let data = [];
     this.gridAnaliseRef.current.api.forEachNodeAfterFilter((rowNode) => data.push(rowNode.data.uid));
+    this.setState({ loading: true })
     fetch(variables.API_URL + '/api/summarise', {
       method: 'POST',
       headers: {
@@ -758,6 +761,7 @@ export class TematicReview extends Component {
   createGraph() {
     let analise_data = [];
     this.gridAnaliseRef.current.api.forEachNodeAfterFilter((rowNode) => analise_data.push(rowNode.data.uid));
+    this.setState({ loading: true })
     fetch(variables.API_URL + '/api/graphs/', {
       method: 'POST',
       headers: {
@@ -1010,6 +1014,11 @@ export class TematicReview extends Component {
                         <Link to="/tematic_review">
                           <li>
                             <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0" aria-current="page">Тематический анализ</a>
+                          </li>
+                        </Link>
+                        <Link to="/chat">
+                          <li>
+                            <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Поговорим</a>
                           </li>
                         </Link>
                         <Link to="/ddi_review">
