@@ -22,14 +22,9 @@ class BaseTaskView(APIView):
 
     def check_allow(self, request):
         permissions = request.user.permissions.get(topic=self.topic_number)
-        print(permissions)
         today = datetime.now(timezone.utc)
         print(f'Days after create permission = {(today - permissions.start_time).days}')
-        if (today - permissions.start_time).days > 0:
-            permissions.start_time = today
-            permissions.used_records = 0
-            permissions.save()
-        return permissions
+        return permissions.all_records
 
     def check_working_task(self, request, **kwargs):
         # Модуль проверки наличии уже запущенных запросов в поиске данному пользователю
@@ -167,19 +162,18 @@ class SearchTaskView(BaseTaskView):
         current_task, current_worker = self.check_working_task(request)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
         if (current_task is not None) and (current_worker is not None) and (current_worker.status == 'PROGRESS' or current_worker.status == 'STARTED'):
             return self.response_data(403, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
-        permissions = self.check_allow(request)
 
-        if permissions.all_records is not None:
-            allow_search_records = permissions.all_records - permissions.used_records
-            print(f'Осталось {allow_search_records} до ограничения пользования...')
 
-            if allow_search_records == 0:
-                return self.response_data(403, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
+        allow_record = self.check_allow(request)
+
+        if allow_record is not None:
+            self.retmax = allow_record
+
         query = create_query(**request.data)
         full_query, translation_stack, count = get_records(query)
         new_task = self.create_task(query=query, count=count, full_query=full_query, user=request.user,
                                translation_stack=translation_stack)
-        task = parse_records.delay(query=query, count=count, new_task_id=new_task.id, retmax=self.retmax, permission_id=permissions.id)
+        task = parse_records.delay(query=query, count=count, new_task_id=new_task.id, retmax=self.retmax)
         new_task.message = 'Запрос получен'
         new_task.task_id = task.id
         new_task.save()
@@ -232,18 +226,15 @@ class TematicAnaliseView(BaseTaskView):
         if len(request.data['articles']) < 2:
             return self.response_data(400, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
 
-        permissions = self.check_allow(request)
-        if permissions.all_records is None:
-            allow_search_records = None
-        else:
-            allow_search_records = permissions.all_records - permissions.used_records
-            print(f'Осталось {allow_search_records} до ограничения пользования...')
-            if allow_search_records == 0:
-                return self.response_data(403, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
+        allow_record = self.check_allow(request)
 
-        request.data['allow_records'] = allow_search_records
+        if allow_record is not None:
+            if len(request.data['articles']) > allow_record:
+                request.data['articles'] = request.data['articles'][:allow_record]
+
+        print(len(request.data['articles']))
         new_task = self.create_task(user=request.user, type_analise=0)
-        task = analise_records.delay(pk=request.user.id, params=request.data, new_task_id=new_task.id, user_permission_id=permissions.id)
+        task = analise_records.delay(pk=request.user.id, params=request.data, new_task_id=new_task.id)
 
         new_task.task_id = task.id
         new_task.message = 'Начинаем обработку...'
@@ -288,16 +279,8 @@ class EmbeddingTaskView(BaseTaskView):
         if (current_task is not None) and (current_worker is not None) and (current_worker.status == 'PROGRESS' or current_worker.status == 'STARTED'):
             return self.response_data(403, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
 
-        permissions = self.check_allow(request)
-        if permissions.all_records is not None:
-            allow_search_records = permissions.all_records - permissions.used_records
-            print(f'Осталось {allow_search_records} до ограничения пользования...')
-            if allow_search_records == 0:
-                return self.response_data(403, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
-
-        request.data['allow_records'] = allow_search_records
         new_task = self.create_task(user=request.user, type_analise=1)
-        task = get_ddi_articles.delay(new_task_id=new_task.id, user_permission_id=permissions.id, **request.data)
+        task = get_ddi_articles.delay(new_task_id=new_task.id, **request.data)
 
         new_task.task_id = task.id
         new_task.message = 'Начало обработки...'

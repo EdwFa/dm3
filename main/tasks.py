@@ -8,6 +8,7 @@ import json
 import os
 import math
 import io
+import http.client
 
 import oneai
 import requests
@@ -25,58 +26,60 @@ def get_path_to_file(pk, file_name):
 
     return path_to_file
 
-def check_permission(user_permission, IdList):
+def check_permission(user_permission, retmax):
     if user_permission.all_records is None:
         print('User has unlimited access!')
     else:
-        allow_records = user_permission.all_records - user_permission.used_records
-        print(f'Allow analise records = {allow_records}, Len recieved data = {len(IdList)}')
-        if not (len(IdList) > allow_records):
-            user_permission.used_records += len(IdList)
-        else:
-            IdList = IdList[:allow_records]
-            user_permission.used_records = user_permission.all_records
-        user_permission.save()
-    return IdList
+        allow_records = user_permission.all_records
+        print(f'Allow analise records = {allow_records}, Len recieved data = {retmax}')
+        if (retmax > allow_records):
+            retmax = allow_records
+
+    return retmax
 
 
 @shared_task(bind=True)
-def parse_records(self, query: str, count: int, new_task_id: int, permission_id: int, retmax: int = 10000):
+def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 10000):
     # Парсим полученные записи
     print("Start parsing...")
     print(f"Count={count}, Task id={new_task_id}")
     new_task = TaskSearch.objects.get(id=new_task_id)
-    user_permission = UserPermissions.objects.get(id=permission_id)
+    print(f'Parsing = {retmax} records')
 
     handle = Entrez.esearch(db="pubmed", sort='relevance', term=query, retmax=retmax)
     f = Entrez.read(handle)
     IdList = f['IdList']
-    IdList = check_permission(user_permission, IdList)
-
     handle.close()
 
-    handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
-
-    records = []
     i = 0
+    records = []
 
-    for record in Medline.parse(handle):
-        data = parse_record(record)
-        if data:
-            records.append(data)
+    while i < len(IdList):
+        handle = Entrez.efetch(db="pubmed", id=IdList[i:i+300], rettype="medline", retmode="text")
+        print(f'Parse IdList from {i} to {i+300}')
 
-        if i % 1000 == 0:
-            new_task.message = f'On {i}/{count} step...'
-            new_task.save()
+        try:
+            for record in Medline.parse(handle):
+                data = parse_record(record)
+                if data:
+                    records.append(data)
+                i += 1
+        except Exception as e:
+            print(f'Error on {i} step...')
+            print(e)
+            time.sleep(1)
 
-        i += 1
+        new_task.message = f'On {i}/{count} step...'
+        new_task.save()
 
-    new_task.save()
+        handle.close()
+
     print(len(records))
+
+
     data = {
         'search_ncbi': ArticleSerializer(records, many=True).data
     }
-    handle.close()
     return data
 
 
@@ -97,7 +100,7 @@ def move_space(inp_str):
 
 
 @shared_task(bind=True)
-def analise_records(self, pk, params, new_task_id, user_permission_id):
+def analise_records(self, pk, params, new_task_id):
     new_task = TaskAnalise.objects.get(id=new_task_id)
     new_task.message = 'Запущен процесс анализа, пожайлуста подождите...'
     new_task.save()
@@ -111,9 +114,6 @@ def analise_records(self, pk, params, new_task_id, user_permission_id):
     with open(get_path_to_file(pk, 'heapmap.json'), 'w') as f:
         json.dump(data['heapmap'], f)
     with open(get_path_to_file(pk, 'tematic_analise.json'), 'w') as f:
-        if params['allow_records'] is not None:
-            user_permission = UserPermissions.objects.get(id=user_permission_id)
-            check_permission(user_permission, data['tematic_analise'])
         json.dump(data['tematic_analise'], f)
     with open(get_path_to_file(pk, 'clust_graph.json'), 'w') as f:
         json.dump(data['clust_graph'], f)
@@ -205,7 +205,7 @@ def filter_record(record, **filters):
 
 
 @shared_task(bind=True)
-def get_ddi_articles(self, query, new_task_id, user_permission_id, **kwargs):
+def get_ddi_articles(self, query, new_task_id, **kwargs):
 
     url = f'https://www.ncbi.nlm.nih.gov/research/litsense-api/api/?query={query}&rerank=true'
     r = requests.get(url)
@@ -213,8 +213,7 @@ def get_ddi_articles(self, query, new_task_id, user_permission_id, **kwargs):
     if (r.status_code > 299 or r.status_code < 200):
         raise ConnectionError(f'Подключение к эмбедингам ncbi прошло неудачно с {r.status_code} ошибкой')
 
-    user_permission = UserPermissions.objects.get(id=user_permission_id)
-    records = check_permission(user_permission, json.loads(r.text))
+    records = json.loads(r.text)
     records_id = {record['pmid']: [round(record['score'], 2), record['section'], record['text']] for record in records if current_record(record, **kwargs)}
 
     handle = Entrez.efetch(db="pubmed", id=[k for k in records_id], rettype="medline", retmode="text")
