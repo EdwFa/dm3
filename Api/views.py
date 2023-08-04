@@ -3,6 +3,7 @@ from flask import Blueprint, current_app, jsonify, request
 from flask import send_file
 import nltk
 from Bio import Entrez, Medline
+import time
 
 from .summarise import *
 from .parsing import parse_record
@@ -29,13 +30,36 @@ def summarise_records():
     data = request.json
     if not ('IdList' in data):
         return jsonify({'status': 'Error', 'message': 'Text not found'}), 500
+    if len(data['IdList']) == 0:
+        return jsonify({'status': 'Error', 'message': 'Text not found'}), 500
     IdList = data['IdList']
     print(f'Len records = {len(IdList)}')
     print(IdList[:10])
-    handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
-    records = [parse_record(record) for record in Medline.parse(handle) if (record is not None)]
+    # handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
+    # records = [parse_record(record) for record in Medline.parse(handle) if (record is not None)]
+    # handle.close()
+
+    i = 0
+    records = []
+
+    while i < len(IdList):
+        handle = Entrez.efetch(db="pubmed", id=IdList[i:i + 300], rettype="medline", retmode="text")
+        print(f'Parse IdList from {i} to {i + 300}')
+
+        try:
+            for record in Medline.parse(handle):
+                data = parse_record(record)
+                if data:
+                    records.append(data)
+                i += 1
+        except Exception as e:
+            print(f'Error on {i} step...')
+            print(e)
+            time.sleep(1)
+
+        handle.close()
+
     raw_text = ' '.join([rec.titl + ' ' + rec.tiab for rec in records])
-    handle.close()
 
     current_app.logger.info(f'Делим документ на предложения...')
     sentences = nltk.sent_tokenize(raw_text)
