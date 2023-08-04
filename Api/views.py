@@ -2,6 +2,7 @@ import json
 from flask import Blueprint, current_app, jsonify, request
 from flask import send_file
 from Bio import Entrez, Medline
+import time
 
 from .model_analise import *
 from .parsing import parse_record
@@ -31,15 +32,33 @@ def analise_records():
         return jsonify({'status': 'Error', 'message': 'No one article id'}), 500
     IdList = data['articles']
 
-    current_app.logger.info(f'Get limit on analise package ({data["allow_records"]})...')
-    if data['allow_records'] is not None:
-        if len(IdList) > data['allow_records']:
-            IdList = IdList[:data['allow_records']]
+    current_app.logger.info(f'Get limit on analise package ({len(IdList)})...')
 
     filters = data['filters']
-    handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
-    records = [parse_record(record) for record in Medline.parse(handle) if not (record is None)]
-    handle.close()
+
+    i = 0
+    records = []
+
+    while i < len(IdList):
+        handle = Entrez.efetch(db="pubmed", id=IdList[i:i + 300], rettype="medline", retmode="text")
+        print(f'Parse IdList from {i} to {i + 300}')
+
+        try:
+            for record in Medline.parse(handle):
+                data = parse_record(record)
+                if data:
+                    records.append(data)
+                i += 1
+        except Exception as e:
+            print(f'Error on {i} step...')
+            print(e)
+            time.sleep(1)
+
+        handle.close()
+
+    # handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
+    # records = [parse_record(record) for record in Medline.parse(handle) if not (record is None)]
+    # handle.close()
 
     current_app.logger.info(f'Start clear raw strings...')
     articles = create_clear_articles(records)
