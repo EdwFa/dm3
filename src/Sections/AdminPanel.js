@@ -325,7 +325,7 @@ export class AdminPanel extends Component {
                     </a>
                     <ul class="dropdown-menu text-small shadow">
                       {permissions?.map(per =>
-                        <li><a class="dropdown-item" href="#">{per.topic} {per.used_records}/{per.all_records}</a></li>
+                        <li><a class="dropdown-item" href="#">{per.topic} {per.all_records? `${per.all_records}`: 'безлимитно'}</a></li>
                       )}
                     </ul>
                   </div>
@@ -539,7 +539,7 @@ export class AdminPanel extends Component {
                                 <p class="card-text">---------------------------------- </p>
                                 {DetailUser.permissions?.map(per =>
                                     <>
-                                        <p class="card-text"><small class="text-success">{per.topic} : {per.all_records? `${per.used_records}/${per.all_records}`: 'безлимитно'} </small></p>
+                                        <p class="card-text"><small class="text-success">{per.topic} : {per.all_records? `${per.all_records}`: 'безлимитно'} </small></p>
                                         <p class="card-text"><small class="text-success">Начало использования: {per.start_time}</small></p>
                                         <p class="card-text"><small class="text-success">---------------------------------- </small></p>
                                     </>

@@ -161,6 +161,13 @@ export class Chat extends Component {
                     <a href="#" class="d-block link-body-emphasis text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                       <img src="https://github.com/mdo.png" alt="mdo" width="32" height="32" class="rounded-circle" />
                     </a>
+                    <ul class="dropdown-menu text-small shadow">
+                      {/*
+                        {permissions?.map(per =>
+                            <li><a class="dropdown-item" href="#">{per.topic} {per.all_records? `${per.all_records}`: 'безлимитно'}</a></li>
+                        )}
+                      */}
+                    </ul>
                   </div>
                 </div>
                 <div class="flex items-center lg:order-2">

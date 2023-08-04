@@ -97,6 +97,7 @@ export class TematicReview extends Component {
       articles: [],
       DetailArticle: null,
       articlesInfo: [
+        { field: 'uid', filter: 'agNumberColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, resizable: true, headerName: 'PMID'},
         { field: 'titl', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, minWidth: 300, width: 450, resizable: true, headerName: 'Заголовок'},
         { field: 'pdat', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, resizable: true, headerName: 'Дата выхода'},
         { field: 'auth', filter: 'agTextColumnFilter', sortable: true, enableRowGroup: true, enableValue: true, minWidth: 300, width: 450, resizable: true, headerName: 'Авторы'},
@@ -1044,7 +1045,7 @@ export class TematicReview extends Component {
                     </a>
                     <ul class="dropdown-menu text-small shadow">
                       {permissions?.map(per =>
-                        <li><a class="dropdown-item" href="#">{per.topic} {per.all_records? `${per.used_records}/${per.all_records}`: 'безлимитно'}</a></li>
+                        <li><a class="dropdown-item" href="#">{per.topic} {per.all_records? `${per.all_records}`: 'безлимитно'}</a></li>
                       )}
                     </ul>
                   </div>
