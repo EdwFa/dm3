@@ -55,8 +55,8 @@ def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 
     records = []
 
     while i < len(IdList):
-        handle = Entrez.efetch(db="pubmed", id=IdList[i:i+300], rettype="medline", retmode="text")
-        print(f'Parse IdList from {i} to {i+300}')
+        handle = Entrez.efetch(db="pubmed", id=IdList[i:i+500], rettype="medline", retmode="text")
+        print(f'Parse IdList from {i} to {i+500}')
 
         try:
             for record in Medline.parse(handle):
@@ -67,7 +67,8 @@ def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 
         except Exception as e:
             print(f'Error on {i} step...')
             print(e)
-            time.sleep(1)
+
+        time.sleep(1)
 
         new_task.message = f'On {i}/{count} step...'
         new_task.save()
