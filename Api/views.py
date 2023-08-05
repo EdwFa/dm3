@@ -41,10 +41,23 @@ def summarise_records():
 
     i = 0
     records = []
+    retries = 0
 
     while i < len(IdList):
-        handle = Entrez.efetch(db="pubmed", id=IdList[i:i + 500], rettype="medline", retmode="text")
-        print(f'Parse IdList from {i} to {i + 300}')
+        try:
+            handle = Entrez.efetch(db="pubmed", id=IdList[i:i + 1000], rettype="medline", retmode="text")
+        except Exception as e:
+            print(e)
+
+            retries += 1
+            if retries > 5:
+                print('Max retries break')
+                break
+            time.sleep(1)
+            print(f'Retry IdList from {i} to {i + 1000}...')
+            continue
+
+        print(f'Parse IdList from {i} to {i + 1000}')
 
         try:
             for record in Medline.parse(handle):
@@ -55,8 +68,9 @@ def summarise_records():
         except Exception as e:
             print(f'Error on {i} step...')
             print(e)
+            time.sleep(1)
 
-        time.sleep(1)
+        time.sleep(0.5)
 
         handle.close()
 
