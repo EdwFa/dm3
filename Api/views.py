@@ -43,7 +43,7 @@ def summarise_records():
     records = []
 
     while i < len(IdList):
-        handle = Entrez.efetch(db="pubmed", id=IdList[i:i + 300], rettype="medline", retmode="text")
+        handle = Entrez.efetch(db="pubmed", id=IdList[i:i + 500], rettype="medline", retmode="text")
         print(f'Parse IdList from {i} to {i + 300}')
 
         try:
@@ -55,7 +55,8 @@ def summarise_records():
         except Exception as e:
             print(f'Error on {i} step...')
             print(e)
-            time.sleep(1)
+
+        time.sleep(1)
 
         handle.close()
 
