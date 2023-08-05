@@ -318,6 +318,44 @@ export class DDIReview extends Component {
       })
   }
 
+  getTranslate = (task_id, interval = 1000) => {
+    fetch(variables.API_URL + `/api/translate?task_id=${task_id}`,
+      {
+        headers: {
+          'Content-Type': 'application/json;charset=utf-8',
+          'Authorization': `Token ${variables.token}`,
+        },
+      }
+    )
+      .then((res) => {
+        if (res.status == 202) {
+          setTimeout(() => {
+            return this.getTranslate(task_id, interval)
+          }, interval);
+        } else if (res.status == 200) {
+          return res.json()
+        } else {
+          throw Error(res.statusText)
+        }
+      })
+      .then((data) => {
+        try {
+          this.setState({
+            queryText: data.data.translations[0].text,
+            message: 'Переведено',
+            messageStatus: 200,
+            loading: false,
+          });
+        } catch {
+          console.log('access')
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+        this.setState({ message: 'Произошла ошибка при переводе', loading: false, messageStatus: 500 });
+      });
+  }
+
   translateQuery() {
     fetch(variables.API_URL + '/api/translate', {
       method: 'POST',
@@ -335,7 +373,9 @@ export class DDIReview extends Component {
         else { throw Error(res.statusText) }
       })
       .then((result) => {
-        console.log(result.translations)
+        var task_id = result.data;
+        this.setState({ message: 'Переводим...', messageStatus: 201, loading: true })
+        this.getTranslate(task_id);
       })
       .catch((error) => {
         console.log(error)
@@ -553,7 +593,7 @@ export class DDIReview extends Component {
                         value={queryText}
                         onChange={this.changeQueryText}
                         aria-label="Search" />
-                      {/*<button type="submit" disabled={loading} value="Перевести" onClick={() => this.translateQuery()} class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-2">Перевести</button>*/}
+                      <button type="submit" disabled={loading} value="Перевести" onClick={() => this.translateQuery()} class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2">Перевести</button>
                       <button type="submit" disabled={loading} value="Найти" onClick={() => this.createTask()} class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2">Найти</button>
                     </div>
                   </div>
