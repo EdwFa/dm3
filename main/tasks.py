@@ -329,4 +329,26 @@ def send_message(self, message):
     # time.sleep(3)
     # return 'Ответ'
 
+@shared_task(bind=True)
+def translate(self, text):
+    headers = {
+        # 'Authorization': 'Api-Key ajejc7b5tt8j3kj70dd2',
+        'Authorization': 'Api-Key AQVN02HWXvUTHSZwNaK_tsv3KpFmeBEQxDMJIFnJ',
+        'Accept': 'application/json',
+        'Content-Type': 'application/json;charset=utf-8',
+    }
+    body = {
+        'targetLanguageCode': 'en',
+        'format': "PLAIN_TEXT",
+        'texts': [
+            text
+        ],
+        'speller': True
+    }
+    response = requests.post('https://translate.api.cloud.yandex.net/translate/v2/translate', headers=headers,
+                             json=body)
+
+    print(response.status_code)
+
+    return response.json()
 
