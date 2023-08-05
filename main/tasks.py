@@ -39,13 +39,17 @@ def check_permission(user_permission, retmax):
 
 
 @shared_task(bind=True)
-def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 10000):
+def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 10000, email: str = None):
     # Парсим полученные записи
     print("Start parsing...")
     print(f"Count={count}, Task id={new_task_id}")
     new_task = TaskSearch.objects.get(id=new_task_id)
     print(f'Parsing = {retmax} records')
 
+    if email:
+        Entrez.email = email
+
+    print(f'Email {email}]')
     handle = Entrez.esearch(db="pubmed", sort='relevance', term=query, retmax=retmax)
     f = Entrez.read(handle)
     IdList = f['IdList']
@@ -53,10 +57,23 @@ def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 
 
     i = 0
     records = []
+    retries = 0
 
     while i < len(IdList):
-        handle = Entrez.efetch(db="pubmed", id=IdList[i:i+500], rettype="medline", retmode="text")
-        print(f'Parse IdList from {i} to {i+500}')
+        try:
+            handle = Entrez.efetch(db="pubmed", id=IdList[i:i+1000], rettype="medline", retmode="text")
+        except Exception as e:
+            print(e)
+
+            retries += 1
+            if retries > 5:
+                print('Max retries break')
+                break
+            time.sleep(1)
+            print(f'Retry IdList from {i} to {i+1000}...')
+            continue
+
+        print(f'Parse IdList from {i} to {i+1000}')
 
         try:
             for record in Medline.parse(handle):
@@ -67,8 +84,9 @@ def parse_records(self, query: str, count: int, new_task_id: int, retmax: int = 
         except Exception as e:
             print(f'Error on {i} step...')
             print(e)
+            time.sleep(1)
 
-        time.sleep(1)
+        time.sleep(0.5)
 
         new_task.message = f'On {i}/{count} step...'
         new_task.save()

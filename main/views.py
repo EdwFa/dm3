@@ -173,7 +173,7 @@ class SearchTaskView(BaseTaskView):
         full_query, translation_stack, count = get_records(query)
         new_task = self.create_task(query=query, count=count, full_query=full_query, user=request.user,
                                translation_stack=translation_stack)
-        task = parse_records.delay(query=query, count=count, new_task_id=new_task.id, retmax=self.retmax)
+        task = parse_records.delay(query=query, count=count, new_task_id=new_task.id, retmax=self.retmax, email=request.user.email)
         new_task.message = 'Запрос получен'
         new_task.task_id = task.id
         new_task.save()
