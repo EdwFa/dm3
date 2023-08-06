@@ -1709,7 +1709,7 @@ export class TematicReview extends Component {
                             <div className="accordion-item">
                               <h2 className="accordion-header" id="flush-headingTwo">
                                 <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseSeven" aria-expanded="false" aria-controls="flush-collapseTwo">
-                                  Класстеризация
+                                  Тематические коллекции
                                 </button>
                               </h2>
                               <div id="flush-collapseSeven" className="collapse show multi-collapse" aria-labelledby="flush-headingTwo" data-bs-target="#accordionFlushExample">
@@ -1732,7 +1732,7 @@ export class TematicReview extends Component {
                             <div className="accordion-item">
                               <h2 className="accordion-header" id="flush-headingTwo">
                                 <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseEight" aria-expanded="false" aria-controls="flush-collapseTwo">
-                                  Таблица близости
+                                  Матрица близости тем
                                 </button>
                               </h2>
                               <div id="flush-collapseEight" className="collapse show multi-collapse" aria-labelledby="flush-headingTwo" data-bs-target="#accordionFlushExample">
@@ -1752,7 +1752,7 @@ export class TematicReview extends Component {
                             <div className="accordion-item">
                               <h2 className="accordion-header" id="flush-headingTwo">
                                 <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseNine" aria-expanded="false" aria-controls="flush-collapseTwo">
-                                  Иерархическое дерево
+                                  Иерархия тем
                                 </button>
                               </h2>
                               <div id="flush-collapseNine" className="collapse show multi-collapse" aria-labelledby="flush-headingTwo" data-bs-target="#accordionFlushExample">
@@ -1772,7 +1772,7 @@ export class TematicReview extends Component {
                             <div className="accordion-item">
                               <h2 className="accordion-header" id="flush-headingTwo">
                                 <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseTen" aria-expanded="false" aria-controls="flush-collapseTwo">
-                                  Распределение по датам
+                                  Временная динамика по темам
                                 </button>
                               </h2>
                               <div id="flush-collapseTen" className="collapse show multi-collapse" aria-labelledby="flush-headingTwo" data-bs-target="#accordionFlushExample">
