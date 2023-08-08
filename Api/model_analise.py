@@ -1,6 +1,6 @@
 from nltk.tokenize import word_tokenize
 import numpy
-from umap import UMAP
+from umap.umap_ import UMAP
 from bertopic import BERTopic
 import plotly
 from sentence_transformers import SentenceTransformer
