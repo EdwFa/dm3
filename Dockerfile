@@ -1,6 +1,6 @@
 FROM python:3.10.12
 
-WORKDIR /usr/src/datamed
+WORKDIR /usr/src/berttopicapi
 
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
