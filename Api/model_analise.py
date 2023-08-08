@@ -1,6 +1,6 @@
 from nltk.tokenize import word_tokenize
 import numpy
-from umap.umap_ import UMAP
+import umap.umap_ as um
 from bertopic import BERTopic
 import plotly
 from sentence_transformers import SentenceTransformer
@@ -73,7 +73,7 @@ def return_clust_graph(topic_model, docs_title, embeddings, **params):
     n_components = int(params.get('n_components', 2))
     min_dist = float(params.get('min_dist', 0.0))
     metric = params.get('metric', 'cosine')
-    reduced_embeddings = UMAP(n_neighbors=n_neighbors, n_components=n_components, min_dist=min_dist, metric=metric).fit_transform(embeddings)
+    reduced_embeddings = um.UMAP(n_neighbors=n_neighbors, n_components=n_components, min_dist=min_dist, metric=metric).fit_transform(embeddings)
     fig = topic_model.visualize_documents(docs_title, reduced_embeddings=reduced_embeddings, width=1000, height=1000)
     graphJSON = plotly.io.to_json(fig, pretty=True)
     return graphJSON
