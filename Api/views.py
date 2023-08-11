@@ -1,8 +1,11 @@
 import json
+import os
+
 from flask import Blueprint, current_app, jsonify, request
 from flask import send_file
 from Bio import Entrez, Medline
 import time
+import redis
 
 from .model_analise import *
 from .parsing import parse_record
@@ -10,6 +13,7 @@ from .parsing import parse_record
 
 analise = Blueprint('analise', __name__)
 
+redis_cli = redis.Redis(host=os.getenv('REDIS_HOST'), port=os.getenv('REDIS_PORT'), decode_responses=True)
 
 @analise.route('/check', methods=['GET'])
 def check_status():
@@ -33,14 +37,21 @@ def analise_records():
     IdList = data['articles']
 
     current_app.logger.info(f'Get limit on analise package ({len(IdList)})...')
-
+    email = data.get('email', None)
+    if email:
+        Entrez.email = email
     filters = data['filters']
+
+    current_task = data['current_task']
+
+    #redis_cli.get(f'task:{current_task}')
 
     i = 0
     records = []
     retries = 0
 
     while i < len(IdList):
+        redis_cli.set(f'task:{current_task}', 'Передаем данные на анализ...')
         try:
             handle = Entrez.efetch(db="pubmed", id=IdList[i:i + 1000], rettype="medline", retmode="text")
         except Exception as e:
@@ -76,9 +87,11 @@ def analise_records():
     # handle.close()
 
     current_app.logger.info(f'Start clear raw strings...')
+    redis_cli.set(f'task:{current_task}', ' Токенизация и очистка от стоп слов...')
     articles = create_clear_articles(records)
 
     current_app.logger.info(f'Start analise clear articles...')
+    redis_cli.set(f'task:{current_task}', 'Построение построение эмбедингов...')
     current_app.logger.info(f'Bild Bert...')
     current_app.logger.info(filters)
     topic_model = bild_bert(**filters)
@@ -87,9 +100,11 @@ def analise_records():
 
     current_app.logger.info(f'Plot graphics for results...')
     current_app.logger.info(f'Plot clust graph')
+    redis_cli.set(f'task:{current_task}', 'Cжатие по UMAP...')
     graph = return_clust_graph(topic_model, [rec['titl'] for rec in records], embeddings, **filters)
 
     current_app.logger.info(f'Plot heapmap')
+    redis_cli.set(f'task:{current_task}', 'Отрисовка графиков...')
     count_topics = len(set(topics))
     current_app.logger.info(f"Count topic = {count_topics}")
     n_clusters = int(filters.get('n_clusters', 10))
@@ -123,6 +138,7 @@ def analise_records():
         'topics': return_topic_label(topic_model)
     }
 
+    redis_cli.set(f'task:{current_task}', 'Передача назад...')
     current_app.logger.info(f'Done analise!')
 
     return jsonify(data), 200
