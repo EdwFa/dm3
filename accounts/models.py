@@ -6,7 +6,8 @@ from datetime import datetime
 allow_statuses = (
     (0, 'tematic'),
     (1, 'embedding'),
-    (2, 'all'),
+    (2, 'chat'),
+    (3, 'all'),
 )
 
 topic_number = (
@@ -123,6 +124,8 @@ class User(AbstractBaseUser):
         if self.allow_status == 1:
             return 'Факты EBM'
         if self.allow_status == 2:
+            return 'Поговорим'
+        if self.allow_status == 3:
             return 'Все'
 
 

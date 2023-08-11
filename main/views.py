@@ -1,13 +1,16 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import AllowAny
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 
 from celery.result import AsyncResult
 from django_celery_results.models import TaskResult
 
-from dm.settings import RETMAX, MAX_COUNT
+import asyncio
+
+from dm.settings import RETMAX, MAX_COUNT, redis_cli
 from .tasks import *
 
 
@@ -119,6 +122,11 @@ class SearchTaskView(BaseTaskView):
     label = 'search_ncbi'
     topic_number = 0
 
+    def create_data_response(self, pk):
+        data = super().create_data_response(pk)
+        data['search_ncbi'] = data['search_ncbi'][:100]
+        return data
+
     def get(self, request):
         current_task, current_worker = self.check_working_task(request)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
 
@@ -163,7 +171,6 @@ class SearchTaskView(BaseTaskView):
         if (current_task is not None) and (current_worker is not None) and (current_worker.status == 'PROGRESS' or current_worker.status == 'STARTED'):
             return self.response_data(403, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
 
-
         allow_record = self.check_allow(request)
 
         if allow_record is not None:
@@ -183,6 +190,21 @@ class SearchTaskView(BaseTaskView):
         return self.response_data(201, data=data)
 
 
+class GetAllSearchApi(BaseTaskView):
+    taskModel = TaskSearch  # Начальная модель для поиска задачи
+    files = ['search_ncbi']  #
+    label = 'search_ncbi'
+    topic_number = 0
+
+    def get(self, request):
+        current_task, current_worker = self.check_working_task(
+            request)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
+
+        if current_task is None:  # Если воркер отсутвует значит у пользователя сейчас свободна очередь запросов
+            data = self.create_data_response(request.user.id)
+            return self.response_data(200, data=data)  # Выводим его последний запрос из базы
+
+
 class TematicAnaliseView(BaseTaskView):
     taskModel = TaskAnalise  # Начальная модель для поиска задачи
     files = ['tematic_analise', 'clust_graph', 'heapmap', 'heirarchy', 'DTM', 'topics']
@@ -194,6 +216,7 @@ class TematicAnaliseView(BaseTaskView):
         return None
 
     def get(self, request):
+
         current_task, current_worker = self.check_working_task(request, type_analise=0)  # Получаем наш первый запущенный воркер по возрастанию даты запроса
 
         if current_task is None: # Если воркер отсутвует значит у пользователя сейчас свободна очередь запросов
@@ -202,7 +225,10 @@ class TematicAnaliseView(BaseTaskView):
 
         if current_worker is None:  # Пользователь отправил запрос но обработчик не принял его
             current_task.delete()
+            redis_cli.delete(f'task:{current_task.id}')
             return self.response_data(400, message='Запрос завершен с ошибкой!', data={'tematic_review': None})  # Выводим ошибку об отсутвии обработки запросов
+
+        current_task.message = redis_cli.get(f'task:{current_task.id}')
 
         if current_worker.status == 'PROGRESS' or current_worker.status == 'STARTED':
              return self.response_data(202, message=current_task.message, data={'tematic_analise': None})
@@ -234,10 +260,12 @@ class TematicAnaliseView(BaseTaskView):
 
         print(len(request.data['articles']))
         new_task = self.create_task(user=request.user, type_analise=0)
+        redis_cli.set(f'task:{new_task.id}', 'Начинаем обработку...')
+        request.data['email'] = request.user.email
         task = analise_records.delay(pk=request.user.id, params=request.data, new_task_id=new_task.id)
 
         new_task.task_id = task.id
-        new_task.message = 'Начинаем обработку...'
+        new_task.message = redis_cli.get(f'task:{new_task.id}')
         new_task.save()
         data = {
             'data': TaskAnaliseSerializer(new_task, many=False).data,
@@ -280,7 +308,7 @@ class EmbeddingTaskView(BaseTaskView):
             return self.response_data(403, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
 
         new_task = self.create_task(user=request.user, type_analise=1)
-        task = get_ddi_articles.delay(new_task_id=new_task.id, **request.data)
+        task = get_ddi_articles.delay(new_task_id=new_task.id, email=request.user.email, **request.data)
 
         new_task.task_id = task.id
         new_task.message = 'Начало обработки...'
@@ -347,7 +375,7 @@ class GetGraphData(BaseTaskView):
             return self.response_data(400, message='В настоящее время вы не можете создать еще один запрос, дождитесь оканчания предыдущего.')
 
         new_task = self.create_task(user=request.user, type_analise=2)
-        task = plot_graph_associations.delay(pk=request.user.id, IdList=request.data['articles'])
+        task = plot_graph_associations.delay(pk=request.user.id, email=request.user.email, IdList=request.data['articles'])
 
         new_task.task_id = task.id
         new_task.message = 'Начинаем обработку...'
@@ -380,7 +408,7 @@ class SummariseTextApi(APIView):
 
     def post(self, request):
         print(request.data)
-        task = summarise_text.delay(records=request.data['articles'])
+        task = summarise_text.delay(records=request.data['articles'], email=request.user.email)
         data = {
             'data': task.id,
         }
@@ -409,7 +437,7 @@ class SummariseEmbApi(APIView):
 
     def post(self, request):
         print(request.data)
-        task = summarise_emb.delay(pk=request.user.id, text=request.data['articles'])
+        task = summarise_emb.delay(pk=request.user.id, text=request.data['articles'], email=request.user.email)
         data = {
             'data': task.id,
         }
@@ -554,5 +582,15 @@ class ChatApi(APIView):
             'data': task.id,
         }
         return Response(data=data, status=status.HTTP_200_OK)
+
+
+from rest_framework.decorators import api_view, permission_classes
+
+@api_view()
+@permission_classes([AllowAny])
+async def hello_world(request):
+    context = await check()
+    return Response(status=200)
+
 
 

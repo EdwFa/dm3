@@ -4,6 +4,7 @@ from .views import *
 
 urlpatterns = [
     path('search/', SearchTaskView.as_view(), name='search'),
+    path('all_records/', GetAllSearchApi.as_view(), name='admin'),
     path('analise/', TematicAnaliseView.as_view(), name='analise'),
     path('summarise', SummariseTextApi.as_view(), name='summarise'),
 
@@ -21,4 +22,6 @@ urlpatterns = [
     path('chat', ChatApi.as_view(), name='chat'),
 
     path('admin', AdminPanelApi.as_view(), name='admin'),
+
+    # path('check_async', hello_world, name='check'), # разобраться с ассинхроннотью
 ]

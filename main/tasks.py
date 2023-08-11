@@ -2,7 +2,6 @@ from datetime import datetime, timezone
 from Bio import Entrez
 from Bio import Medline
 from celery import shared_task
-import requests
 import time
 import json
 import os
@@ -10,7 +9,10 @@ import math
 import io
 import http.client
 
-import oneai
+import asyncio
+import aiohttp
+from aiohttp import ClientSession
+
 import requests
 
 from .serializers import *
@@ -124,7 +126,8 @@ def analise_records(self, pk, params, new_task_id):
     new_task.message = 'Запущен процесс анализа, пожайлуста подождите...'
     new_task.save()
 
-    response = requests.post(f'{BERTTOPICAPI_URL}/analise', json=params)
+    params['current_task'] = new_task_id
+    response = requests.post(f'{BERTTOPICAPI_URL}/analise', json=params, headers={'User-Agent': 'Mozilla/5.0'})
     print(response.status_code)
     if response.status_code != 200:
         raise Exception('Api is failed!')
@@ -173,8 +176,8 @@ def analise_records(self, pk, params, new_task_id):
 
 
 @shared_task(bind=True)
-def summarise_text(self, records):
-    response = requests.post(f'{SUMMARISEAPI_URL}/summarise', json={'IdList': records})
+def summarise_text(self, records, email: str):
+    response = requests.post(f'{SUMMARISEAPI_URL}/summarise', json={'IdList': records, 'email': email}, headers={'User-Agent': 'Mozilla/5.0'})
     print(response.status_code)
     if response.status_code != 200:
         raise Exception('Api is failed!')
@@ -185,9 +188,9 @@ def summarise_text(self, records):
 
 
 @shared_task(bind=True)
-def summarise_emb(self, pk, text):
+def summarise_emb(self, pk, text, email: str):
     text = ' '.join([s for s in text])
-    response = requests.post(f'{SUMMARISEAPI_URL}/summarise_emb', json={'text': text})
+    response = requests.post(f'{SUMMARISEAPI_URL}/summarise_emb', json={'text': text, 'email': email}, headers={'User-Agent': 'Mozilla/5.0'})
     print(response.status_code)
     if response.status_code != 200:
         raise Exception('Api is failed!')
@@ -235,6 +238,7 @@ def get_ddi_articles(self, query, new_task_id, **kwargs):
     records = json.loads(r.text)
     records_id = {record['pmid']: [round(record['score'], 2), record['section'], record['text']] for record in records if current_record(record, **kwargs)}
 
+    Entrez.email = kwargs.get('email', PARSER_EMAIL)
     handle = Entrez.efetch(db="pubmed", id=[k for k in records_id], rettype="medline", retmode="text")
 
     records = []
@@ -283,12 +287,13 @@ def markup_artcile(self, record):
     return record
 
 @shared_task(bind=True)
-def plot_graph_associations(self, IdList, pk, max_size=200):
+def plot_graph_associations(self, IdList, pk, email, max_size=200):
     # Start plot graph on tematic analise
 
     if len(IdList) > max_size:
         IdList = IdList[:max_size - 1]
 
+    Entrez.email = email
     handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
     articles = []
 
@@ -320,14 +325,12 @@ def plot_graph_associations(self, IdList, pk, max_size=200):
 
 @shared_task(bind=True)
 def send_message(self, message):
-    response = requests.post(f'{CHATAPI_URL}/analise', json={'message': message})
+    response = requests.post(f'{CHATAPI_URL}/analise', json={'message': message}, headers={'User-Agent': 'Mozilla/5.0'})
     print(response.status_code)
     if response.status_code != 200:
         raise Exception('Api is failed!')
 
     return response.json()['message']
-    # time.sleep(3)
-    # return 'Ответ'
 
 @shared_task(bind=True)
 def translate(self, text):
@@ -351,4 +354,13 @@ def translate(self, text):
     print(response.status_code)
 
     return response.json()
+
+
+async def hello_world_message() -> str:
+    await asyncio.sleep(1)
+    return 'Hello World!'
+async def check() -> None:
+    message = await hello_world_message()
+    print(message)
+    return message
 

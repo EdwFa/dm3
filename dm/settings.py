@@ -14,6 +14,7 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv, dotenv_values
 from Bio import Entrez
+import redis
 
 
 bool_env = lambda key: True if key == 'True' else False  # Ф-я для превращения данных в булевые значения из .env файла конфигурации
@@ -243,4 +244,6 @@ CHATAPI_URL = os.getenv('CHATAPI_URL')
 
 # Пользовтель
 AUTH_USER_MODEL = "accounts.User"
+
+redis_cli = redis.Redis(host='localhost', port=6379, decode_responses=True)
 
