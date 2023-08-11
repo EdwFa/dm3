@@ -34,6 +34,11 @@ def summarise_records():
         return jsonify({'status': 'Error', 'message': 'Text not found'}), 500
     IdList = data['IdList']
     print(f'Len records = {len(IdList)}')
+
+    email = data.get('email', None)
+    if email:
+        Entrez.email = email
+
     print(IdList[:10])
     # handle = Entrez.efetch(db="pubmed", id=IdList, rettype="medline", retmode="text")
     # records = [parse_record(record) for record in Medline.parse(handle) if (record is not None)]
