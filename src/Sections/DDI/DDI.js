@@ -73,8 +73,8 @@ export class DDIReview extends Component {
       articlesInfo: [
         { field: 'text', filter: 'agTextColumnFilter', editable: true, enableRowGroup: true, minWidth: 300, width: 450, resizable: true, headerName: 'Результат'},
         { field: 'score', filter: 'agNumberColumnFilter', sortable: true, enableRowGroup: true, editable: true, resizable: true, headerName: 'Точность'},
-        { field: 'query_number', editable: true, resizable: true, enableRowGroup: true, headerName: 'Номер запроса'},
-        { field: 'section', filter: 'agTextColumnFilter', editable: true, resizable: true, enableRowGroup: true, headerName: 'Секция'},
+        { field: 'query_number', filter: 'agNumberColumnFilter', editable: true, resizable: true, enableRowGroup: true, headerName: 'Номер запроса'},
+        { field: 'section', filter: 'agNumberColumnFilter', editable: true, resizable: true, enableRowGroup: true, headerName: 'Секция'},
       ],
       summarise: null,
       task_id: null,
@@ -511,9 +511,10 @@ export class DDIReview extends Component {
 
     if (!token) {
       return <Navigate push to="/login" />
-
     } else if (allow_page === 0) {
       return <Navigate push to="/tematic_review" />
+    } else if (allow_page === 2) {
+      return <Navigate push to="/chat" />
     } else {
       return (
         <>
@@ -525,7 +526,7 @@ export class DDIReview extends Component {
                     <img src="https://flowbite.s3.amazonaws.com/logo.svg" class="mr-3 h-8" alt="FlowBite Logo" />
                     <span class="self-center text-2xl font-semibold whitespace-nowrap">EBM Sechenov DataMed.AI</span>
                   </a>
-                  {allow_page === 2 ?
+                  {allow_page === 3 ?
                     <ul class="flex font-medium flex-row space-x-8">
                       <Link to="/tematic_review">
                         <li>

@@ -1,8 +1,8 @@
 export const variables = {
     API_URL: "http://localhost:8000",
-    token: "1c353870d62ea08af5f9b15f66dc2926519ec396",
-    email: "artemnesteihyb@mail.ru",
-    allow: 2,
+    token: null,
+    email: null,
+    allow: null,
     admin: true,
 }
 

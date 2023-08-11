@@ -17,6 +17,7 @@ export class Chat extends Component {
 
     this.state = {
       token: variables.token,
+      allow_page: variables.allow,
       loading: false,
       messages: [{'request': 'test 1', 'response': 'response 1', status: 200}, {'request': 'test 2', 'response': 'response 2', status: 200}],
       message: null,
@@ -118,10 +119,16 @@ export class Chat extends Component {
       message,
       sendMessage,
 
+      allow_page,
+
     } = this.state;
 
     if (!token) {
       return <Navigate push to="/login" />
+    } else if (allow_page === 0) {
+      return <Navigate push to="/tematic_review" />
+    } else if (allow_page === 1) {
+      return <Navigate push to="/ddi_review" />
     } else {
       return (
         <>
@@ -133,6 +140,7 @@ export class Chat extends Component {
                     <img src="https://flowbite.s3.amazonaws.com/logo.svg" class="mr-3 h-8" alt="FlowBite Logo" />
                     <span class="self-center text-2xl font-semibold whitespace-nowrap">EBM Sechenov DataMed.AI</span>
                   </a>
+                  {allow_page === 3 ?
                     <ul class="flex font-medium flex-row space-x-8">
                       <Link to="/tematic_review">
                         <li>
@@ -149,12 +157,15 @@ export class Chat extends Component {
                           <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Факты для EBM</a>
                         </li>
                       </Link>
-                      <Link to="/admin">
-                        <li>
-                          <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Админ панель</a>
-                        </li>
-                      </Link>
+                      {variables.admin?
+                        <Link to="/admin">
+                          <li>
+                            <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Админ панель</a>
+                          </li>
+                        </Link>
+                      :null}
                     </ul>
+                  :null}
                 </div>
                 <div class="flex items-center lg:order-3">
                   <div class="flex-shrink-0 dropdown">

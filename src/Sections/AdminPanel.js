@@ -75,8 +75,8 @@ export class AdminPanel extends Component {
       max_analise: 9999,
       max_ddi: 9999,
       changedUser: null,
-      allow_type: {label: 'Все', value: 2},
-      allow_types: [{label: 'Тематический анализ', value: 0}, {label: 'Факты EBM', value: 1}, {label: 'Все', value: 2}]
+      allow_type: {label: 'Все', value: 3},
+      allow_types: [{label: 'Тематический анализ', value: 0}, {label: 'Факты EBM', value: 1}, {label: 'Поговорим', value: 2}, {label: 'Все', value: 3}]
     }
   }
 
