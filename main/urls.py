@@ -23,5 +23,5 @@ urlpatterns = [
 
     path('admin', AdminPanelApi.as_view(), name='admin'),
 
-    # path('check_async', hello_world, name='check'), # разобраться с ассинхроннотью
+    # path('check_async', check_async, name='check'), # разобраться с ассинхроннотью
 ]

@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/4.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
-
+import json
 from pathlib import Path
 import os
 from dotenv import load_dotenv, dotenv_values
@@ -86,6 +86,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'dm.wsgi.application'
+# ASGI_APPLICATION = 'dm.asgi.application'
 
 # Cookie and sessions configs.py
 
@@ -247,3 +248,10 @@ AUTH_USER_MODEL = "accounts.User"
 
 redis_cli = redis.Redis(host='localhost', port=6379, decode_responses=True)
 
+# Для яндекса
+SERVICE_ACCOUNT_ID = os.getenv('SERVICE_ACCOUNT_ID')
+KEY_ID = os.getenv('KEY_ID')
+
+PRIVATE_KEY = json.load(open('maintenance-key.json'))['private_key']
+
+IAM_TOKEN = "ebm.datamed.pro: IAMTOKEN"

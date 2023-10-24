@@ -1,3 +1,4 @@
+import django.http
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -577,20 +578,13 @@ class ChatApi(APIView):
 
     def post(self, request):
         print(request.data)
-        task = send_message.delay(message=request.data['message'])
+        request.data['email'] = request.user.email
+        request.data['number_of_query'] = 1
+        task = send_message.delay(**request.data)
         data = {
             'data': task.id,
         }
         return Response(data=data, status=status.HTTP_200_OK)
-
-
-from rest_framework.decorators import api_view, permission_classes
-
-@api_view()
-@permission_classes([AllowAny])
-async def hello_world(request):
-    context = await check()
-    return Response(status=200)
 
 
 
