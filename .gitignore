@@ -4,3 +4,5 @@ logs
 datasets
 *.pyc
 dm/settings.py
+*.env
+maintenance-key.json
