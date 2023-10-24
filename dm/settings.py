@@ -249,9 +249,11 @@ AUTH_USER_MODEL = "accounts.User"
 redis_cli = redis.Redis(host='localhost', port=6379, decode_responses=True)
 
 # Для яндекса
-SERVICE_ACCOUNT_ID = os.getenv('SERVICE_ACCOUNT_ID')
-KEY_ID = os.getenv('KEY_ID')
-
-PRIVATE_KEY = json.load(open('maintenance-key.json'))['private_key']
+with open('maintenance-key.json') as f:
+    json_data = json.load(f)
+    SERVICE_ACCOUNT_ID = json_data['service_account_id']
+    KEY_ID = json_data['id']
+    PRIVATE_KEY = json_data['private_key']
+    print(SERVICE_ACCOUNT_ID, KEY_ID, PRIVATE_KEY)
 
 IAM_TOKEN = "ebm.datamed.pro: IAMTOKEN"
