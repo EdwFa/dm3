@@ -1,60 +1,70 @@
-import React, { Component } from 'react';
-import { useState, useEffect, createRef } from 'react';
+import React, { Component } from "react";
+import { useState, useEffect, createRef } from "react";
 
-import { Navigate, Link } from 'react-router-dom';
+import { Navigate, Link } from "react-router-dom";
 
 import Graph from "react-graph-vis";
-import { v4 as uuidv4 } from 'uuid'
+import { v4 as uuidv4 } from "uuid";
 //import "./network.css";
 
-import { AgGridReact } from 'ag-grid-react';
-import 'ag-grid-enterprise';
-import 'ag-grid-community/styles/ag-grid.css';
-import 'ag-grid-community/styles/ag-theme-alpine.css';
-import '../ag-theme-acmecorp.css';
+import { AgGridReact } from "ag-grid-react";
+import "ag-grid-enterprise";
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-alpine.css";
+import "../ag-theme-acmecorp.css";
 
+import { variables, AG_GRID_LOCALE_RU } from "../Variables.js";
 
-import { variables, AG_GRID_LOCALE_RU } from '../Variables.js';
+import Slider from "react-input-slider";
 
-import Slider from 'react-input-slider';
-
-var ErrorMessage = 0
-const per_topics = ['Поиск в pubmed', 'Тематический анализ', 'Поиск в векторном представлении']
+var ErrorMessage = 0;
+const per_topics = [
+  "Поиск в pubmed",
+  "Тематический анализ",
+  "Поиск в векторном представлении",
+];
 
 const obj_color = {
-  'disease': "#fdbbbb",
-  'drug': "#ECC58B",
-  'gene': "#E2DB8C",
-  'chemical': "#21c354",
-  'species': "#A6EFDC",
-  'mutation': "#B2DDEA",
-  'cell_type': "#C6DEF5",
-  'cell_line': "#A3B3D2",
-  'DNA': "#C9B9E8",
-  'RNA': "#D7DBE8",
-}
+  disease: "#fdbbbb",
+  drug: "#ECC58B",
+  gene: "#E2DB8C",
+  chemical: "#21c354",
+  species: "#A6EFDC",
+  mutation: "#B2DDEA",
+  cell_type: "#C6DEF5",
+  cell_line: "#A3B3D2",
+  DNA: "#C9B9E8",
+  RNA: "#D7DBE8",
+};
 
 function markup_text(text, annotations) {
   if (!annotations) {
-    return text
+    return text;
   }
-  let markup_text = ''
-  let last_position = 0
+  let markup_text = "";
+  let last_position = 0;
   for (let annotation of annotations) {
-    let start = annotation.span.begin
-    let end = annotation.span.end
-    if (!annotation.prop) { console.log('This') }
-    let markup_str = `<span style=\"color: ${obj_color[annotation.obj]}\">${text.slice(start, end)}<sub>${annotation.prob ? annotation.prob.toFixed(2) : ""}</sub></span>`
-    markup_text = `${markup_text}${text.slice(last_position, start)}${markup_str}`
+    let start = annotation.span.begin;
+    let end = annotation.span.end;
+    if (!annotation.prop) {
+      console.log("This");
+    }
+    let markup_str = `<span style=\"color: ${
+      obj_color[annotation.obj]
+    }\">${text.slice(start, end)}<sub>${
+      annotation.prob ? annotation.prob.toFixed(2) : ""
+    }</sub></span>`;
+    markup_text = `${markup_text}${text.slice(
+      last_position,
+      start
+    )}${markup_str}`;
 
-    last_position = end
+    last_position = end;
   }
-  return markup_text
+  return markup_text;
 }
 
-
 export class DDIReview extends Component {
-
   constructor(props) {
     super(props);
 
@@ -71,114 +81,165 @@ export class DDIReview extends Component {
       messageStatus: 200,
       articles: [],
       articlesInfo: [
-        { field: 'text', filter: 'agTextColumnFilter', editable: true, enableRowGroup: true, minWidth: 300, width: 450, resizable: true, headerName: 'Результат'},
-        { field: 'score', filter: 'agNumberColumnFilter', sortable: true, enableRowGroup: true, editable: true, resizable: true, headerName: 'Точность'},
-        { field: 'query_number', filter: 'agNumberColumnFilter', editable: true, resizable: true, enableRowGroup: true, headerName: 'Номер запроса'},
-        { field: 'section', filter: 'agNumberColumnFilter', editable: true, resizable: true, enableRowGroup: true, headerName: 'Секция'},
+        {
+          field: "text",
+          filter: "agTextColumnFilter",
+          editable: true,
+          enableRowGroup: true,
+          minWidth: 300,
+          width: 450,
+          resizable: true,
+          headerName: "Результат",
+        },
+        {
+          field: "score",
+          filter: "agNumberColumnFilter",
+          sortable: true,
+          enableRowGroup: true,
+          editable: true,
+          resizable: true,
+          headerName: "Точность",
+        },
+        {
+          field: "query_number",
+          filter: "agNumberColumnFilter",
+          editable: true,
+          resizable: true,
+          enableRowGroup: true,
+          headerName: "Номер запроса",
+        },
+        {
+          field: "section",
+          filter: "agNumberColumnFilter",
+          editable: true,
+          resizable: true,
+          enableRowGroup: true,
+          headerName: "Секция",
+        },
       ],
       summarise: null,
       task_id: null,
 
       // Filters
-      queryText: 'What methods are available to measure anti-mullerian hormone concentrations in young women?',
+      queryText:
+        "What methods are available to measure anti-mullerian hormone concentrations in young women?",
       queryDate: null,
       queryScore: 0.8,
       queryTypes: new Set(),
 
       permissions: [],
-    }
+    };
   }
 
   // Permissions
   getPermissions() {
-    fetch(variables.API_URL + '/api/permissions',
-      {
-        headers: {
-          'Content-Type': 'application/json;charset=utf-8',
-          'Authorization': `Token ${variables.token}`,
-        },
-      }
-    )
-      .then(response => {
+    fetch(variables.API_URL + "/api/permissions", {
+      headers: {
+        "Content-Type": "application/json;charset=utf-8",
+        Authorization: `Token ${variables.token}`,
+      },
+    })
+      .then((response) => {
         console.log(response.status);
-        ErrorMessage = response.status
+        ErrorMessage = response.status;
         if (response.ok) {
-          return response.json()
+          return response.json();
         } else {
-          throw Error(response.status)
+          throw Error(response.status);
         }
       })
-      .then(data => {
-        console.log(data)
-        this.setState({permissions: data.permissions})
+      .then((data) => {
+        console.log(data);
+        this.setState({ permissions: data.permissions });
       })
-      .catch(error => {
-        console.log(error)
-      })
+      .catch((error) => {
+        console.log(error);
+      });
   }
 
   getArticles = (task_id, query_number = 0, interval = 1000) => {
-    fetch(variables.API_URL + `/api/ddi_review`,
-      {
-        headers: {
-          'Content-Type': 'application/json;charset=utf-8',
-          'Authorization': `Token ${variables.token}`,
-        },
-      }
-    )
-      .then(response => {
-        console.log(query_number)
+    fetch(variables.API_URL + `/api/ddi_review`, {
+      headers: {
+        "Content-Type": "application/json;charset=utf-8",
+        Authorization: `Token ${variables.token}`,
+      },
+    })
+      .then((response) => {
+        console.log(query_number);
         console.log(response.status);
-        ErrorMessage = response.status
+        ErrorMessage = response.status;
         if (response.ok) {
-          return response.json()
+          return response.json();
         } else {
-          throw Error(response.statusText)
+          throw Error(response.statusText);
         }
       })
-      .then(data => {
+      .then((data) => {
         if (ErrorMessage === 202) {
-          this.setState({ loading: true, message: data.message, messageStatus: 202 });
+          this.setState({
+            loading: true,
+            message: data.message,
+            messageStatus: 202,
+          });
           setTimeout(() => {
-            return this.getArticles(task_id, query_number, interval)
+            return this.getArticles(task_id, query_number, interval);
           }, interval);
         } else {
           this.setState({
-            articles: [...this.state.articles, ...data.data], DetailArticle: data.data[0], loading: false, message: 'Запрос успешно обработан', messageStatus: 200
+            articles: [...this.state.articles, ...data.data],
+            DetailArticle: data.data[0],
+            loading: false,
+            message: "Запрос успешно обработан",
+            messageStatus: 200,
           });
           if (query_number !== 0) {
             this.state.query_list[query_number - 1].status = 1;
           }
         }
       })
-      .catch(error => {
+      .catch((error) => {
         console.log(error);
         if (ErrorMessage === 500) {
-          this.setState({ loading: false, message: 'Ошибка сервера', messageStatus: 500});
+          this.setState({
+            loading: false,
+            message: "Ошибка сервера",
+            messageStatus: 500,
+          });
         } else if (ErrorMessage === 403) {
-          this.setState({ loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 403 });
+          this.setState({
+            loading: false,
+            message: "Дождитесь окончания предыдушего запроса",
+            messageStatus: 403,
+          });
         } else if (ErrorMessage === 404) {
-          this.setState({ loading: false, message: 'Сделайте запрос', messageStatus: 202 });
+          this.setState({
+            loading: false,
+            message: "Сделайте запрос",
+            messageStatus: 202,
+          });
         } else {
-          this.setState({ loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
+          this.setState({
+            loading: false,
+            message: "Что-то пошло не так",
+            messageStatus: 400,
+          });
         }
         if (query_number !== 0) {
           this.state.query_list[query_number - 1].status = 2;
         }
-      })
-
-  }
+      });
+  };
 
   createTask() {
     // Отправляем запрос на сервер для получения статей
     this.state.query_list.push({ query: this.state.queryText, status: 0 });
     const query_number = this.state.query_list.length;
-    fetch(variables.API_URL + '/api/ddi_review', {
-      method: 'POST',
+    fetch(variables.API_URL + "/api/ddi_review", {
+      method: "POST",
       headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json;charset=utf-8',
-        'Authorization': `Token ${variables.token}`,
+        Accept: "application/json",
+        "Content-Type": "application/json;charset=utf-8",
+        Authorization: `Token ${variables.token}`,
       },
       body: JSON.stringify({
         query: this.state.queryText,
@@ -186,272 +247,317 @@ export class DDIReview extends Component {
         number_of_query: query_number,
         date: this.state.queryDate,
         type: [...this.state.queryTypes],
-      })
+      }),
     })
-      .then(response => {
-        console.log(query_number)
+      .then((response) => {
+        console.log(query_number);
         console.log(response.status);
         if (response.ok) {
-          return response.json()
+          return response.json();
         } else {
-          ErrorMessage = response.status
-          throw Error(response.statusText)
+          ErrorMessage = response.status;
+          throw Error(response.statusText);
         }
       })
-      .then(data => {
+      .then((data) => {
         this.setState({
           task_id: data.data,
           message: "Ваш запрос в очереди. Пожайлуста дождитесь результата",
           messageStatus: 201,
-          loading: true
+          loading: true,
         });
-        this.getArticles(data.data, query_number)
+        this.getArticles(data.data, query_number);
       })
-      .catch(error => {
+      .catch((error) => {
         console.log(error);
         if (ErrorMessage === 500) {
-          this.setState({ loading: false, message: 'Ошибка сервера', messageStatus: 500 });
+          this.setState({
+            loading: false,
+            message: "Ошибка сервера",
+            messageStatus: 500,
+          });
         } else if (ErrorMessage === 403) {
-          this.setState({ loading: false, message: 'Дождитесь окончания предыдушего запроса', messageStatus: 403 });
+          this.setState({
+            loading: false,
+            message: "Дождитесь окончания предыдушего запроса",
+            messageStatus: 403,
+          });
         } else {
-          this.setState({ loading: false, message: 'Что-то пошло не так', messageStatus: 400 });
+          this.setState({
+            loading: false,
+            message: "Что-то пошло не так",
+            messageStatus: 400,
+          });
         }
-      }
-      )
+      });
   }
 
   clearTask() {
-    this.setState({ query_list: [], articles: [], DetailArticle: null })
+    this.setState({ query_list: [], articles: [], DetailArticle: null });
     alert("Таблица очищена!");
   }
 
   componentDidMount() {
     this.getArticles();
     this.getPermissions();
-    console.log('start');
+    console.log("start");
   }
 
   onSelectionChanged = () => {
     const selectedRows = this.gridRef.current.api.getSelectedRows();
-    this.setState({ DetailArticle: (selectedRows.length === 1 ? selectedRows[0] : null) })
-  }
+    this.setState({
+      DetailArticle: selectedRows.length === 1 ? selectedRows[0] : null,
+    });
+  };
 
   changeQueryText = (e) => {
     this.setState({ queryText: e.target.value });
-  }
+  };
 
   changeQueryDate = (e) => {
     this.setState({ queryDate: e });
-  }
+  };
 
   changeQueryTypes(type) {
     if (this.state.queryTypes.has(type)) {
-      this.state.queryTypes.delete(type)
+      this.state.queryTypes.delete(type);
     } else {
-      this.state.queryTypes.add(type)
+      this.state.queryTypes.add(type);
     }
-    this.setState({ updateOr: !this.state.updateOr })
+    this.setState({ updateOr: !this.state.updateOr });
   }
 
   // Summarise
 
   getSummarise = (task_id, interval = 1000) => {
-    fetch(variables.API_URL + `/api/summarise_emb?task_id=${task_id}`,
-      {
-        headers: {
-          'Content-Type': 'application/json;charset=utf-8',
-          'Authorization': `Token ${variables.token}`,
-        },
-      }
-    )
+    fetch(variables.API_URL + `/api/summarise_emb?task_id=${task_id}`, {
+      headers: {
+        "Content-Type": "application/json;charset=utf-8",
+        Authorization: `Token ${variables.token}`,
+      },
+    })
       .then((res) => {
         if (res.status == 202) {
-          this.setState({ loading: true })
+          this.setState({ loading: true });
           setTimeout(() => {
-            return this.getSummarise(task_id, interval)
+            return this.getSummarise(task_id, interval);
           }, interval);
         } else if (res.status == 200) {
-          return res.json()
+          return res.json();
         } else {
-          throw Error(res.statusText)
+          throw Error(res.statusText);
         }
       })
       .then((data) => {
         this.setState({
           summarise: data.data,
-          message: 'Суммаризация прошла успешно',
+          message: "Суммаризация прошла успешно",
           messageStatus: 200,
-          loading: false
+          loading: false,
         });
       })
       .catch((err) => {
         console.log(err);
-        this.setState({ message: 'Ошибка при суммаризации', messageStatus: 500, summarise: null, loading: false })
+        this.setState({
+          message: "Ошибка при суммаризации",
+          messageStatus: 500,
+          summarise: null,
+          loading: false,
+        });
       });
-  }
+  };
 
   createSummariseQuery() {
     let summarise_data = [];
-    this.gridRef.current.api.forEachNodeAfterFilter((rowNode) => summarise_data.push(rowNode.data.text));
-    fetch(variables.API_URL + '/api/summarise_emb', {
-      method: 'POST',
+    this.gridRef.current.api.forEachNodeAfterFilter((rowNode) =>
+      summarise_data.push(rowNode.data.text)
+    );
+    fetch(variables.API_URL + "/api/summarise_emb", {
+      method: "POST",
       headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json;charset=utf-8',
-        'Authorization': `Token ${variables.token}`,
+        Accept: "application/json",
+        "Content-Type": "application/json;charset=utf-8",
+        Authorization: `Token ${variables.token}`,
       },
       body: JSON.stringify({
-        articles: summarise_data
-      })
+        articles: summarise_data,
+      }),
     })
       .then((res) => {
-        if (res.ok) { return res.json() }
-        else { throw Error(res.statusText) }
+        if (res.ok) {
+          return res.json();
+        } else {
+          throw Error(res.statusText);
+        }
       })
       .then((result) => {
         var task_id = result.data;
-        this.setState({ message: 'Отправлено на суммаризацию пожайлуста дождитесь ответа', messageStatus: 201, loading: true })
+        this.setState({
+          message: "Отправлено на суммаризацию пожайлуста дождитесь ответа",
+          messageStatus: 201,
+          loading: true,
+        });
         this.getSummarise(task_id);
       })
       .catch((error) => {
-        this.setState({ message: 'Ошибка при суммаризации', messageStatus: 500, summarise: null, loading: false })
-      })
+        this.setState({
+          message: "Ошибка при суммаризации",
+          messageStatus: 500,
+          summarise: null,
+          loading: false,
+        });
+      });
   }
 
   getTranslate = (task_id, interval = 1000) => {
-    fetch(variables.API_URL + `/api/translate?task_id=${task_id}`,
-      {
-        headers: {
-          'Content-Type': 'application/json;charset=utf-8',
-          'Authorization': `Token ${variables.token}`,
-        },
-      }
-    )
+    fetch(variables.API_URL + `/api/translate?task_id=${task_id}`, {
+      headers: {
+        "Content-Type": "application/json;charset=utf-8",
+        Authorization: `Token ${variables.token}`,
+      },
+    })
       .then((res) => {
         if (res.status == 202) {
           setTimeout(() => {
-            return this.getTranslate(task_id, interval)
+            return this.getTranslate(task_id, interval);
           }, interval);
         } else if (res.status == 200) {
-          return res.json()
+          return res.json();
         } else {
-          throw Error(res.statusText)
+          throw Error(res.statusText);
         }
       })
       .then((data) => {
         try {
           this.setState({
             queryText: data.data.translations[0].text,
-            message: 'Переведено',
+            message: "Переведено",
             messageStatus: 200,
             loading: false,
           });
         } catch {
-          console.log('access')
+          console.log("access");
         }
       })
       .catch((err) => {
         console.log(err);
-        this.setState({ message: 'Произошла ошибка при переводе', loading: false, messageStatus: 500 });
+        this.setState({
+          message: "Произошла ошибка при переводе",
+          loading: false,
+          messageStatus: 500,
+        });
       });
-  }
+  };
 
   translateQuery() {
-    fetch(variables.API_URL + '/api/translate', {
-      method: 'POST',
+    fetch(variables.API_URL + "/api/translate", {
+      method: "POST",
       headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json;charset=utf-8',
-        'Authorization': `Token ${variables.token}`,
+        Accept: "application/json",
+        "Content-Type": "application/json;charset=utf-8",
+        Authorization: `Token ${variables.token}`,
       },
       body: JSON.stringify({
         query: this.state.queryText,
-      })
+      }),
     })
-    .then((res) => {
-        if (res.ok) { return res.json() }
-        else { throw Error(res.statusText) }
+      .then((res) => {
+        if (res.ok) {
+          return res.json();
+        } else {
+          throw Error(res.statusText);
+        }
       })
       .then((result) => {
         var task_id = result.data;
-        this.setState({ message: 'Переводим...', messageStatus: 201, loading: true })
+        this.setState({
+          message: "Переводим...",
+          messageStatus: 201,
+          loading: true,
+        });
         this.getTranslate(task_id);
       })
       .catch((error) => {
-        console.log(error)
-      })
+        console.log(error);
+      });
   }
 
   // MarkUp article
 
   getMarkUp = (task_id, interval = 1000) => {
-    fetch(variables.API_URL + `/api/markup?task_id=${task_id}`,
-      {
-        headers: {
-          'Content-Type': 'application/json;charset=utf-8',
-          'Authorization': `Token ${variables.token}`,
-        },
-      }
-    )
+    fetch(variables.API_URL + `/api/markup?task_id=${task_id}`, {
+      headers: {
+        "Content-Type": "application/json;charset=utf-8",
+        Authorization: `Token ${variables.token}`,
+      },
+    })
       .then((res) => {
         if (res.status == 202) {
           setTimeout(() => {
-            return this.getMarkUp(task_id, interval)
+            return this.getMarkUp(task_id, interval);
           }, interval);
         } else if (res.status == 200) {
-          return res.json()
+          return res.json();
         } else {
-          throw Error(res.statusText)
+          throw Error(res.statusText);
         }
       })
       .then((data) => {
         try {
           this.setState({
             DetailArticle: data.data,
-            message: 'Разметка прошла успешно',
+            message: "Разметка прошла успешно",
             messageStatus: 200,
             loading: false,
           });
         } catch {
-          console.log('access')
+          console.log("access");
         }
       })
       .catch((err) => {
         console.log(err);
-        this.setState({ message: 'Произошла ошибка при разметке', loading: false, messageStatus: 500 });
+        this.setState({
+          message: "Произошла ошибка при разметке",
+          loading: false,
+          messageStatus: 500,
+        });
       });
-  }
+  };
 
   markUpArticle(DetailArticle) {
-    this.setState({ loading: true })
-    fetch(variables.API_URL + '/api/markup', {
-      method: 'POST',
+    this.setState({ loading: true });
+    fetch(variables.API_URL + "/api/markup", {
+      method: "POST",
       headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json;charset=utf-8',
-        'Authorization': `Token ${variables.token}`,
+        Accept: "application/json",
+        "Content-Type": "application/json;charset=utf-8",
+        Authorization: `Token ${variables.token}`,
       },
       body: JSON.stringify({
-        article: DetailArticle
-      })
+        article: DetailArticle,
+      }),
     })
       .then((res) => {
-        console.log(res.status)
+        console.log(res.status);
         if (res.ok) {
-          return res.json()
+          return res.json();
         } else {
-          throw Error(res.statusText)
+          throw Error(res.statusText);
         }
       })
       .then((result) => {
         var task_id = result.data;
-        this.setState({ message: 'Отправлено на суммаризацию пожайлуста дождитесь ответа', messageStatus: 201, loading: true })
+        this.setState({
+          message: "Отправлено на суммаризацию пожайлуста дождитесь ответа",
+          messageStatus: 201,
+          loading: true,
+        });
         this.getMarkUp(task_id);
       })
       .catch((err) => {
         console.log(err);
         this.setState({
-          message: 'ошибка при разметке',
+          message: "ошибка при разметке",
           messageStatus: 500,
           loading: false,
         });
@@ -461,33 +567,35 @@ export class DDIReview extends Component {
   suppressCutToClipboard = false;
 
   onRemoveSelected = () => {
-
     const selectedData = this.gridRef.current.api.getSelectedRows();
-    console.log(selectedData)
-    const res = this.gridRef.current.api.applyTransaction({ remove: selectedData });
-  }
+    console.log(selectedData);
+    const res = this.gridRef.current.api.applyTransaction({
+      remove: selectedData,
+    });
+  };
 
   onCellValueChanged = (params) => {
-    console.log('Callback onCellValueChanged:', params);
-    console.log(params.node)
-    const res = this.gridRef.current.api.applyTransaction({ remove: [params.node.data] });
-  }
+    console.log("Callback onCellValueChanged:", params);
+    console.log(params.node);
+    const res = this.gridRef.current.api.applyTransaction({
+      remove: [params.node.data],
+    });
+  };
 
   onCutStart = (params) => {
-    console.log('Callback onCutStart:', params);
-  }
+    console.log("Callback onCutStart:", params);
+  };
 
   onCutEnd = (params) => {
-    console.log('Callback onCutEnd:', params);
-  }
+    console.log("Callback onCutEnd:", params);
+  };
 
   getRowId = () => {
     return (params) => {
-      console.log(params)
+      console.log(params);
       return params.data.code;
     };
-  }
-
+  };
 
   render() {
     const {
@@ -510,11 +618,11 @@ export class DDIReview extends Component {
     } = this.state;
 
     if (!token) {
-      return <Navigate push to="/login" />
+      return <Navigate push to="/login" />;
     } else if (allow_page === 0) {
-      return <Navigate push to="/tematic_review" />
+      return <Navigate push to="/tematic_review" />;
     } else if (allow_page === 2) {
-      return <Navigate push to="/chat" />
+      return <Navigate push to="/chat" />;
     } else {
       return (
         <>
@@ -523,66 +631,167 @@ export class DDIReview extends Component {
               <div class="flex flex-wrap justify-between items-center">
                 <div class="flex justify-start items-center">
                   <a href="" class="flex mr-4">
-                    <img src="https://flowbite.s3.amazonaws.com/logo.svg" class="mr-3 h-8" alt="FlowBite Logo" />
-                    <span class="self-center text-2xl font-semibold whitespace-nowrap">EBM Sechenov DataMed.AI</span>
+                    <img
+                      src="https://flowbite.s3.amazonaws.com/logo.svg"
+                      class="mr-3 h-8"
+                      alt="FlowBite Logo"
+                    />
+                    <span class="self-center text-2xl font-semibold whitespace-nowrap">
+                      EBM Sechenov DataMed.AI
+                    </span>
                   </a>
-                  {allow_page === 3 ?
+                  {allow_page === 3 ? (
                     <ul class="flex font-medium flex-row space-x-8">
                       <Link to="/tematic_review">
                         <li>
-                          <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Тематический анализ</a>
+                          <a
+                            href="#"
+                            class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0"
+                          >
+                            Тематический анализ
+                          </a>
                         </li>
                       </Link>
                       <Link to="/chat">
                         <li>
-                          <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Поговорим</a>
+                          <a
+                            href="#"
+                            class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0"
+                          >
+                            Поговорим
+                          </a>
                         </li>
                       </Link>
                       <Link to="/ddi_review">
                         <li>
-                          <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0" aria-current="page">Факты для EBM</a>
+                          <a
+                            href="#"
+                            class="block py-2 pl-3 pr-4 text-gray-900 bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0"
+                            aria-current="page"
+                          >
+                            Факты для EBM
+                          </a>
                         </li>
                       </Link>
-                      {variables.admin?
+                      {variables.admin ? (
                         <Link to="/admin">
                           <li>
-                            <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Админ панель</a>
+                            <a
+                              href="#"
+                              class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0"
+                            >
+                              Админ панель
+                            </a>
                           </li>
                         </Link>
-                      :null}
+                      ) : null}
                     </ul>
-                    : null}
+                  ) : null}
                 </div>
                 <div class="flex items-center lg:order-3">
                   <div class="flex-shrink-0 dropdown">
-                    <a href="#" class="d-block link-body-emphasis text-decoration-none dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                      <img src="https://github.com/mdo.png" alt="mdo" width="32" height="32" class="rounded-circle" />
+                    <a
+                      href="#"
+                      class="d-block link-body-emphasis text-decoration-none dropdown-toggle"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                    >
+                      <img
+                        src="https://github.com/mdo.png"
+                        alt="mdo"
+                        width="32"
+                        height="32"
+                        class="rounded-circle"
+                      />
                     </a>
                     <ul class="dropdown-menu text-small shadow">
-                      {permissions?.map(per =>
-                        <li><a class="dropdown-item" href="#">{per.topic} {per.all_records? `${per.all_records}`: 'безлимитно'}</a></li>
-                      )}
+                      {permissions?.map((per) => (
+                        <li>
+                          <a class="dropdown-item" href="#">
+                            {per.topic}{" "}
+                            {per.all_records
+                              ? `${per.all_records}`
+                              : "безлимитно"}
+                          </a>
+                        </li>
+                      ))}
                     </ul>
                   </div>
                 </div>
                 <div class="flex items-center lg:order-2">
-                  <button type="button" class="hidden sm:inline-flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-xs px-3 py-1.5 mr-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"><svg aria-hidden="true" class="mr-1 -ml-1 w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd"></path></svg> Действие</button>
+                  <button
+                    type="button"
+                    class="hidden sm:inline-flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-xs px-3 py-1.5 mr-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"
+                  >
+                    <svg
+                      aria-hidden="true"
+                      class="mr-1 -ml-1 w-5 h-5"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                        clip-rule="evenodd"
+                      ></path>
+                    </svg>{" "}
+                    Действие
+                  </button>
                 </div>
               </div>
             </nav>
             <nav class="bg-white border-gray-200 px-6">
               <div class="w-full">
                 <div class="flex justify-between items-center">
-                  <button id="toggleSidebar" aria-expanded="true" aria-controls="sidebar" class="hidden p-2 mr-3 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700" data-bs-toggle="collapse" data-bs-target="#sidebar" aria-label="Toggle navigation">
-                    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
+                  <button
+                    id="toggleSidebar"
+                    aria-expanded="true"
+                    aria-controls="sidebar"
+                    class="hidden p-2 mr-3 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#sidebar"
+                    aria-label="Toggle navigation"
+                  >
+                    <svg
+                      class="w-6 h-6"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                        clip-rule="evenodd"
+                      ></path>
+                    </svg>
                   </button>
-                  <label for="topbar-search" class="sr-only">Поисковый запрос</label>
-                  <div className='w-full'>
-                    <label for="search" class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white">Поисковый запрос</label>
+                  <label for="topbar-search" class="sr-only">
+                    Поисковый запрос
+                  </label>
+                  <div className="w-full">
+                    <label
+                      for="search"
+                      class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white"
+                    >
+                      Поисковый запрос
+                    </label>
                     <div class="relative mt-1 w-full">
                       <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                        <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                          <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
+                        <svg
+                          class="w-4 h-4 text-gray-500 dark:text-gray-400"
+                          aria-hidden="true"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            stroke="currentColor"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
+                          />
                         </svg>
                       </div>
                       <input
@@ -593,31 +802,90 @@ export class DDIReview extends Component {
                         placeholder="Поисковый запрос"
                         value={queryText}
                         onChange={this.changeQueryText}
-                        aria-label="Search" />
-                      <button type="submit" disabled={loading} value="Перевести" onClick={() => this.translateQuery()} class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2">Перевести</button>
-                      <button type="submit" disabled={loading} value="Найти" onClick={() => this.createTask()} class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2">Найти</button>
+                        aria-label="Search"
+                      />
+                      <div
+                        class="inline-flex rounded-md shadow-sm absolute right-2.5 bottom-2.5"
+                        role="group"
+                      >
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          value="Перевести"
+                          onClick={() => this.translateQuery()}
+                          class="text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
+                        >
+                          Перевести
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          value="Найти"
+                          onClick={() => this.createTask()}
+                          class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
+                        >
+                          Найти
+                        </button>
+                      </div>
                     </div>
                   </div>
-                  <button id="toggleSidebar" aria-expanded="true" aria-controls="sidebar2" class="order-last hidden p-2 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700" data-bs-toggle="collapse" data-bs-target="#sidebar2" aria-label="Toggle navigation">
-                    <svg class="w-6 h-6 rotate-180" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
+                  <button
+                    id="toggleSidebar"
+                    aria-expanded="true"
+                    aria-controls="sidebar2"
+                    class="order-last hidden p-2 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#sidebar2"
+                    aria-label="Toggle navigation"
+                  >
+                    <svg
+                      class="w-6 h-6 rotate-180"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                        clip-rule="evenodd"
+                      ></path>
+                    </svg>
                   </button>
                 </div>
               </div>
             </nav>
-          </header >
+          </header>
           <main>
             <div>
               <div className="container-fluid">
                 <div className="row align-items-stretch b-height">
-                  <aside id="sidebar" className="h-screen col-md-2 my-3 bg-white collapse show width border rounded-3 g-0">
-                    <div className="accordion accordion-flush" id="accordionFlushExample">
+                  <aside
+                    id="sidebar"
+                    className="h-screen col-md-2 my-3 bg-white collapse show width border rounded-3 g-0"
+                  >
+                    <div
+                      className="accordion accordion-flush"
+                      id="accordionFlushExample"
+                    >
                       <div className="accordion-item">
                         <h2 className="accordion-header" id="flush-headingOne">
-                          <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseOne" aria-expanded="false" aria-controls="flush-collapseOne">
+                          <button
+                            className="accordion-button collapsed"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#flush-collapseOne"
+                            aria-expanded="false"
+                            aria-controls="flush-collapseOne"
+                          >
                             Период поиска
                           </button>
                         </h2>
-                        <div id="flush-collapseOne" className="collapse show multi-collapse" aria-labelledby="flush-headingOne" data-bs-target="#accordionFlushExample">
+                        <div
+                          id="flush-collapseOne"
+                          className="collapse show multi-collapse"
+                          aria-labelledby="flush-headingOne"
+                          data-bs-target="#accordionFlushExample"
+                        >
                           <div className="accordion-body">
                             <div class="form-check">
                               <input
@@ -628,7 +896,10 @@ export class DDIReview extends Component {
                                 checked={queryDate === 1}
                                 onChange={() => this.changeQueryDate(1)}
                               />
-                              <label class="form-check-label" for="flexRadioDefault1">
+                              <label
+                                class="form-check-label"
+                                for="flexRadioDefault1"
+                              >
                                 1 год
                               </label>
                             </div>
@@ -641,7 +912,10 @@ export class DDIReview extends Component {
                                 checked={queryDate === 3}
                                 onChange={() => this.changeQueryDate(3)}
                               />
-                              <label class="form-check-label" for="flexRadioDefault2">
+                              <label
+                                class="form-check-label"
+                                for="flexRadioDefault2"
+                              >
                                 3 года
                               </label>
                             </div>
@@ -653,7 +927,11 @@ export class DDIReview extends Component {
                                 id="flexRadioDefault3"
                                 checked={queryDate === 5}
                                 onChange={() => this.changeQueryDate(5)}
-                              /><label class="form-check-label" for="flexRadioDefault3">
+                              />
+                              <label
+                                class="form-check-label"
+                                for="flexRadioDefault3"
+                              >
                                 5 лет
                               </label>
                             </div>
@@ -666,8 +944,11 @@ export class DDIReview extends Component {
                                 checked={!queryDate}
                                 onChange={() => this.changeQueryDate(null)}
                               />
-                              <label class="form-check-label" for="flexRadioDefault4">
-                                            > 5 лет
+                              <label
+                                class="form-check-label"
+                                for="flexRadioDefault4"
+                              >
+                                > 5 лет
                               </label>
                             </div>
                           </div>
@@ -675,11 +956,24 @@ export class DDIReview extends Component {
                       </div>
                       <div className="accordion-item">
                         <h2 class="accordion-header" id="flush-headingThree">
-                          <button class="accordion-button collapsed" data-target='#flush-collapseThree' type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseFour" aria-expanded="false" aria-controls="flush-collapseThree">
+                          <button
+                            class="accordion-button collapsed"
+                            data-target="#flush-collapseThree"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#flush-collapseFour"
+                            aria-expanded="false"
+                            aria-controls="flush-collapseThree"
+                          >
                             Тип статьи
                           </button>
                         </h2>
-                        <div id="flush-collapseFour" className="collapse show multi-collapse" aria-labelledby="flush-headingFour" data-bs-target="#accordionFlushExample">
+                        <div
+                          id="flush-collapseFour"
+                          className="collapse show multi-collapse"
+                          aria-labelledby="flush-headingFour"
+                          data-bs-target="#accordionFlushExample"
+                        >
                           <div className="accordion-body">
                             <div className="form-check form-check-inline">
                               <input
@@ -687,10 +981,19 @@ export class DDIReview extends Component {
                                 type="checkbox"
                                 id="CheckboxClinicalTrial"
                                 name="CheckBoxClinicalTrial"
-                                checked={this.state.queryTypes.has('Clinical Trial')}
-                                onChange={() => this.changeQueryTypes('Clinical Trial')}
+                                checked={this.state.queryTypes.has(
+                                  "Clinical Trial"
+                                )}
+                                onChange={() =>
+                                  this.changeQueryTypes("Clinical Trial")
+                                }
                               />
-                              <label className="form-check-label" for="CheckboxClinicalTrial">Clinical Trial</label>
+                              <label
+                                className="form-check-label"
+                                for="CheckboxClinicalTrial"
+                              >
+                                Clinical Trial
+                              </label>
                             </div>
                             <div className="form-check form-check-inline">
                               <input
@@ -698,10 +1001,19 @@ export class DDIReview extends Component {
                                 type="checkbox"
                                 id="CheckboxMetaAnalysys"
                                 name="CheckboxMetaAnalysys"
-                                checked={this.state.queryTypes.has('Meta Analysys')}
-                                onChange={() => this.changeQueryTypes('Meta Analysys')}
+                                checked={this.state.queryTypes.has(
+                                  "Meta Analysys"
+                                )}
+                                onChange={() =>
+                                  this.changeQueryTypes("Meta Analysys")
+                                }
                               />
-                              <label className="form-check-label" for="CheckboxMetaAnalysys">Meta Analysys</label>
+                              <label
+                                className="form-check-label"
+                                for="CheckboxMetaAnalysys"
+                              >
+                                Meta Analysys
+                              </label>
                             </div>
                             <div className="form-check form-check-inline">
                               <input
@@ -709,10 +1021,21 @@ export class DDIReview extends Component {
                                 type="checkbox"
                                 id="CheckboxRandomizedControlledTrial"
                                 name="CheckboxRandomizedControlledTrial"
-                                checked={this.state.queryTypes.has('Randomized Controlled Trial')}
-                                onChange={() => this.changeQueryTypes('Randomized Controlled Trial')}
+                                checked={this.state.queryTypes.has(
+                                  "Randomized Controlled Trial"
+                                )}
+                                onChange={() =>
+                                  this.changeQueryTypes(
+                                    "Randomized Controlled Trial"
+                                  )
+                                }
                               />
-                              <label className="form-check-label" for="CheckboxRandomizedControlledTrial">Randomized Controlled Trial</label>
+                              <label
+                                className="form-check-label"
+                                for="CheckboxRandomizedControlledTrial"
+                              >
+                                Randomized Controlled Trial
+                              </label>
                             </div>
                             <div className="form-check form-check-inline">
                               <input
@@ -720,10 +1043,15 @@ export class DDIReview extends Component {
                                 type="checkbox"
                                 id="CheckboxReview"
                                 name="CheckboxReview"
-                                checked={this.state.queryTypes.has('Review')}
-                                onChange={() => this.changeQueryTypes('Review')}
+                                checked={this.state.queryTypes.has("Review")}
+                                onChange={() => this.changeQueryTypes("Review")}
                               />
-                              <label className="form-check-label" for="CheckboxReview">Review</label>
+                              <label
+                                className="form-check-label"
+                                for="CheckboxReview"
+                              >
+                                Review
+                              </label>
                             </div>
                             <div className="form-check form-check-inline">
                               <input
@@ -731,10 +1059,19 @@ export class DDIReview extends Component {
                                 type="checkbox"
                                 id="CheckboxSystematicReview"
                                 name="CheckboxSystematicReview"
-                                checked={this.state.queryTypes.has('Systematic Review')}
-                                onChange={() => this.changeQueryTypes('Systematic Review')}
+                                checked={this.state.queryTypes.has(
+                                  "Systematic Review"
+                                )}
+                                onChange={() =>
+                                  this.changeQueryTypes("Systematic Review")
+                                }
                               />
-                              <label className="form-check-label" for="CheckboxSystematicReview">Systematic Review</label>
+                              <label
+                                className="form-check-label"
+                                for="CheckboxSystematicReview"
+                              >
+                                Systematic Review
+                              </label>
                             </div>
                             <div className="form-check form-check-inline">
                               <input
@@ -742,22 +1079,43 @@ export class DDIReview extends Component {
                                 type="checkbox"
                                 id="CheckboxJournalArticle"
                                 name="CheckboxJournalArticle"
-                                checked={this.state.queryTypes.has('Journal Article')}
-                                onChange={() => this.changeQueryTypes('Journal Article')}
+                                checked={this.state.queryTypes.has(
+                                  "Journal Article"
+                                )}
+                                onChange={() =>
+                                  this.changeQueryTypes("Journal Article")
+                                }
                               />
-                              <label className="form-check-label" for="CheckboxJournalArticle">Journal Article</label>
+                              <label
+                                className="form-check-label"
+                                for="CheckboxJournalArticle"
+                              >
+                                Journal Article
+                              </label>
                             </div>
-
                           </div>
                         </div>
                       </div>
                       <div className="accordion-item">
                         <h2 class="accordion-header" id="flush-headingThree">
-                          <button class="accordion-button collapsed" data-target='#flush-collapseThree' type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseThree" aria-expanded="false" aria-controls="flush-collapseThree">
+                          <button
+                            class="accordion-button collapsed"
+                            data-target="#flush-collapseThree"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#flush-collapseThree"
+                            aria-expanded="false"
+                            aria-controls="flush-collapseThree"
+                          >
                             Точность
                           </button>
                         </h2>
-                        <div id="flush-collapseThree" className="collapse show multi-collapse" aria-labelledby="flush-headingFour" data-bs-target="#accordionFlushExample">
+                        <div
+                          id="flush-collapseThree"
+                          className="collapse show multi-collapse"
+                          aria-labelledby="flush-headingFour"
+                          data-bs-target="#accordionFlushExample"
+                        >
                           <div className="accordion-body">
                             <p>Требуемая точность = {queryScore.toFixed(2)}</p>
                             <Slider
@@ -766,20 +1124,42 @@ export class DDIReview extends Component {
                               xmax={1}
                               xmin={0}
                               xstep={0.01}
-                              onChange={({ x }) => this.setState({ queryScore: x })}
+                              onChange={({ x }) =>
+                                this.setState({ queryScore: x })
+                              }
                             />
                           </div>
                         </div>
                       </div>
                       <div className="accordion-item">
                         <h2 class="accordion-header" id="flush-headingThree">
-                          <button class="accordion-button collapsed" data-target='#flush-collapseThree' type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseFive" aria-expanded="false" aria-controls="flush-collapseThree">
+                          <button
+                            class="accordion-button collapsed"
+                            data-target="#flush-collapseThree"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#flush-collapseFive"
+                            aria-expanded="false"
+                            aria-controls="flush-collapseThree"
+                          >
                             Выделенные сущности
                           </button>
                         </h2>
-                        <div id="flush-collapseFive" className="collapse show multi-collapse" aria-labelledby="flush-headingFour" data-bs-target="#accordionFlushExample">
+                        <div
+                          id="flush-collapseFive"
+                          className="collapse show multi-collapse"
+                          aria-labelledby="flush-headingFour"
+                          data-bs-target="#accordionFlushExample"
+                        >
                           <div className="accordion-body">
-                            {Object.entries(obj_color).map(tag => <p class="pb-2 mb-3 border-bottom" style={{ color: `${tag[1]}` }}>{tag[0]}.</p>)}
+                            {Object.entries(obj_color).map((tag) => (
+                              <p
+                                class="pb-2 mb-3 border-bottom"
+                                style={{ color: `${tag[1]}` }}
+                              >
+                                {tag[0]}.
+                              </p>
+                            ))}
                           </div>
                         </div>
                       </div>
@@ -789,58 +1169,124 @@ export class DDIReview extends Component {
                     <div class="accordion accordion-flush" id="accordion">
                       <div class="accordion-item">
                         <h2 class="accordion-header" id="">
-                          {message ?
-                            messageStatus > 299 ?
-                              <p class="pb-2 mb-3 border-bottom" style={{ color: 'red' }}>{message}.</p>
-                              : messageStatus === 200 ?
-                                <p class="pb-2 mb-3 border-bottom" style={{ color: 'green' }}>{message}.</p>
-                                :
-                                <p class="pb-2 mb-3 border-bottom" style={{ color: 'black' }}>{message}.</p>
-                            : null
-                          }
-                          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseSeven" aria-expanded="false" aria-controls="flush-collapseSeven">
+                          {message ? (
+                            messageStatus > 299 ? (
+                              <p
+                                class="pb-2 mb-3 border-bottom"
+                                style={{ color: "red" }}
+                              >
+                                {message}.
+                              </p>
+                            ) : messageStatus === 200 ? (
+                              <p
+                                class="pb-2 mb-3 border-bottom"
+                                style={{ color: "green" }}
+                              >
+                                {message}.
+                              </p>
+                            ) : (
+                              <p
+                                class="pb-2 mb-3 border-bottom"
+                                style={{ color: "black" }}
+                              >
+                                {message}.
+                              </p>
+                            )
+                          ) : null}
+                          <button
+                            class="accordion-button collapsed"
+                            type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#flush-collapseSeven"
+                            aria-expanded="false"
+                            aria-controls="flush-collapseSeven"
+                          >
                             Запросы
                           </button>
                         </h2>
-                        <div id="flush-collapseSeven" class="collapse multi-collapse" aria-labelledby="flush-headingSeven" data-bs-target="#accordionFlushExample">
+                        <div
+                          id="flush-collapseSeven"
+                          class="collapse multi-collapse"
+                          aria-labelledby="flush-headingSeven"
+                          data-bs-target="#accordionFlushExample"
+                        >
                           <div class="accordion-body">
                             {query_list?.map((query, index) =>
-                              query.status === 2 ?
-                                <p class="pb-2 mb-3 border-bottom" style={{ color: 'red' }}>{index + 1} - {query.query}.</p>
-                                : query.status === 1 ?
-                                  <p class="pb-2 mb-3 border-bottom" style={{ color: 'green' }}>{index + 1} - {query.query}.</p>
-                                  :
-                                  <p class="pb-2 mb-3 border-bottom" style={{ color: 'black' }}>{index + 1} - {query.query}.</p>
+                              query.status === 2 ? (
+                                <p
+                                  class="pb-2 mb-3 border-bottom"
+                                  style={{ color: "red" }}
+                                >
+                                  {index + 1} - {query.query}.
+                                </p>
+                              ) : query.status === 1 ? (
+                                <p
+                                  class="pb-2 mb-3 border-bottom"
+                                  style={{ color: "green" }}
+                                >
+                                  {index + 1} - {query.query}.
+                                </p>
+                              ) : (
+                                <p
+                                  class="pb-2 mb-3 border-bottom"
+                                  style={{ color: "black" }}
+                                >
+                                  {index + 1} - {query.query}.
+                                </p>
+                              )
                             )}
                           </div>
                           <div class="accordion-body">
-                            <input className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Очистить" onClick={() => this.clearTask()} />
+                            <input
+                              className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
+                              type="submit"
+                              value="Очистить"
+                              onClick={() => this.clearTask()}
+                            />
                           </div>
                         </div>
                       </div>
                       <div>
-                        {summarise ?
+                        {summarise ? (
                           <>
                             <p>Summarise</p>
                             <p>{summarise}</p>
                           </>
-                          : <input className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Суммаризовать" disabled={loading} onClick={() => this.createSummariseQuery()} />}
+                        ) : (
+                          <input
+                            className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
+                            type="submit"
+                            value="Суммаризовать"
+                            disabled={loading}
+                            onClick={() => this.createSummariseQuery()}
+                          />
+                        )}
                       </div>
                     </div>
                     <div>
                       <div class="bd-example">
                         <div class="tab-content" id="myTabContent">
-                          <div class="tab-pane fade active show" id="home" role="tabpanel" aria-labelledby="home-tab">
+                          <div
+                            class="tab-pane fade active show"
+                            id="home"
+                            role="tabpanel"
+                            aria-labelledby="home-tab"
+                          >
                             <div class="container-fluid g-0">
-                              <div className="ag-theme-alpine ag-theme-acmecorp" style={{ height: 700 }}>
+                              <div
+                                className="ag-theme-alpine ag-theme-acmecorp"
+                                style={{ height: 700 }}
+                              >
                                 <AgGridReact
                                   ref={this.gridRef}
                                   rowData={articles}
                                   columnDefs={articlesInfo}
                                   pagination={true}
-                                  rowSelection={'single'}
+                                  rowSelection={"single"}
                                   onSelectionChanged={this.onSelectionChanged}
-                                  suppressCutToClipboard={this.suppressCutToClipboard}
+                                  suppressCutToClipboard={
+                                    this.suppressCutToClipboard
+                                  }
                                   onCellValueChanged={this.onCellValueChanged}
                                   onCutStart={this.onCutStart}
                                   localeText={AG_GRID_LOCALE_RU}
@@ -848,31 +1294,29 @@ export class DDIReview extends Component {
                                   sideBar={{
                                     toolPanels: [
                                       {
-                                        id: 'columns',
-                                        labelDefault: 'Columns',
-                                        labelKey: 'columns',
-                                        iconKey: 'columns',
-                                        toolPanel: 'agColumnsToolPanel',
+                                        id: "columns",
+                                        labelDefault: "Columns",
+                                        labelKey: "columns",
+                                        iconKey: "columns",
+                                        toolPanel: "agColumnsToolPanel",
                                         minWidth: 225,
                                         width: 225,
                                         maxWidth: 225,
                                       },
                                       {
-                                        id: 'filters',
-                                        labelDefault: 'Filters',
-                                        labelKey: 'filters',
-                                        iconKey: 'filter',
-                                        toolPanel: 'agFiltersToolPanel',
+                                        id: "filters",
+                                        labelDefault: "Filters",
+                                        labelKey: "filters",
+                                        iconKey: "filter",
+                                        toolPanel: "agFiltersToolPanel",
                                         minWidth: 180,
                                         maxWidth: 400,
                                         width: 250,
                                       },
                                     ],
-                                    position: 'left',
-
+                                    position: "left",
                                   }}
-                                >
-                                </AgGridReact>
+                                ></AgGridReact>
                               </div>
                             </div>
                           </div>
@@ -881,46 +1325,105 @@ export class DDIReview extends Component {
                     </div>
                   </section>
 
-                  <aside id="sidebar2" class="col-md-4 h-screen collapse show width col p-3 my-3 border rounded-3 bg-white">
+                  <aside
+                    id="sidebar2"
+                    class="col-md-4 h-screen collapse show width col p-3 my-3 border rounded-3 bg-white"
+                  >
                     <h3 class="pb-2 mb-3 border-bottom">Подробное описание</h3>
                     <nav class="small" id="toc">
-                      {DetailArticle ?
+                      {DetailArticle ? (
                         <div class="card mb-3">
                           <div class="card-body">
-                            <a href={DetailArticle.url} class="card-title link-primary text-decoration-none h5" target="_blank"> {DetailArticle.titl} </a>
-                            <p class="card-text">---------------------------------- </p>
-                            <p class="card-text">Авторы :  {DetailArticle.auth} </p>
-                            <p class="card-text">---------------------------------- </p>
-                            <p class="card-text">Аннотация :  </p>
-                            <p class="card-text" dangerouslySetInnerHTML={{ __html: markup_text(DetailArticle.tiab, DetailArticle.annotations) }} />
-                            <p class="card-text">---------------------------------- </p>
-                            <p class="card-text"><small class="text-success">Дата публикации : {DetailArticle.pdat} </small></p>
-                            <p class="card-text"><small class="text-success">Издание : {DetailArticle.jour}</small></p>
-                            <p class="card-text"><small class="text-success">Вид публикации : {DetailArticle.pt}</small></p>
-                            <p class="card-text"><small class="text-success">Страна : {DetailArticle.pl} </small></p>
-                            <p class="card-text"><small class="text-success">{DetailArticle.mesh} </small></p>
-                            {summarise ?
+                            <a
+                              href={DetailArticle.url}
+                              class="card-title link-primary text-decoration-none h5"
+                              target="_blank"
+                            >
+                              {" "}
+                              {DetailArticle.titl}{" "}
+                            </a>
+                            <p class="card-text">
+                              ----------------------------------{" "}
+                            </p>
+                            <p class="card-text">
+                              Авторы : {DetailArticle.auth}{" "}
+                            </p>
+                            <p class="card-text">
+                              ----------------------------------{" "}
+                            </p>
+                            <p class="card-text">Аннотация : </p>
+                            <p
+                              class="card-text"
+                              dangerouslySetInnerHTML={{
+                                __html: markup_text(
+                                  DetailArticle.tiab,
+                                  DetailArticle.annotations
+                                ),
+                              }}
+                            />
+                            <p class="card-text">
+                              ----------------------------------{" "}
+                            </p>
+                            <p class="card-text">
+                              <small class="text-success">
+                                Дата публикации : {DetailArticle.pdat}{" "}
+                              </small>
+                            </p>
+                            <p class="card-text">
+                              <small class="text-success">
+                                Издание : {DetailArticle.jour}
+                              </small>
+                            </p>
+                            <p class="card-text">
+                              <small class="text-success">
+                                Вид публикации : {DetailArticle.pt}
+                              </small>
+                            </p>
+                            <p class="card-text">
+                              <small class="text-success">
+                                Страна : {DetailArticle.pl}{" "}
+                              </small>
+                            </p>
+                            <p class="card-text">
+                              <small class="text-success">
+                                {DetailArticle.mesh}{" "}
+                              </small>
+                            </p>
+                            {summarise ? (
                               <>
                                 <p>Summarise</p>
                                 <p>{summarise}</p>
                               </>
-                              : loading ?
-                                <p>Loading...</p>
-                                : <input className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Разметить" disabled={loading} onClick={() => this.markUpArticle(DetailArticle)} />
-                            }
-                            <input className="text-white right-2.5 my-4 bottom-2.5 bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-4 py-2" type="submit" value="Удалить" onClick={() => this.onRemoveSelected()} />
+                            ) : loading ? (
+                              <p>Loading...</p>
+                            ) : (
+                              <input
+                                className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
+                                type="submit"
+                                value="Разметить"
+                                disabled={loading}
+                                onClick={() =>
+                                  this.markUpArticle(DetailArticle)
+                                }
+                              />
+                            )}
+                            <input
+                              className="text-white right-2.5 my-4 bottom-2.5 bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-4 py-2"
+                              type="submit"
+                              value="Удалить"
+                              onClick={() => this.onRemoveSelected()}
+                            />
                           </div>
                         </div>
-                        : null}
+                      ) : null}
                     </nav>
                   </aside>
-
                 </div>
               </div>
             </div>
           </main>
         </>
-      )
+      );
     }
   }
 }

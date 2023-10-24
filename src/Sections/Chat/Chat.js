@@ -8,7 +8,7 @@ import Select from 'react-select';
 import { variables, AG_GRID_LOCALE_RU } from '../Variables.js';
 
 import update from 'immutability-helper';
-
+import Slider from 'react-input-slider';
 
 export class Chat extends Component {
 
@@ -22,6 +22,8 @@ export class Chat extends Component {
       messages: [{'request': 'test 1', 'response': 'response 1', status: 200}, {'request': 'test 2', 'response': 'response 2', status: 200}],
       message: null,
       messageStatus: 0,
+      queryScore: 0.8,
+      queryCount: 10,
       sendMessage: null,
     }
   }
@@ -75,7 +77,9 @@ export class Chat extends Component {
         'Authorization': `Token ${variables.token}`,
       },
       body: JSON.stringify({
-        message: this.state.sendMessage
+        message: this.state.sendMessage,
+        score: this.state.queryScore,
+        count: this.state.queryCount,
       })
     })
       .then((res) => {
@@ -118,6 +122,8 @@ export class Chat extends Component {
       messageStatus,
       message,
       sendMessage,
+      queryScore,
+      queryCount,
 
       allow_page,
 
@@ -202,8 +208,46 @@ export class Chat extends Component {
                 <div className="row align-items-stretch b-height">
                   <aside id="sidebar" className="h-screen col-md-2 my-3 bg-white collapse show width border rounded-3 g-0">
                     <div className="accordion accordion-flush" id="accordionFlushExample">
-                        <div class="ml-5 grow items-center justify-between hidden w-full md:flex md:w-auto md:order-1" id="navbar-sticky">
+                      <div className="accordion-item">
+                        <h2 class="accordion-header" id="flush-headingThree">
+                          <button class="accordion-button collapsed" data-target='#flush-collapseThree' type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseThree" aria-expanded="false" aria-controls="flush-collapseThree">
+                            Точность
+                          </button>
+                        </h2>
+                        <div id="flush-collapseThree" className="collapse show multi-collapse" aria-labelledby="flush-headingFour" data-bs-target="#accordionFlushExample">
+                          <div className="accordion-body">
+                            <p>Требуемая точность = {queryScore.toFixed(2)}</p>
+                            <Slider
+                              axis="x"
+                              x={queryScore}
+                              xmax={1}
+                              xmin={0}
+                              xstep={0.01}
+                              onChange={({ x }) => this.setState({ queryScore: x })}
+                            />
+                          </div>
                         </div>
+                      </div>
+                      <div className="accordion-item">
+                        <h2 class="accordion-header" id="flush-headingThree">
+                          <button class="accordion-button collapsed" data-target='#flush-collapseThree' type="button" data-bs-toggle="collapse" data-bs-target="#flush-collapseThree" aria-expanded="false" aria-controls="flush-collapseThree">
+                            Кол-во просматриваемых документов
+                          </button>
+                        </h2>
+                        <div id="flush-collapseThree" className="collapse show multi-collapse" aria-labelledby="flush-headingFour" data-bs-target="#accordionFlushExample">
+                          <div className="accordion-body">
+                            <p>Кол-во документов для просмотра = {queryCount}</p>
+                            <Slider
+                              axis="x"
+                              x={queryCount}
+                              xmax={10}
+                              xmin={1}
+                              xstep={1}
+                              onChange={({ x }) => this.setState({ queryCount: x })}
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </aside>
                   <section class="col p-3 m-3 border rounded-3 bg-white overflow-auto">

@@ -1,7 +1,3 @@
-.ag-theme-acmecorp .ag-header-cell-label {
-    font-style: italic;
-}
-
 .ag-theme-acmecorp .ag-watermark::before {
   background: #dcdfe600 !important;
   content: "";
