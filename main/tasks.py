@@ -426,7 +426,7 @@ def send_message(self, **kwargs):
     try:
         token_time = datetime.strptime(token_data['time'], '%m/%d/%Y:%H-%M')
     except:
-        token_time = datetime.fromisoformat(token_data['time'])
+        token_time = datetime.strptime(token_data['time'].split('.')[0], '%Y-%m-%dT%H:%M:%S')
     timed = token_time - datetime.now()
     if timed.days < 0:
         timed = -1 * timed.days * 24 - timed.seconds / 3600
@@ -476,7 +476,7 @@ def send_message(self, **kwargs):
         message = chain.run(input_documents=records, query=kwargs['message'])
         print(message)
     except grpc.RpcError as e:
-        message = "Слишком большой запрос или очередь на запрос, пожайлуста подождите и попробуйте снова"
+        message = "Слишком большой запрос по кол-ву документов, пожайлуста уменьшите их кол-во и попробуйте снова"
 
     return message
 
