@@ -423,7 +423,10 @@ def send_message(self, **kwargs):
     token_data = json.loads(redis_cli.get(IAM_TOKEN))
     token = token_data['token']
     print(token_data)
-    token_time = datetime.strptime(token_data['time'], '%m/%d/%Y:%H-%M')
+    try:
+        token_time = datetime.strptime(token_data['time'], '%m/%d/%Y:%H-%M')
+    except:
+        token_time = datetime.fromisoformat(token_data['time'])
     timed = token_time - datetime.now()
     if timed.days < 0:
         timed = -1 * timed.days * 24 - timed.seconds / 3600
