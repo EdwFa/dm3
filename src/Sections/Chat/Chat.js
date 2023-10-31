@@ -23,7 +23,7 @@ export class Chat extends Component {
       message: null,
       messageStatus: 0,
       queryScore: 0.8,
-      queryCount: 10,
+      queryCount: 100,
       sendMessage: null,
     }
   }
@@ -198,6 +198,28 @@ export class Chat extends Component {
                   <button id="toggleSidebar" aria-expanded="true" aria-controls="sidebar" class="hidden p-2 mr-3 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700" data-bs-toggle="collapse" data-bs-target="#sidebar" aria-label="Toggle navigation">
                     <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path></svg>
                   </button>
+                  <button
+                    id="toggleSidebar"
+                    aria-expanded="true"
+                    aria-controls="sidebar2"
+                    class="order-last hidden p-2 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#sidebar2"
+                    aria-label="Toggle navigation"
+                  >
+                    <svg
+                      class="w-6 h-6 rotate-180"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                        clip-rule="evenodd"
+                      ></path>
+                    </svg>
+                  </button>
                 </div>
               </div>
             </nav>
@@ -240,7 +262,7 @@ export class Chat extends Component {
                             <Slider
                               axis="x"
                               x={queryCount}
-                              xmax={10}
+                              xmax={100}
                               xmin={1}
                               xstep={1}
                               onChange={({ x }) => this.setState({ queryCount: x })}
@@ -303,6 +325,14 @@ export class Chat extends Component {
                       </div>
                     </div>
                   </section>
+                  <aside
+                    id="sidebar2"
+                    class="col-md-4 h-screen collapse show width col p-3 my-3 border rounded-3 bg-white"
+                  >
+                    <h3 class="pb-2 mb-3 border-bottom">Подробное описание</h3>
+                    <nav class="small" id="toc">
+                    </nav>
+                  </aside>
                 </div>
               </div>
             </div>

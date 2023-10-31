@@ -13,6 +13,9 @@ import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 import "../ag-theme-acmecorp.css";
 
+import { Tab } from "@headlessui/react";
+import { Disclosure } from "@headlessui/react";
+
 import { variables, AG_GRID_LOCALE_RU } from "../Variables.js";
 
 import Slider from "react-input-slider";
@@ -36,6 +39,10 @@ const obj_color = {
   DNA: "#C9B9E8",
   RNA: "#D7DBE8",
 };
+
+function classNames(...classes) {
+  return classes.filter(Boolean).join(" ");
+}
 
 function markup_text(text, annotations) {
   if (!annotations) {
@@ -81,6 +88,14 @@ export class DDIReview extends Component {
       messageStatus: 200,
       articles: [],
       articlesInfo: [
+        {
+          field: 'use',
+          headerName: 'use',
+          cellRenderer: 'agCheckboxCellRenderer',
+          cellEditor: 'agCheckboxCellEditor',
+          editable: true,
+          suppressKeyboardEvent: (params) => params.event.key === ' ',
+        },
         {
           field: "text",
           filter: "agTextColumnFilter",
@@ -128,6 +143,10 @@ export class DDIReview extends Component {
       queryTypes: new Set(),
 
       permissions: [],
+
+      //chat
+      messages: [{'request': 'test 1', 'response': 'response 1', status: 200}, {'request': 'test 2', 'response': 'response 2', status: 200}],
+      sendMessage: null,
     };
   }
 
@@ -369,8 +388,10 @@ export class DDIReview extends Component {
 
   createSummariseQuery() {
     let summarise_data = [];
-    this.gridRef.current.api.forEachNodeAfterFilter((rowNode) =>
-      summarise_data.push(rowNode.data.text)
+    this.gridRef.current.api.forEachNodeAfterFilter((rowNode) => {
+      if (rowNode.data.use) {
+        summarise_data.push(rowNode.data.text)
+      }}
     );
     fetch(variables.API_URL + "/api/summarise_emb", {
       method: "POST",
@@ -597,6 +618,94 @@ export class DDIReview extends Component {
     };
   };
 
+  //chat
+
+  getResponse = (task_id, interval = 1000) => {
+    fetch(variables.API_URL + `/api/chat?task_id=${task_id}`,
+      {
+        headers: {
+          'Content-Type': 'application/json;charset=utf-8',
+          'Authorization': `Token ${variables.token}`,
+        },
+      }
+    )
+      .then((res) => {
+        if (res.status == 202) {
+          setTimeout(() => {
+            return this.getResponse(task_id, interval)
+          }, interval);
+        } else if (res.status == 200) {
+          return res.json()
+        } else {
+          throw Error(res.statusText)
+        }
+      })
+      .then((data) => {
+        try {
+          this.state.messages.push({'request': this.state.sendMessage, 'response': data.data, status: 200})
+          this.setState({
+            message: "Успешно",
+            messageStatus: 200,
+            loading: false,
+          });
+        } catch {
+          console.log('access')
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+        this.setState({ message: 'Произошла ошибка', loading: false, messageStatus: 500 });
+        this.state.messages.push({'request': this.state.sendMessage, 'response': 'Произошла ошибка', status: 500})
+      });
+  }
+
+  getRequest() {
+    let summarise_data = [];
+    this.gridRef.current.api.forEachNodeAfterFilter((rowNode) => {
+      if (rowNode.data.use) {
+        summarise_data.push(rowNode.data.text)
+      }}
+    );
+    this.setState({ loading: true })
+    fetch(variables.API_URL + '/api/chat', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json;charset=utf-8',
+        'Authorization': `Token ${variables.token}`,
+      },
+      body: JSON.stringify({
+        message: this.state.sendMessage,
+        articles: summarise_data
+      })
+    })
+      .then((res) => {
+        console.log(res.status)
+        if (res.ok) {
+          return res.json()
+        } else {
+          throw Error(res.statusText)
+        }
+      })
+      .then((result) => {
+        var task_id = result.data;
+        this.setState({ message: 'Ждем ответа', messageStatus: 201, loading: true })
+        this.getResponse(task_id);
+      })
+      .catch((err) => {
+        console.log(err);
+        this.setState({
+          message: 'Ошибка при отправке сообщения',
+          messageStatus: 500,
+          loading: false,
+        });
+      });
+  }
+
+  changeQueryTextChat = (e) => {
+    this.setState({ sendMessage: e.target.value });
+  }
+
   render() {
     const {
       token,
@@ -613,6 +722,9 @@ export class DDIReview extends Component {
       queryScore,
       allow_page,
       messageStatus,
+
+      messages,
+      sendMessage,
 
       permissions,
     } = this.state;
@@ -1284,13 +1396,7 @@ export class DDIReview extends Component {
                                   pagination={true}
                                   rowSelection={"single"}
                                   onSelectionChanged={this.onSelectionChanged}
-                                  suppressCutToClipboard={
-                                    this.suppressCutToClipboard
-                                  }
-                                  onCellValueChanged={this.onCellValueChanged}
-                                  onCutStart={this.onCutStart}
                                   localeText={AG_GRID_LOCALE_RU}
-                                  onCutEnd={this.onCutEnd}
                                   sideBar={{
                                     toolPanels: [
                                       {
@@ -1329,94 +1435,209 @@ export class DDIReview extends Component {
                     id="sidebar2"
                     class="col-md-4 h-screen collapse show width col p-3 my-3 border rounded-3 bg-white"
                   >
-                    <h3 class="pb-2 mb-3 border-bottom">Подробное описание</h3>
-                    <nav class="small" id="toc">
-                      {DetailArticle ? (
-                        <div class="card mb-3">
-                          <div class="card-body">
-                            <a
-                              href={DetailArticle.url}
-                              class="card-title link-primary text-decoration-none h5"
-                              target="_blank"
-                            >
-                              {" "}
-                              {DetailArticle.titl}{" "}
-                            </a>
-                            <p class="card-text">
-                              ----------------------------------{" "}
-                            </p>
-                            <p class="card-text">
-                              Авторы : {DetailArticle.auth}{" "}
-                            </p>
-                            <p class="card-text">
-                              ----------------------------------{" "}
-                            </p>
-                            <p class="card-text">Аннотация : </p>
-                            <p
-                              class="card-text"
-                              dangerouslySetInnerHTML={{
-                                __html: markup_text(
-                                  DetailArticle.tiab,
-                                  DetailArticle.annotations
-                                ),
-                              }}
-                            />
-                            <p class="card-text">
-                              ----------------------------------{" "}
-                            </p>
-                            <p class="card-text">
-                              <small class="text-success">
-                                Дата публикации : {DetailArticle.pdat}{" "}
-                              </small>
-                            </p>
-                            <p class="card-text">
-                              <small class="text-success">
-                                Издание : {DetailArticle.jour}
-                              </small>
-                            </p>
-                            <p class="card-text">
-                              <small class="text-success">
-                                Вид публикации : {DetailArticle.pt}
-                              </small>
-                            </p>
-                            <p class="card-text">
-                              <small class="text-success">
-                                Страна : {DetailArticle.pl}{" "}
-                              </small>
-                            </p>
-                            <p class="card-text">
-                              <small class="text-success">
-                                {DetailArticle.mesh}{" "}
-                              </small>
-                            </p>
-                            {summarise ? (
-                              <>
-                                <p>Summarise</p>
-                                <p>{summarise}</p>
-                              </>
-                            ) : loading ? (
-                              <p>Loading...</p>
-                            ) : (
-                              <input
-                                className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
-                                type="submit"
-                                value="Разметить"
-                                disabled={loading}
-                                onClick={() =>
-                                  this.markUpArticle(DetailArticle)
-                                }
-                              />
+                  <Tab.Group>
+                      <div>
+                        <Disclosure
+                          as="nav"
+                          className="bg-white border-gray-200 px-4 dark:bg-gray-800"
+                        >
+                          {({ open }) => (
+                            <div className="flex h-16 items-center justify-between">
+                              <div className="flex items-center">
+                                <div className="hidden md:block">
+                                  <div className="flex items-baseline space-x-1">
+                                    <Tab.List className="flex text-sm font-medium text-center">
+                                      <Tab
+                                        className={({ selected }) =>
+                                          classNames(
+                                            "",
+                                            "inline-block p-2 border-b-2 rounded-t-lg",
+                                            selected
+                                              ? "focus:outline-none text-blue-600 border-b-2 border-blue-600"
+                                              : "hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300"
+                                          )
+                                        }
+                                      >
+                                        Подробное описание
+                                      </Tab>
+                                      <Tab
+                                        className={({ selected }) =>
+                                          classNames(
+                                            "",
+                                            "inline-block p-2 border-b-2 rounded-t-lg",
+                                            selected
+                                              ? "focus:outline-none text-blue-600 border-b-2 border-blue-600"
+                                              : "hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300"
+                                          )
+                                        }
+                                      >
+                                        Чат
+                                      </Tab>
+                                    </Tab.List>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </Disclosure>
+                        {/* Страница с датасетом где он выводится в aj-grid и тут его загрузка есть */}
+                        <Tab.Panels className={classNames("px-4")}>
+                          <Tab.Panel
+                            className={classNames(
+                              "h-dvh flex flex-col bg-white dark:bg-gray-800",
+                              "focus:outline-none"
                             )}
-                            <input
-                              className="text-white right-2.5 my-4 bottom-2.5 bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-4 py-2"
-                              type="submit"
-                              value="Удалить"
-                              onClick={() => this.onRemoveSelected()}
-                            />
-                          </div>
-                        </div>
-                      ) : null}
-                    </nav>
+                          >
+                            <h3 class="pb-2 mb-3 border-bottom">Подробное описание</h3>
+                            <nav class="small" id="toc">
+                              {DetailArticle ? (
+                                <div class="card mb-3">
+                                  <div class="card-body">
+                                    <a
+                                      href={DetailArticle.url}
+                                      class="card-title link-primary text-decoration-none h5"
+                                      target="_blank"
+                                    >
+                                      {" "}
+                                      {DetailArticle.titl}{" "}
+                                    </a>
+                                    <p class="card-text">
+                                      ----------------------------------{" "}
+                                    </p>
+                                    <p class="card-text">
+                                      Авторы : {DetailArticle.auth}{" "}
+                                    </p>
+                                    <p class="card-text">
+                                      ----------------------------------{" "}
+                                    </p>
+                                    <p class="card-text">Аннотация : </p>
+                                    <p
+                                      class="card-text"
+                                      dangerouslySetInnerHTML={{
+                                        __html: markup_text(
+                                          DetailArticle.tiab,
+                                          DetailArticle.annotations
+                                        ),
+                                      }}
+                                    />
+                                    <p class="card-text">
+                                      ----------------------------------{" "}
+                                    </p>
+                                    <p class="card-text">
+                                      <small class="text-success">
+                                        Дата публикации : {DetailArticle.pdat}{" "}
+                                      </small>
+                                    </p>
+                                    <p class="card-text">
+                                      <small class="text-success">
+                                        Издание : {DetailArticle.jour}
+                                      </small>
+                                    </p>
+                                    <p class="card-text">
+                                      <small class="text-success">
+                                        Вид публикации : {DetailArticle.pt}
+                                      </small>
+                                    </p>
+                                    <p class="card-text">
+                                      <small class="text-success">
+                                        Страна : {DetailArticle.pl}{" "}
+                                      </small>
+                                    </p>
+                                    <p class="card-text">
+                                      <small class="text-success">
+                                        {DetailArticle.mesh}{" "}
+                                      </small>
+                                    </p>
+                                    {summarise ? (
+                                      <>
+                                        <p>Summarise</p>
+                                        <p>{summarise}</p>
+                                      </>
+                                    ) : loading ? (
+                                      <p>Loading...</p>
+                                    ) : (
+                                      <input
+                                        className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
+                                        type="submit"
+                                        value="Разметить"
+                                        disabled={loading}
+                                        onClick={() =>
+                                          this.markUpArticle(DetailArticle)
+                                        }
+                                      />
+                                    )}
+                                    <input
+                                      className="text-white right-2.5 my-4 bottom-2.5 bg-red-700 hover:bg-red-800 focus:ring-4 focus:outline-none focus:ring-red-300 font-medium rounded-lg text-sm px-4 py-2"
+                                      type="submit"
+                                      value="Удалить"
+                                      onClick={() => this.onRemoveSelected()}
+                                    />
+                                  </div>
+                                </div>
+                              ) : null}
+                            </nav>
+                          </Tab.Panel>
+                          <Tab.Panel
+                            className={classNames(
+                              "h-dvh flex flex-col bg-white dark:bg-gray-800",
+                              "focus:outline-none"
+                            )}
+                          >
+                            <h3 class="pb-2 mb-3 border-bottom">YandexGPT</h3>
+                            <nav class="small" id="toc">
+                                <div>
+                                  <div class="bd-example">
+                                    <div class="tab-content" id="myTabContent">
+                                        <div class="container-fluid g-0">
+                                            <div class="relative mt-1 w-full">
+                                              <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
+                                                  <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
+                                                </svg>
+                                              </div>
+                                              <input
+                                                class="py-3 bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5"
+                                                id="search"
+                                                type="text"
+                                                name="search_field"
+                                                placeholder="Задайте вопрос"
+                                                value={sendMessage}
+                                                onChange={this.changeQueryTextChat}
+                                                aria-label="Search" />
+                                              {/*<button type="submit" disabled={loading} value="Перевести" onClick={() => this.translateQuery()} class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-2">Перевести</button>*/}
+                                              <button type="submit" disabled={loading} value="Отправить" onClick={() => this.getRequest()} class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2">Отправить</button>
+                                            </div>
+                                        </div>
+                                        <div name='chat'>
+                                            {loading?
+                                                <p>loading...</p>
+                                            :null}
+                                            <br />
+                                            {messages?.toReversed().map(m =>
+                                                <>
+                                                    <div className="flex flex-row">
+                                                        <p>{m.request}</p>
+                                                    </div>
+                                                    <div className="flex flex-row-reverse">
+                                                        {m.status > 299?
+                                                            <p style={{ color: 'red' }}>{m.response}</p>
+                                                        :
+                                                            <p style={{ color: 'green' }}>{m.response}</p>
+                                                        }
+
+                                                    </div>
+                                                    <br />
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                  </div>
+                                </div>
+                            </nav>
+                          </Tab.Panel>
+                        </Tab.Panels>
+                      </div>
+                    </Tab.Group>
                   </aside>
                 </div>
               </div>
