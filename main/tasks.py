@@ -10,12 +10,10 @@ import io
 import http.client
 
 import langchain
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.vectorstores import OpenSearchVectorSearch
-from langchain.document_loaders import TextLoader
 from langchain.chains import LLMChain
 from langchain.schema import Document
 from langchain.chat_models import ChatYandexGPT as YandexLLM
+from langchain.callbacks import get_openai_callback
 import grpc
 
 import time
@@ -45,50 +43,6 @@ def check_permission(user_permission, retmax):
             retmax = allow_records
 
     return retmax
-
-
-def get_ddi_records(query, new_task_id=None, **kwargs):
-    url = f'https://www.ncbi.nlm.nih.gov/research/litsense-api/api/?query={query}&rerank=true'
-    r = requests.get(url)
-    print(r.status_code)
-    if (r.status_code > 299 or r.status_code < 200):
-        raise ConnectionError(f'Подключение к эмбедингам ncbi прошло неудачно с {r.status_code} ошибкой')
-
-    records = json.loads(r.text)
-    records_id = {record['pmid']: [round(record['score'], 2), record['section'], record['text']] for record in records
-                  if current_record(record, **kwargs)}
-
-    Entrez.email = kwargs.get('email', PARSER_EMAIL)
-    handle = Entrez.efetch(db="pubmed", id=[k for k in records_id], rettype="medline", retmode="text")
-
-    records = []
-    len_records = len(records_id)
-    if 'chat' not in kwargs:
-        new_task = TaskAnalise.objects.get(id=new_task_id)
-    i = 0
-
-    for record in Medline.parse(handle):
-        data = parse_record(record)
-        if not filter_record(data, **kwargs):
-            i += 1
-            continue
-        if data:
-            record = ArticleSerializer(data, many=False).data
-            record['annotations'] = None
-            record['query_number'] = kwargs['number_of_query']
-            record['score'], record['section'], record['text'] = records_id[record['uid']]
-
-            records.append(record)
-
-        if i % 10 == 0 and 'chat' not in kwargs:
-            new_task.message = f'On {i}/{len_records} step...'
-            new_task.save()
-
-        i += 1
-
-    print(len(records))
-    handle.close()
-    return records
 
 
 @shared_task(bind=True)
@@ -279,7 +233,47 @@ def filter_record(record, **filters):
 
 @shared_task(bind=True)
 def get_ddi_articles(self, query, new_task_id, **kwargs):
-    return get_ddi_records(query, new_task_id, **kwargs)
+    url = f'https://www.ncbi.nlm.nih.gov/research/litsense-api/api/?query={query}&rerank=true'
+    r = requests.get(url)
+    print(r.status_code)
+    if (r.status_code > 299 or r.status_code < 200):
+        raise ConnectionError(f'Подключение к эмбедингам ncbi прошло неудачно с {r.status_code} ошибкой')
+
+    records = json.loads(r.text)
+    records_id = {record['pmid']: [round(record['score'], 2), record['section'], record['text']] for record in records
+                  if current_record(record, **kwargs)}
+
+    Entrez.email = kwargs.get('email', PARSER_EMAIL)
+    handle = Entrez.efetch(db="pubmed", id=[k for k in records_id], rettype="medline", retmode="text")
+
+    records = []
+    len_records = len(records_id)
+    new_task = TaskAnalise.objects.get(id=new_task_id)
+    i = 0
+
+    for record in Medline.parse(handle):
+        data = parse_record(record)
+        if not filter_record(data, **kwargs):
+            i += 1
+            continue
+        if data:
+            record = ArticleSerializer(data, many=False).data
+            record['annotations'] = None
+            record['use'] = True
+            record['query_number'] = kwargs['number_of_query']
+            record['score'], record['section'], record['text'] = records_id[record['uid']]
+
+            records.append(record)
+
+        if i % 10 == 0:
+            new_task.message = f'On {i}/{len_records} step...'
+            new_task.save()
+
+        i += 1
+
+    print(len(records))
+    handle.close()
+    return records
 
 @shared_task(bind=True)
 def markup_artcile(self, record):
@@ -333,14 +327,6 @@ def plot_graph_associations(self, IdList, pk, email, max_size=200):
     json.dump(data, f)
     f.close()
     return
-
-def create_doc(record, i):
-    if record['section'] == 'abstract':
-        return Document(page_content=f"{record['tiab']}\n", metadata={'page': f"{i}"})
-    elif record['section'] == 'title':
-        return Document(page_content=f"{record['titl']}\n", metadata={'page': f"{i}"})
-    else:
-        return None
 
 def get_token():
     try:
@@ -397,25 +383,16 @@ def translate(self, text):
 
     return response.json()
 
+def create_doc(record, i):
+    return Document(page_content=f"{record}\n", metadata={'page': f"{i}"})
+
 @shared_task(bind=True)
 def send_message(self, **kwargs):
-    count = kwargs['count']
-    translate_message = translate(kwargs['message'])['translations'][0]['text']
-    print(translate_message)
-    records_pub = get_ddi_records(translate_message, chat="chat", **kwargs)
-    i = 0
-    records = []
-    while(0 < count and i < len(records_pub)):
-        print(f'parse {i} record')
-        record = create_doc(records_pub[i], i)
-        if record is None:
-            i += 1
-            continue
-        records.append(record)
-        i += 1
-        count -= 1
-
-    print(len(records))
+    records = [create_doc(record, i) for i, record in enumerate(kwargs['articles'])]
+    len_records = 0
+    for record in records:
+        len_records += len(record.page_content.split(' '))
+    print(len_records)
     if not redis_cli.exists(IAM_TOKEN):
         if not get_token():
             raise Exception('Token didnt got')
@@ -440,7 +417,8 @@ def send_message(self, **kwargs):
     instructions = """Представь себе, что ты сотрудник Yandex Cloud. Твоя задача - вежливо и по мере своих сил отвечать на все вопросы собеседника."""
 
     llm = YandexLLM(iam_token=token,
-                    instruction_text=instructions)
+                    instruction_text=instructions,
+                    timeout=30)
     # Промпт для обработки документов
     document_prompt = langchain.prompts.PromptTemplate(
         input_variables=["page_content"],
@@ -476,6 +454,7 @@ def send_message(self, **kwargs):
         message = chain.run(input_documents=records, query=kwargs['message'])
         print(message)
     except grpc.RpcError as e:
+        print(e)
         message = "Слишком большой запрос по кол-ву документов, пожайлуста уменьшите их кол-во и попробуйте снова"
 
     return message

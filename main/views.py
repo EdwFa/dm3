@@ -572,14 +572,15 @@ class ChatApi(APIView):
 
         if worker_id.status == 'SUCCESS':
             data = {
-                'data': AsyncResult(worker_id.task_id, app=summarise_emb).get()
+                'data': AsyncResult(worker_id.task_id, app=summarise_emb).get(),
+                'message': "Успешно"
             }
         return Response(data=data, status=status.HTTP_200_OK)
 
     def post(self, request):
         print(request.data)
-        request.data['email'] = request.user.email
-        request.data['number_of_query'] = 1
+        if 'articles' not in request.data:
+            return Response(data={'data': None, 'message': 'no one article sent'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         task = send_message.delay(**request.data)
         data = {
             'data': task.id,
