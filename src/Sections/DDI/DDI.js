@@ -89,16 +89,16 @@ export class DDIReview extends Component {
       articles: [],
       articlesInfo: [
         {
-          field: 'use',
-          headerName: 'use',
-          cellRenderer: 'agCheckboxCellRenderer',
-          cellEditor: 'agCheckboxCellEditor',
+          field: "use",
+          headerName: "use",
+          cellRenderer: "agCheckboxCellRenderer",
+          cellEditor: "agCheckboxCellEditor",
           editable: true,
           minWidth: 50,
           width: 75,
           maxWidth: 100,
           resizable: true,
-          suppressKeyboardEvent: (params) => params.event.key === ' ',
+          suppressKeyboardEvent: (params) => params.event.key === " ",
         },
         {
           field: "text",
@@ -149,7 +149,10 @@ export class DDIReview extends Component {
       permissions: [],
 
       //chat
-      messages: [{'request': 'test 1', 'response': 'response 1', status: 200}, {'request': 'test 2', 'response': 'response 2', status: 200}],
+      messages: [
+        { request: "test 1", response: "response 1", status: 200 },
+        { request: "test 2", response: "response 2", status: 200 },
+      ],
       sendMessage: null,
     };
   }
@@ -394,9 +397,9 @@ export class DDIReview extends Component {
     let summarise_data = [];
     this.gridRef.current.api.forEachNodeAfterFilter((rowNode) => {
       if (rowNode.data.use) {
-        summarise_data.push(rowNode.data.text)
-      }}
-    );
+        summarise_data.push(rowNode.data.text);
+      }
+    });
     fetch(variables.API_URL + "/api/summarise_emb", {
       method: "POST",
       headers: {
@@ -625,81 +628,95 @@ export class DDIReview extends Component {
   //chat
 
   getResponse = (task_id, interval = 1000) => {
-    fetch(variables.API_URL + `/api/chat?task_id=${task_id}`,
-      {
-        headers: {
-          'Content-Type': 'application/json;charset=utf-8',
-          'Authorization': `Token ${variables.token}`,
-        },
-      }
-    )
+    fetch(variables.API_URL + `/api/chat?task_id=${task_id}`, {
+      headers: {
+        "Content-Type": "application/json;charset=utf-8",
+        Authorization: `Token ${variables.token}`,
+      },
+    })
       .then((res) => {
         if (res.status == 202) {
           setTimeout(() => {
-            return this.getResponse(task_id, interval)
+            return this.getResponse(task_id, interval);
           }, interval);
         } else if (res.status == 200) {
-          return res.json()
+          return res.json();
         } else {
-          throw Error(res.statusText)
+          throw Error(res.statusText);
         }
       })
       .then((data) => {
         try {
-          this.state.messages.push({'request': this.state.sendMessage, 'response': data.data, status: 200})
+          this.state.messages.push({
+            request: this.state.sendMessage,
+            response: data.data,
+            status: 200,
+          });
           this.setState({
             message: "Успешно",
             messageStatus: 200,
             loading: false,
           });
         } catch {
-          console.log('access')
+          console.log("access");
         }
       })
       .catch((err) => {
         console.log(err);
-        this.setState({ message: 'Произошла ошибка', loading: false, messageStatus: 500 });
-        this.state.messages.push({'request': this.state.sendMessage, 'response': 'Произошла ошибка', status: 500})
+        this.setState({
+          message: "Произошла ошибка",
+          loading: false,
+          messageStatus: 500,
+        });
+        this.state.messages.push({
+          request: this.state.sendMessage,
+          response: "Произошла ошибка",
+          status: 500,
+        });
       });
-  }
+  };
 
   getRequest() {
     let summarise_data = [];
     this.gridRef.current.api.forEachNodeAfterFilter((rowNode) => {
       if (rowNode.data.use) {
-        summarise_data.push(rowNode.data.text)
-      }}
-    );
-    this.setState({ loading: true })
-    fetch(variables.API_URL + '/api/chat', {
-      method: 'POST',
+        summarise_data.push(rowNode.data.text);
+      }
+    });
+    this.setState({ loading: true });
+    fetch(variables.API_URL + "/api/chat", {
+      method: "POST",
       headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json;charset=utf-8',
-        'Authorization': `Token ${variables.token}`,
+        Accept: "application/json",
+        "Content-Type": "application/json;charset=utf-8",
+        Authorization: `Token ${variables.token}`,
       },
       body: JSON.stringify({
         message: this.state.sendMessage,
-        articles: summarise_data
-      })
+        articles: summarise_data,
+      }),
     })
       .then((res) => {
-        console.log(res.status)
+        console.log(res.status);
         if (res.ok) {
-          return res.json()
+          return res.json();
         } else {
-          throw Error(res.statusText)
+          throw Error(res.statusText);
         }
       })
       .then((result) => {
         var task_id = result.data;
-        this.setState({ message: 'Ждем ответа', messageStatus: 201, loading: true })
+        this.setState({
+          message: "Ждем ответа",
+          messageStatus: 201,
+          loading: true,
+        });
         this.getResponse(task_id);
       })
       .catch((err) => {
         console.log(err);
         this.setState({
-          message: 'Ошибка при отправке сообщения',
+          message: "Ошибка при отправке сообщения",
           messageStatus: 500,
           loading: false,
         });
@@ -708,7 +725,7 @@ export class DDIReview extends Component {
 
   changeQueryTextChat = (e) => {
     this.setState({ sendMessage: e.target.value });
-  }
+  };
 
   render() {
     const {
@@ -847,7 +864,7 @@ export class DDIReview extends Component {
                 </div>
               </div>
             </nav>
-            <nav class="bg-white border-gray-200 px-6">
+            <nav class="bg-white border-gray-200 px-6 py-1">
               <div class="w-full">
                 <div class="flex justify-between items-center">
                   <button
@@ -919,7 +936,7 @@ export class DDIReview extends Component {
                           disabled={loading}
                           value="Перевести"
                           onClick={() => this.translateQuery()}
-                          class="text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
+                          class="text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 mr-2"
                         >
                           Перевести
                         </button>
@@ -1429,7 +1446,7 @@ export class DDIReview extends Component {
                     id="sidebar2"
                     class="col-md-4 h-screen collapse show width col p-3 my-3 border rounded-3 bg-white"
                   >
-                  <Tab.Group>
+                    <Tab.Group>
                       <div>
                         <Disclosure
                           as="nav"
@@ -1482,7 +1499,9 @@ export class DDIReview extends Component {
                               "focus:outline-none"
                             )}
                           >
-                            <h3 class="pb-2 mb-3 border-bottom">Подробное описание</h3>
+                            <h3 class="pb-2 mb-3 border-bottom">
+                              Подробное описание
+                            </h3>
                             <nav class="small" id="toc">
                               {DetailArticle ? (
                                 <div class="card mb-3">
@@ -1579,54 +1598,76 @@ export class DDIReview extends Component {
                           >
                             <h3 class="pb-2 mb-3 border-bottom">YandexGPT</h3>
                             <nav class="small" id="toc">
-                                <div>
-                                  <div class="bd-example">
-                                    <div class="tab-content" id="myTabContent">
-                                        <div class="container-fluid g-0">
-                                            <div class="relative mt-1 w-full">
-                                              <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                                <svg class="w-4 h-4 text-gray-500 dark:text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20">
-                                                  <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z" />
-                                                </svg>
-                                              </div>
-                                              <input
-                                                class="py-3 bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5"
-                                                id="search"
-                                                type="text"
-                                                name="search_field"
-                                                placeholder="Задайте вопрос"
-                                                value={sendMessage}
-                                                onChange={this.changeQueryTextChat}
-                                                aria-label="Search" />
-                                              {/*<button type="submit" disabled={loading} value="Перевести" onClick={() => this.translateQuery()} class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-2">Перевести</button>*/}
-                                              <button type="submit" disabled={loading} value="Отправить" onClick={() => this.getRequest()} class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2">Отправить</button>
-                                            </div>
+                              <div>
+                                <div class="bd-example">
+                                  <div class="tab-content" id="myTabContent">
+                                    <div class="container-fluid g-0">
+                                      <div class="relative mt-1 w-full">
+                                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                          <svg
+                                            class="w-4 h-4 text-gray-500 dark:text-gray-400"
+                                            aria-hidden="true"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            fill="none"
+                                            viewBox="0 0 20 20"
+                                          >
+                                            <path
+                                              stroke="currentColor"
+                                              stroke-linecap="round"
+                                              stroke-linejoin="round"
+                                              stroke-width="2"
+                                              d="m19 19-4-4m0-7A7 7 0 1 1 1 8a7 7 0 0 1 14 0Z"
+                                            />
+                                          </svg>
                                         </div>
-                                        <div name='chat'>
-                                            {loading?
-                                                <p>loading...</p>
-                                            :null}
-                                            <br />
-                                            {messages?.toReversed().map(m =>
-                                                <>
-                                                    <div className="flex flex-row">
-                                                        <p>{m.request}</p>
-                                                    </div>
-                                                    <div className="flex flex-row-reverse">
-                                                        {m.status > 299?
-                                                            <p style={{ color: 'red' }}>{m.response}</p>
-                                                        :
-                                                            <p style={{ color: 'green' }}>{m.response}</p>
-                                                        }
-
-                                                    </div>
-                                                    <br />
-                                                </>
+                                        <input
+                                          class="py-3 bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5"
+                                          id="search"
+                                          type="text"
+                                          name="search_field"
+                                          placeholder="Задайте вопрос"
+                                          value={sendMessage}
+                                          onChange={this.changeQueryTextChat}
+                                          aria-label="Search"
+                                        />
+                                        {/*<button type="submit" disabled={loading} value="Перевести" onClick={() => this.translateQuery()} class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-2">Перевести</button>*/}
+                                        <button
+                                          type="submit"
+                                          disabled={loading}
+                                          value="Отправить"
+                                          onClick={() => this.getRequest()}
+                                          class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
+                                        >
+                                          Отправить
+                                        </button>
+                                      </div>
+                                    </div>
+                                    <div name="chat">
+                                      {loading ? <p>loading...</p> : null}
+                                      <br />
+                                      {messages?.toReversed().map((m) => (
+                                        <>
+                                          <div className="flex flex-row">
+                                            <p>{m.request}</p>
+                                          </div>
+                                          <div className="flex flex-row-reverse">
+                                            {m.status > 299 ? (
+                                              <p style={{ color: "red" }}>
+                                                {m.response}
+                                              </p>
+                                            ) : (
+                                              <p style={{ color: "green" }}>
+                                                {m.response}
+                                              </p>
                                             )}
-                                        </div>
+                                          </div>
+                                          <br />
+                                        </>
+                                      ))}
                                     </div>
                                   </div>
                                 </div>
+                              </div>
                             </nav>
                           </Tab.Panel>
                         </Tab.Panels>

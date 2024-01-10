@@ -1,5 +1,6 @@
 export const variables = {
-    API_URL: "http://localhost:8000",
+    //API_URL: "http://localhost:8000",
+    API_URL: "https://restapi3.datamed.pro",
     token: null,
     email: null,
     allow: null,
