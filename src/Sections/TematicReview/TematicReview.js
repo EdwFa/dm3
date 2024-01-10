@@ -746,7 +746,7 @@ export class TematicReview extends Component {
   }
 
   getAllArticles() {
-    this.setState({loading: true});
+    this.setState({ loading: true });
     fetch(variables.API_URL + "/api/all_records/", {
       headers: {
         "Content-Type": "application/json;charset=utf-8",
@@ -763,10 +763,10 @@ export class TematicReview extends Component {
         }
       })
       .then((data) => {
-          this.setState({
-            articles: data.data.search_ncbi,
-            loading: false,
-          })
+        this.setState({
+          articles: data.data.search_ncbi,
+          loading: false,
+        });
       })
       .catch((error) => {
         if (ErrorMessage === 500) {
@@ -787,7 +787,7 @@ export class TematicReview extends Component {
           });
         }
       });
-  };
+  }
 
   // Analise
 
@@ -1415,33 +1415,33 @@ export class TematicReview extends Component {
     if (!token) {
       return <Navigate push to="/login" />;
     } else if (allow_page === 1) {
-      return <Navigate push to="/ddi_review" />
+      return <Navigate push to="/ddi_review" />;
     } else if (allow_page === 2) {
-      return <Navigate push to="/chat" />
+      return <Navigate push to="/chat" />;
     } else {
       return (
         <>
           <header className="bg-white">
-            <nav class="px-2 py-2.5">
-              <div class="flex flex-wrap justify-between items-center">
-                <div class="flex justify-start items-center">
-                  <a href="" class="flex mr-4">
+            <nav className="px-2 py-2.5">
+              <div className="flex flex-wrap justify-between items-center">
+                <div className="flex justify-start items-center">
+                  <a href="" className="flex mr-4">
                     <img
                       src="https://flowbite.s3.amazonaws.com/logo.svg"
-                      class="mr-3 h-8"
+                      className="mr-3 h-8"
                       alt="FlowBite Logo"
                     />
-                    <span class="self-center text-2xl font-semibold whitespace-nowrap">
+                    <span className="self-center text-2xl font-semibold whitespace-nowrap">
                       EBM Sechenov DataMed.AI
                     </span>
                   </a>
                   {allow_page === 3 ? (
-                    <ul class="flex font-medium flex-row space-x-8 ml-10">
+                    <ul className="flex font-medium flex-row space-x-8 ml-10">
                       <Link to="/tematic_review">
                         <li>
                           <a
                             href="#"
-                            class="block py-2 pl-3 pr-4 text-gray-900 bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0"
+                            className="block py-2 pl-3 pr-4 text-gray-900 bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0"
                             aria-current="page"
                           >
                             Тематический анализ
@@ -1452,27 +1452,32 @@ export class TematicReview extends Component {
                         <li>
                           <a
                             href="#"
-                            class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0"
+                            className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0"
                           >
                             Факты для EBM
                           </a>
                         </li>
                       </Link>
-                      {variables.admin?
+                      {variables.admin ? (
                         <Link to="/admin">
                           <li>
-                            <a href="#" class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0">Админ панель</a>
+                            <a
+                              href="#"
+                              className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0"
+                            >
+                              Админ панель
+                            </a>
                           </li>
                         </Link>
-                      :null}
+                      ) : null}
                     </ul>
                   ) : null}
                 </div>
-                <div class="flex items-center lg:order-2">
-                  <div class="flex-shrink-0 dropdown">
+                <div className="flex items-center lg:order-2">
+                  <div className="flex-shrink-0 dropdown">
                     <a
                       href="#"
-                      class="d-block link-body-emphasis text-decoration-none dropdown-toggle"
+                      className="d-block link-body-emphasis text-decoration-none dropdown-toggle"
                       data-bs-toggle="dropdown"
                       aria-expanded="false"
                     >
@@ -1481,13 +1486,13 @@ export class TematicReview extends Component {
                         alt="mdo"
                         width="32"
                         height="32"
-                        class="rounded-circle"
+                        className="rounded-circle"
                       />
                     </a>
-                    <ul class="dropdown-menu text-small shadow">
+                    <ul className="dropdown-menu text-small shadow">
                       {permissions?.map((per) => (
                         <li>
-                          <a class="dropdown-item" href="#">
+                          <a className="dropdown-item" href="#">
                             {per.topic}{" "}
                             {per.all_records
                               ? `${per.all_records}`
@@ -1500,20 +1505,20 @@ export class TematicReview extends Component {
                 </div>
               </div>
             </nav>
-            <nav class="px-2 py-2 border border-gray-200">
-              <div class="w-full">
-                <div class="flex justify-between items-center">
+            <nav className="px-2 py-2 border border-gray-200">
+              <div className="w-full">
+                <div className="flex justify-between items-center">
                   <button
                     id="toggleSidebar"
                     aria-expanded="true"
                     aria-controls="sidebar"
-                    class="hidden order-first p-2 mr-3 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
+                    className="hidden order-first p-2 mr-3 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
                     data-bs-toggle="collapse"
                     data-bs-target="#sidebar"
                     aria-label="Toggle navigation"
                   >
                     <svg
-                      class="w-6 h-6"
+                      className="w-6 h-6"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                       xmlns="http://www.w3.org/2000/svg"
@@ -1526,10 +1531,10 @@ export class TematicReview extends Component {
                     </svg>
                   </button>
                   <div className="grow">
-                    <div class="relative">
-                      <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <svg
-                          class="w-4 h-4 text-gray-500 dark:text-gray-400"
+                          className="w-4 h-4 text-gray-500 dark:text-gray-400"
                           aria-hidden="true"
                           xmlns="http://www.w3.org/2000/svg"
                           fill="none"
@@ -1545,7 +1550,7 @@ export class TematicReview extends Component {
                         </svg>
                       </div>
                       <input
-                        class="w-full py-3 bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5"
+                        className="w-full py-3 bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5"
                         id="search"
                         type="text"
                         name="search_field"
@@ -1563,43 +1568,43 @@ export class TematicReview extends Component {
                         value="Найти"
                         disabled={loading}
                         onClick={() => this.createTask()}
-                        class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
+                        className="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
                       >
-                        {loading?
-                                        <svg
-                                          class="-ml-1 ml-3 h-5 w-5 text-white"
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          fill="none"
-                                          viewBox="0 0 24 24"
-                                        >
-                                          <circle
-                                            class="opacity-25"
-                                            cx="12"
-                                            cy="12"
-                                            r="10"
-                                            stroke="currentColor"
-                                            stroke-width="4"
-                                          ></circle>
-                                          <path
-                                            class="opacity-75"
-                                            fill="currentColor"
-                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                          ></path>
-                                        </svg>
-                                :
-                                    'Найти'
-                                }
+                        {loading ? (
+                          <svg
+                            className="-ml-1 ml-3 h-5 w-5 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              stroke-width="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                        ) : (
+                          "Найти"
+                        )}
                       </button>
                     </div>
                   </div>
                   <div
-                    class="ml-5 items-center justify-between hidden w-full md:flex md:w-auto md:order-1"
+                    className="ml-5 items-center justify-between hidden w-full md:flex md:w-auto md:order-1"
                     id="navbar-sticky"
                   >
-                    <ul class="nav nav-pills" id="myTab" role="tablist">
-                      <li class="nav-item mr-2" role="presentation">
+                    <ul className="nav nav-pills" id="myTab" role="tablist">
+                      <li className="nav-item mr-2" role="presentation">
                         <button
-                          class="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100 active"
+                          className="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100 active"
                           id="home-tab"
                           data-bs-toggle="tab"
                           data-bs-target="#home"
@@ -1618,9 +1623,9 @@ export class TematicReview extends Component {
                           Результаты поиска
                         </button>
                       </li>
-                      <li class="nav-item mr-2" role="presentation">
+                      <li className="nav-item mr-2" role="presentation">
                         <button
-                          class="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100"
+                          className="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100"
                           id="profile-tab"
                           data-bs-toggle="tab"
                           data-bs-target="#profile"
@@ -1639,9 +1644,9 @@ export class TematicReview extends Component {
                           Тематическое описание коллекции
                         </button>
                       </li>
-                      <li class="nav-item mr-2" role="presentation">
+                      <li className="nav-item mr-2" role="presentation">
                         <button
-                          class="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100"
+                          className="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100"
                           id="contact-tab"
                           data-bs-toggle="tab"
                           data-bs-target="#contact"
@@ -1665,13 +1670,13 @@ export class TematicReview extends Component {
                       id="toggleSidebar"
                       aria-expanded="true"
                       aria-controls="sidebar2"
-                      class="order-last hidden p-2 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
+                      className="order-last hidden p-2 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
                       data-bs-toggle="collapse"
                       data-bs-target="#sidebar2"
                       aria-label="Toggle navigation"
                     >
                       <svg
-                        class="w-6 h-6 rotate-180"
+                        className="w-6 h-6 rotate-180"
                         fill="currentColor"
                         viewBox="0 0 20 20"
                         xmlns="http://www.w3.org/2000/svg"
@@ -1744,9 +1749,12 @@ export class TematicReview extends Component {
                         </div>
                       </div>
                       <div className="accordion-item">
-                        <h2 class="accordion-header" id="flush-headingThree">
+                        <h2
+                          className="accordion-header"
+                          id="flush-headingThree"
+                        >
                           <button
-                            class="accordion-button collapsed"
+                            className="accordion-button collapsed"
                             data-target="#flush-collapseThree"
                             type="button"
                             data-bs-toggle="collapse"
@@ -2260,7 +2268,7 @@ export class TematicReview extends Component {
                         >
                           <div className="accordion-body">
                             <div className="form-outline">
-                              <label class="form-label" for="typeNumber1">
+                              <label className="form-label" for="typeNumber1">
                                 Range Min:{" "}
                               </label>
                               <input
@@ -2274,7 +2282,7 @@ export class TematicReview extends Component {
                               />
                             </div>
                             <div classNams="form-outline">
-                              <label class="form-label" for="typeNumber2">
+                              <label className="form-label" for="typeNumber2">
                                 Range Max:{" "}
                               </label>
                               <input
@@ -2288,7 +2296,7 @@ export class TematicReview extends Component {
                               />
                             </div>
                             <div classNams="form-outline">
-                              <label class="form-label" for="typeNumber3">
+                              <label className="form-label" for="typeNumber3">
                                 min_TOPIC_SIZE:
                               </label>
                               <input
@@ -2304,7 +2312,7 @@ export class TematicReview extends Component {
                               />
                             </div>
                             <div classNams="form-outline">
-                              <label class="form-label" for="typeNumber4">
+                              <label className="form-label" for="typeNumber4">
                                 top_N_WORDS:{" "}
                               </label>
                               <input
@@ -2341,7 +2349,7 @@ export class TematicReview extends Component {
                         >
                           <div className="accordion-body">
                             <div classNams="form-outline">
-                              <label class="form-label" for="typeNumber5">
+                              <label className="form-label" for="typeNumber5">
                                 top_n_topics:{" "}
                               </label>
                               <input
@@ -2357,7 +2365,7 @@ export class TematicReview extends Component {
                               />
                             </div>
                             <div classNams="form-outline">
-                              <label class="form-label" for="typeNumber6">
+                              <label className="form-label" for="typeNumber6">
                                 n_clusters:{" "}
                               </label>
                               <input
@@ -2394,7 +2402,7 @@ export class TematicReview extends Component {
                         >
                           <div className="accordion-body">
                             <div classNams="form-outline">
-                              <label class="form-label" for="typeNumber7">
+                              <label className="form-label" for="typeNumber7">
                                 n_neighbors:{" "}
                               </label>
                               <input
@@ -2408,7 +2416,7 @@ export class TematicReview extends Component {
                               />
                             </div>
                             <div classNams="form-outline">
-                              <label class="form-label" for="typeNumber8">
+                              <label className="form-label" for="typeNumber8">
                                 n_components:{" "}
                               </label>
                               <input
@@ -2424,7 +2432,7 @@ export class TematicReview extends Component {
                               />
                             </div>
                             <div classNams="form-outline">
-                              <label class="form-label" for="typeNumber9">
+                              <label className="form-label" for="typeNumber9">
                                 min_dist:{" "}
                               </label>
                               <input
@@ -2436,7 +2444,7 @@ export class TematicReview extends Component {
                               />
                             </div>
                             <div classNams="form-outline">
-                              <label class="form-label" for="typeNumber9">
+                              <label className="form-label" for="typeNumber9">
                                 metric:{" "}
                               </label>
                               <Select
@@ -2457,45 +2465,45 @@ export class TematicReview extends Component {
                       </div>
                     </div>
                   </aside>
-                  <section class="col p-3 m-3 border rounded-3 bg-white h-screen overflow-auto">
-                    <div class="bd-example">
-                      <div class="tab-content" id="myTabContent">
+                  <section className="col p-3 m-3 border rounded-3 bg-white h-screen overflow-auto">
+                    <div className="bd-example">
+                      <div className="tab-content" id="myTabContent">
                         <div
-                          class="tab-pane fade active show"
+                          className="tab-pane fade active show"
                           id="home"
                           role="tabpanel"
                           aria-labelledby="home-tab"
                         >
-                          <div class="container-fluid g-0">
+                          <div className="container-fluid g-0">
                             <div
-                              class="accordion accordion-flush"
+                              className="accordion accordion-flush"
                               id="accordion"
                             >
-                              <div class="accordion-item">
+                              <div className="accordion-item">
                                 <div className="flex flex-row">
                                   <div
-                                    class="accordion-header"
+                                    className="accordion-header"
                                     id=""
                                     className="p-2 mr-2 rounded-lg bg-gray-200 border border-gray-500 grow font-medium text-sm "
                                   >
                                     {message ? (
                                       messageStatus > 299 ? (
                                         <p
-                                          class="animate-pulse"
+                                          className="animate-pulse"
                                           style={{ color: "red" }}
                                         >
                                           {message}.{" "}
                                         </p>
                                       ) : messageStatus === 200 ? (
                                         <p
-                                          class="animate-pulse"
+                                          className="animate-pulse"
                                           style={{ color: "green" }}
                                         >
                                           {message}.
                                         </p>
                                       ) : (
                                         <p
-                                          class="animate-pulse"
+                                          className="animate-pulse"
                                           style={{ color: "black" }}
                                         >
                                           {message}.
@@ -2505,39 +2513,39 @@ export class TematicReview extends Component {
                                   </div>
                                   <button
                                     type="button"
-                                    class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-white bg-blue-700 hover:bg-blue-800 transition ease-in-out duration-150"
+                                    className="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-white bg-blue-700 hover:bg-blue-800 transition ease-in-out duration-150"
                                     disabled={loading}
                                     onClick={() => this.startAnalise()}
                                   >
-                                    {loading?
-                                        <svg
-                                          class="-ml-1 ml-3 h-5 w-5 text-white"
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          fill="none"
-                                          viewBox="0 0 24 24"
-                                        >
-                                          <circle
-                                            class="opacity-25"
-                                            cx="12"
-                                            cy="12"
-                                            r="10"
-                                            stroke="currentColor"
-                                            stroke-width="4"
-                                          ></circle>
-                                          <path
-                                            class="opacity-75"
-                                            fill="currentColor"
-                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                          ></path>
-                                        </svg>
-                                    :
-                                        'Обработать'
-                                    }
+                                    {loading ? (
+                                      <svg
+                                        className="-ml-1 ml-3 h-5 w-5 text-white"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <circle
+                                          className="opacity-25"
+                                          cx="12"
+                                          cy="12"
+                                          r="10"
+                                          stroke="currentColor"
+                                          stroke-width="4"
+                                        ></circle>
+                                        <path
+                                          className="opacity-75"
+                                          fill="currentColor"
+                                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                        ></path>
+                                      </svg>
+                                    ) : (
+                                      "Обработать"
+                                    )}
                                   </button>
                                 </div>
 
                                 <button
-                                  class="accordion-button collapsed mt-2"
+                                  className="accordion-button collapsed mt-2"
                                   type="button"
                                   data-bs-toggle="collapse"
                                   data-bs-target="#flush-collapseEleven"
@@ -2548,21 +2556,21 @@ export class TematicReview extends Component {
                                 </button>
                                 <div
                                   id="flush-collapseEleven"
-                                  class="collapse multi-collapse"
+                                  className="collapse multi-collapse"
                                   aria-labelledby="flush-headingEleven"
                                   data-bs-target="#accordionFlushExample"
                                 >
-                                  <div class="accordion-body">
-                                    <p class="pb-2 mb-3 border-bottom">
+                                  <div className="accordion-body">
+                                    <p className="pb-2 mb-3 border-bottom">
                                       {" "}
                                       Запрос {short_query} .
                                     </p>
-                                    <p class="pb-2 mb-3 border-bottom">
+                                    <p className="pb-2 mb-3 border-bottom">
                                       {" "}
                                       Запрос автоматически расширен до
                                       следующего вида - {full_query}.
                                     </p>
-                                    <p class="pb-2 mb-3 border-bottom">
+                                    <p className="pb-2 mb-3 border-bottom">
                                       {" "}
                                       Служебная информация для анализа :{" "}
                                       {translation_stack}.
@@ -2614,66 +2622,65 @@ export class TematicReview extends Component {
                               ></AgGridReact>
                               <br />
                               <button
-                                    type="button"
-                                    class="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-white bg-blue-700 hover:bg-blue-800 transition ease-in-out duration-150"
-                                    disabled={loading}
-                                    onClick={() => this.getAllArticles()}
+                                type="button"
+                                className="inline-flex items-center px-4 py-2 font-semibold leading-6 text-sm shadow rounded-md text-white bg-blue-700 hover:bg-blue-800 transition ease-in-out duration-150"
+                                disabled={loading}
+                                onClick={() => this.getAllArticles()}
                               >
-                                {loading?
-                                        <svg
-                                          class="-ml-1 ml-3 h-5 w-5 text-white"
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          fill="none"
-                                          viewBox="0 0 24 24"
-                                        >
-                                          <circle
-                                            class="opacity-25"
-                                            cx="12"
-                                            cy="12"
-                                            r="10"
-                                            stroke="currentColor"
-                                            stroke-width="4"
-                                          ></circle>
-                                          <path
-                                            class="opacity-75"
-                                            fill="currentColor"
-                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                          ></path>
-                                        </svg>
-                                :
-                                    'Загрузить полностью'
-                                }
+                                {loading ? (
+                                  <svg
+                                    className="-ml-1 ml-3 h-5 w-5 text-white"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <circle
+                                      className="opacity-25"
+                                      cx="12"
+                                      cy="12"
+                                      r="10"
+                                      stroke="currentColor"
+                                      stroke-width="4"
+                                    ></circle>
+                                    <path
+                                      className="opacity-75"
+                                      fill="currentColor"
+                                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                    ></path>
+                                  </svg>
+                                ) : (
+                                  "Загрузить полностью"
+                                )}
                               </button>
-
                             </div>
                           </div>
                         </div>
                         <div
-                          class="tab-pane fade"
+                          className="tab-pane fade"
                           id="profile"
                           role="tabpanel"
                           aria-labelledby="profile-tab"
                         >
                           <div>
-                            <h2 class="accordion-header" id="">
+                            <h2 className="accordion-header" id="">
                               {messageAnalise ? (
                                 messageStatusAnalise > 299 ? (
                                   <p
-                                    class="pb-2 mb-3 border-bottom"
+                                    className="pb-2 mb-3 border-bottom"
                                     style={{ color: "red" }}
                                   >
                                     {messageAnalise}.{" "}
                                   </p>
                                 ) : messageStatusAnalise === 200 ? (
                                   <p
-                                    class="pb-2 mb-3 border-bottom"
+                                    className="pb-2 mb-3 border-bottom"
                                     style={{ color: "green" }}
                                   >
                                     {messageAnalise}.
                                   </p>
                                 ) : (
                                   <p
-                                    class="pb-2 mb-3 border-bottom"
+                                    className="pb-2 mb-3 border-bottom"
                                     style={{ color: "black" }}
                                   >
                                     {messageAnalise}.
@@ -2695,38 +2702,41 @@ export class TematicReview extends Component {
                             />
                             <br />
                             <button
-                                    type="button"
-                                    className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
-                                    disabled={loading}
-                                    onClick={() => this.createGraph()}
-                              >
-                                {loading?
-                                        <svg
-                                          class="-ml-1 ml-3 h-5 w-5 text-white"
-                                          xmlns="http://www.w3.org/2000/svg"
-                                          fill="none"
-                                          viewBox="0 0 24 24"
-                                        >
-                                          <circle
-                                            class="opacity-25"
-                                            cx="12"
-                                            cy="12"
-                                            r="10"
-                                            stroke="currentColor"
-                                            stroke-width="4"
-                                          ></circle>
-                                          <path
-                                            class="opacity-75"
-                                            fill="currentColor"
-                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                          ></path>
-                                        </svg>
-                                :
-                                    'Отрисовать граф'
-                                }
-                              </button>
+                              type="button"
+                              className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
+                              disabled={loading}
+                              onClick={() => this.createGraph()}
+                            >
+                              {loading ? (
+                                <svg
+                                  className="-ml-1 ml-3 h-5 w-5 text-white"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    stroke-width="4"
+                                  ></circle>
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  ></path>
+                                </svg>
+                              ) : (
+                                "Отрисовать граф"
+                              )}
+                            </button>
                           </div>
-                          <div class="accordion accordion-flush" id="accordion">
+                          <div
+                            className="accordion accordion-flush"
+                            id="accordion"
+                          >
                             <div className="accordion-item">
                               <h2
                                 className="accordion-header"
@@ -2802,7 +2812,7 @@ export class TematicReview extends Component {
                               </div>
                             </div>
                           </div>
-                          <label class="form-label">
+                          <label className="form-label">
                             Ширина = {plotlyWidth}
                           </label>
                           <Slider
@@ -2813,7 +2823,10 @@ export class TematicReview extends Component {
                             xstep={100}
                             onChange={({ x }) => this.changePlotlyWidth(x)}
                           />
-                          <div class="accordion accordion-flush" id="accordion">
+                          <div
+                            className="accordion accordion-flush"
+                            id="accordion"
+                          >
                             <div className="accordion-item">
                               <h2
                                 className="accordion-header"
@@ -2971,7 +2984,6 @@ export class TematicReview extends Component {
                                 >
                                   Суммаризация
                                 </button>
-
                               </h2>
                               <div
                                 id="flush-collapseEleven"
@@ -2991,33 +3003,35 @@ export class TematicReview extends Component {
                                         type="button"
                                         className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
                                         disabled={loading}
-                                        onClick={() => this.createSummariseQuery()}
-                                        >
-                                        {loading?
-                                                <svg
-                                                  class="-ml-1 ml-3 h-5 w-5 text-white"
-                                                  xmlns="http://www.w3.org/2000/svg"
-                                                  fill="none"
-                                                  viewBox="0 0 24 24"
-                                                >
-                                                  <circle
-                                                    class="opacity-25"
-                                                    cx="12"
-                                                    cy="12"
-                                                    r="10"
-                                                    stroke="currentColor"
-                                                    stroke-width="4"
-                                                  ></circle>
-                                                  <path
-                                                    class="opacity-75"
-                                                    fill="currentColor"
-                                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                                  ></path>
-                                                </svg>
-                                        :
-                                            'Суммаризовать'
+                                        onClick={() =>
+                                          this.createSummariseQuery()
                                         }
-                                        </button>
+                                      >
+                                        {loading ? (
+                                          <svg
+                                            className="-ml-1 ml-3 h-5 w-5 text-white"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                          >
+                                            <circle
+                                              className="opacity-25"
+                                              cx="12"
+                                              cy="12"
+                                              r="10"
+                                              stroke="currentColor"
+                                              stroke-width="4"
+                                            ></circle>
+                                            <path
+                                              className="opacity-75"
+                                              fill="currentColor"
+                                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                            ></path>
+                                          </svg>
+                                        ) : (
+                                          "Суммаризовать"
+                                        )}
+                                      </button>
                                     )}
                                   </div>
                                 </div>
@@ -3049,42 +3063,42 @@ export class TematicReview extends Component {
                                   <div>
                                     <a
                                       href="http://projector.tensorflow.org/"
-                                      class="card-title link-primary text-decoration-none h6"
+                                      className="card-title link-primary text-decoration-none h6"
                                       target="_blank"
                                     >
                                       {" "}
                                       Перейти на проектор{" "}
                                     </a>
                                     <button
-                                        type="button"
-                                        className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
-                                        disabled={loading}
-                                        onClick={() => this.downloadAll()}
+                                      type="button"
+                                      className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
+                                      disabled={loading}
+                                      onClick={() => this.downloadAll()}
                                     >
-                                    {loading?
-                                            <svg
-                                              class="-ml-1 ml-3 h-5 w-5 text-white"
-                                              xmlns="http://www.w3.org/2000/svg"
-                                              fill="none"
-                                              viewBox="0 0 24 24"
-                                            >
-                                              <circle
-                                                class="opacity-25"
-                                                cx="12"
-                                                cy="12"
-                                                r="10"
-                                                stroke="currentColor"
-                                                stroke-width="4"
-                                              ></circle>
-                                              <path
-                                                class="opacity-75"
-                                                fill="currentColor"
-                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                              ></path>
-                                            </svg>
-                                    :
-                                        'Cкачать'
-                                    }
+                                      {loading ? (
+                                        <svg
+                                          className="-ml-1 ml-3 h-5 w-5 text-white"
+                                          xmlns="http://www.w3.org/2000/svg"
+                                          fill="none"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <circle
+                                            className="opacity-25"
+                                            cx="12"
+                                            cy="12"
+                                            r="10"
+                                            stroke="currentColor"
+                                            stroke-width="4"
+                                          ></circle>
+                                          <path
+                                            className="opacity-75"
+                                            fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                          ></path>
+                                        </svg>
+                                      ) : (
+                                        "Cкачать"
+                                      )}
                                     </button>
                                   </div>
                                 </div>
@@ -3093,31 +3107,31 @@ export class TematicReview extends Component {
                           </div>
                         </div>
                         <div
-                          class="tab-pane fade"
+                          className="tab-pane fade"
                           id="contact"
                           role="tabpanel"
                           aria-labelledby="contact-tab"
                         >
-                          <div class="container-fluid g-0">
-                            <h2 class="accordion-header" id="">
+                          <div className="container-fluid g-0">
+                            <h2 className="accordion-header" id="">
                               {messageGraph ? (
                                 messageStatusGraph > 299 ? (
                                   <p
-                                    class="pb-2 mb-3 border-bottom"
+                                    className="pb-2 mb-3 border-bottom"
                                     style={{ color: "red" }}
                                   >
                                     {messageGraph}.{" "}
                                   </p>
                                 ) : messageStatusGraph === 200 ? (
                                   <p
-                                    class="pb-2 mb-3 border-bottom"
+                                    className="pb-2 mb-3 border-bottom"
                                     style={{ color: "green" }}
                                   >
                                     {messageGraph}.
                                   </p>
                                 ) : (
                                   <p
-                                    class="pb-2 mb-3 border-bottom"
+                                    className="pb-2 mb-3 border-bottom"
                                     style={{ color: "black" }}
                                   >
                                     {messageGraph}.
@@ -3174,33 +3188,35 @@ export class TematicReview extends Component {
 
                   <aside
                     id="sidebar2"
-                    class="col-md-4 h-screen collapse show width col p-3 my-3 border rounded-3 overflow-auto bg-white"
+                    className="col-md-4 h-screen collapse show width col p-3 my-3 border rounded-3 overflow-auto bg-white"
                   >
-                    <h3 class="pb-2 mb-3 border-bottom">Подробное описание</h3>
-                    <nav class="small" id="toc">
+                    <h3 className="pb-2 mb-3 border-bottom">
+                      Подробное описание
+                    </h3>
+                    <nav className="small" id="toc">
                       {DetailArticle ? (
-                        <div class="card mb-3">
-                          <div class="card-body">
+                        <div className="card mb-3">
+                          <div className="card-body">
                             <a
                               href={DetailArticle.url}
-                              class="card-title link-primary text-decoration-none h5"
+                              className="card-title link-primary text-decoration-none h5"
                               target="_blank"
                             >
                               {" "}
                               {DetailArticle.titl}{" "}
                             </a>
-                            <p class="card-text">
+                            <p className="card-text">
                               ----------------------------------{" "}
                             </p>
-                            <p class="card-text">
+                            <p className="card-text">
                               Авторы : {DetailArticle.auth}{" "}
                             </p>
-                            <p class="card-text">
+                            <p className="card-text">
                               ----------------------------------{" "}
                             </p>
-                            <p class="card-text">Аннотация : </p>
+                            <p className="card-text">Аннотация : </p>
                             <p
-                              class="card-text"
+                              className="card-text"
                               dangerouslySetInnerHTML={{
                                 __html: markup_text(
                                   DetailArticle.tiab,
@@ -3208,31 +3224,31 @@ export class TematicReview extends Component {
                                 ),
                               }}
                             />
-                            <p class="card-text">
+                            <p className="card-text">
                               ----------------------------------{" "}
                             </p>
-                            <p class="card-text">
-                              <small class="text-success">
+                            <p className="card-text">
+                              <small className="text-success">
                                 Дата публикации : {DetailArticle.pdat}{" "}
                               </small>
                             </p>
-                            <p class="card-text">
-                              <small class="text-success">
+                            <p className="card-text">
+                              <small className="text-success">
                                 Издание : {DetailArticle.jour}
                               </small>
                             </p>
-                            <p class="card-text">
-                              <small class="text-success">
+                            <p className="card-text">
+                              <small className="text-success">
                                 Вид публикации : {DetailArticle.pt}
                               </small>
                             </p>
-                            <p class="card-text">
-                              <small class="text-success">
+                            <p className="card-text">
+                              <small className="text-success">
                                 Страна : {DetailArticle.pl}{" "}
                               </small>
                             </p>
-                            <p class="card-text">
-                              <small class="text-success">
+                            <p className="card-text">
+                              <small className="text-success">
                                 {DetailArticle.mesh}{" "}
                               </small>
                             </p>

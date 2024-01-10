@@ -759,27 +759,27 @@ export class DDIReview extends Component {
     } else {
       return (
         <>
-          <header>
-            <nav class="bg-white border-gray-200 px-4 lg:px-6 py-2.5">
-              <div class="flex flex-wrap justify-between items-center">
-                <div class="flex justify-start items-center">
-                  <a href="" class="flex mr-4">
+          <header className="bg-white">
+            <nav className="px-2 py-2.5">
+              <div className="flex flex-wrap justify-between items-center">
+                <div className="flex justify-start items-center">
+                  <a href="" className="flex mr-4">
                     <img
                       src="https://flowbite.s3.amazonaws.com/logo.svg"
-                      class="mr-3 h-8"
+                      className="mr-3 h-8"
                       alt="FlowBite Logo"
                     />
-                    <span class="self-center text-2xl font-semibold whitespace-nowrap">
+                    <span className="self-center text-2xl font-semibold whitespace-nowrap">
                       EBM Sechenov DataMed.AI
                     </span>
                   </a>
                   {allow_page === 3 ? (
-                    <ul class="flex font-medium flex-row space-x-8">
+                    <ul className="flex font-medium flex-row space-x-8 ml-10">
                       <Link to="/tematic_review">
                         <li>
                           <a
                             href="#"
-                            class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0"
+                            className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0"
                           >
                             Тематический анализ
                           </a>
@@ -789,7 +789,7 @@ export class DDIReview extends Component {
                         <li>
                           <a
                             href="#"
-                            class="block py-2 pl-3 pr-4 text-gray-900 bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0"
+                            className="block py-2 pl-3 pr-4 text-gray-900 bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0"
                             aria-current="page"
                           >
                             Факты для EBM
@@ -801,7 +801,7 @@ export class DDIReview extends Component {
                           <li>
                             <a
                               href="#"
-                              class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0"
+                              className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0"
                             >
                               Админ панель
                             </a>
@@ -811,11 +811,11 @@ export class DDIReview extends Component {
                     </ul>
                   ) : null}
                 </div>
-                <div class="flex items-center lg:order-3">
-                  <div class="flex-shrink-0 dropdown">
+                <div className="flex items-center lg:order-3">
+                  <div className="flex-shrink-0 dropdown">
                     <a
                       href="#"
-                      class="d-block link-body-emphasis text-decoration-none dropdown-toggle"
+                      className="d-block link-body-emphasis text-decoration-none dropdown-toggle"
                       data-bs-toggle="dropdown"
                       aria-expanded="false"
                     >
@@ -824,13 +824,13 @@ export class DDIReview extends Component {
                         alt="mdo"
                         width="32"
                         height="32"
-                        class="rounded-circle"
+                        className="rounded-circle"
                       />
                     </a>
-                    <ul class="dropdown-menu text-small shadow">
+                    <ul className="dropdown-menu text-small shadow">
                       {permissions?.map((per) => (
                         <li>
-                          <a class="dropdown-item" href="#">
+                          <a className="dropdown-item" href="#">
                             {per.topic}{" "}
                             {per.all_records
                               ? `${per.all_records}`
@@ -841,14 +841,14 @@ export class DDIReview extends Component {
                     </ul>
                   </div>
                 </div>
-                <div class="flex items-center lg:order-2">
+                <div className="flex items-center lg:order-2">
                   <button
                     type="button"
-                    class="hidden sm:inline-flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-xs px-3 py-1.5 mr-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"
+                    className="hidden sm:inline-flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-xs px-3 py-1.5 mr-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"
                   >
                     <svg
                       aria-hidden="true"
-                      class="mr-1 -ml-1 w-5 h-5"
+                      className="mr-1 -ml-1 w-5 h-5"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                       xmlns="http://www.w3.org/2000/svg"
@@ -864,20 +864,20 @@ export class DDIReview extends Component {
                 </div>
               </div>
             </nav>
-            <nav class="bg-white border-gray-200 px-6 py-1">
-              <div class="w-full">
-                <div class="flex justify-between items-center">
+            <nav className="px-2 py-2 border border-gray-200">
+              <div className="w-full">
+                <div className="flex justify-between items-center">
                   <button
                     id="toggleSidebar"
                     aria-expanded="true"
                     aria-controls="sidebar"
-                    class="hidden p-2 mr-3 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
+                    className="hidden p-2 mr-3 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
                     data-bs-toggle="collapse"
                     data-bs-target="#sidebar"
                     aria-label="Toggle navigation"
                   >
                     <svg
-                      class="w-6 h-6"
+                      className="w-6 h-6"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                       xmlns="http://www.w3.org/2000/svg"
@@ -889,20 +889,20 @@ export class DDIReview extends Component {
                       ></path>
                     </svg>
                   </button>
-                  <label for="topbar-search" class="sr-only">
+                  <label for="topbar-search" className="sr-only">
                     Поисковый запрос
                   </label>
                   <div className="w-full">
                     <label
                       for="search"
-                      class="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white"
+                      className="mb-2 text-sm font-medium text-gray-900 sr-only dark:text-white"
                     >
                       Поисковый запрос
                     </label>
-                    <div class="relative mt-1 w-full">
-                      <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <div className="relative w-full">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                         <svg
-                          class="w-4 h-4 text-gray-500 dark:text-gray-400"
+                          className="w-4 h-4 text-gray-500 dark:text-gray-400"
                           aria-hidden="true"
                           xmlns="http://www.w3.org/2000/svg"
                           fill="none"
@@ -918,7 +918,7 @@ export class DDIReview extends Component {
                         </svg>
                       </div>
                       <input
-                        class="py-3 bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5"
+                        className="py-3 bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5"
                         id="search"
                         type="text"
                         name="search_field"
@@ -928,7 +928,7 @@ export class DDIReview extends Component {
                         aria-label="Search"
                       />
                       <div
-                        class="inline-flex rounded-md shadow-sm absolute right-2.5 bottom-2.5"
+                        className="inline-flex rounded-md shadow-sm absolute right-2.5 bottom-2.5"
                         role="group"
                       >
                         <button
@@ -936,7 +936,7 @@ export class DDIReview extends Component {
                           disabled={loading}
                           value="Перевести"
                           onClick={() => this.translateQuery()}
-                          class="text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 mr-2"
+                          className="text-white bg-gray-700 hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2 mr-2"
                         >
                           Перевести
                         </button>
@@ -945,7 +945,7 @@ export class DDIReview extends Component {
                           disabled={loading}
                           value="Найти"
                           onClick={() => this.createTask()}
-                          class="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
+                          className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
                         >
                           Найти
                         </button>
@@ -956,13 +956,13 @@ export class DDIReview extends Component {
                     id="toggleSidebar"
                     aria-expanded="true"
                     aria-controls="sidebar2"
-                    class="order-last hidden p-2 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100"
+                    className="order-last hidden p-2 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100"
                     data-bs-toggle="collapse"
                     data-bs-target="#sidebar2"
                     aria-label="Toggle navigation"
                   >
                     <svg
-                      class="w-6 h-6 rotate-180"
+                      className="w-6 h-6 rotate-180"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                       xmlns="http://www.w3.org/2000/svg"
@@ -1010,7 +1010,7 @@ export class DDIReview extends Component {
                           data-bs-target="#accordionFlushExample"
                         >
                           <div className="accordion-body">
-                            <div class="form-check">
+                            <div className="form-check">
                               <input
                                 className="form-check-input"
                                 type="radio"
@@ -1020,13 +1020,13 @@ export class DDIReview extends Component {
                                 onChange={() => this.changeQueryDate(1)}
                               />
                               <label
-                                class="form-check-label"
+                                className="form-check-label"
                                 for="flexRadioDefault1"
                               >
                                 1 год
                               </label>
                             </div>
-                            <div class="form-check">
+                            <div className="form-check">
                               <input
                                 className="form-check-input"
                                 type="radio"
@@ -1036,13 +1036,13 @@ export class DDIReview extends Component {
                                 onChange={() => this.changeQueryDate(3)}
                               />
                               <label
-                                class="form-check-label"
+                                className="form-check-label"
                                 for="flexRadioDefault2"
                               >
                                 3 года
                               </label>
                             </div>
-                            <div class="form-check">
+                            <div className="form-check">
                               <input
                                 className="form-check-input"
                                 type="radio"
@@ -1052,13 +1052,13 @@ export class DDIReview extends Component {
                                 onChange={() => this.changeQueryDate(5)}
                               />
                               <label
-                                class="form-check-label"
+                                className="form-check-label"
                                 for="flexRadioDefault3"
                               >
                                 5 лет
                               </label>
                             </div>
-                            <div class="form-check">
+                            <div className="form-check">
                               <input
                                 className="form-check-input"
                                 type="radio"
@@ -1068,7 +1068,7 @@ export class DDIReview extends Component {
                                 onChange={() => this.changeQueryDate(null)}
                               />
                               <label
-                                class="form-check-label"
+                                className="form-check-label"
                                 for="flexRadioDefault4"
                               >
                                 > 5 лет
@@ -1078,9 +1078,12 @@ export class DDIReview extends Component {
                         </div>
                       </div>
                       <div className="accordion-item">
-                        <h2 class="accordion-header" id="flush-headingThree">
+                        <h2
+                          className="accordion-header"
+                          id="flush-headingThree"
+                        >
                           <button
-                            class="accordion-button collapsed"
+                            className="accordion-button collapsed"
                             data-target="#flush-collapseThree"
                             type="button"
                             data-bs-toggle="collapse"
@@ -1220,9 +1223,12 @@ export class DDIReview extends Component {
                         </div>
                       </div>
                       <div className="accordion-item">
-                        <h2 class="accordion-header" id="flush-headingThree">
+                        <h2
+                          className="accordion-header"
+                          id="flush-headingThree"
+                        >
                           <button
-                            class="accordion-button collapsed"
+                            className="accordion-button collapsed"
                             data-target="#flush-collapseThree"
                             type="button"
                             data-bs-toggle="collapse"
@@ -1255,9 +1261,12 @@ export class DDIReview extends Component {
                         </div>
                       </div>
                       <div className="accordion-item">
-                        <h2 class="accordion-header" id="flush-headingThree">
+                        <h2
+                          className="accordion-header"
+                          id="flush-headingThree"
+                        >
                           <button
-                            class="accordion-button collapsed"
+                            className="accordion-button collapsed"
                             data-target="#flush-collapseThree"
                             type="button"
                             data-bs-toggle="collapse"
@@ -1277,7 +1286,7 @@ export class DDIReview extends Component {
                           <div className="accordion-body">
                             {Object.entries(obj_color).map((tag) => (
                               <p
-                                class="pb-2 mb-3 border-bottom"
+                                className="pb-2 mb-3 border-bottom"
                                 style={{ color: `${tag[1]}` }}
                               >
                                 {tag[0]}.
@@ -1288,28 +1297,28 @@ export class DDIReview extends Component {
                       </div>
                     </div>
                   </aside>
-                  <section class="col p-3 m-3 border rounded-3 bg-white overflow-auto">
-                    <div class="accordion accordion-flush" id="accordion">
-                      <div class="accordion-item">
-                        <h2 class="accordion-header" id="">
+                  <section className="col p-3 m-3 border rounded-3 bg-white overflow-auto">
+                    <div className="accordion accordion-flush" id="accordion">
+                      <div className="accordion-item">
+                        <h2 className="accordion-header" id="">
                           {message ? (
                             messageStatus > 299 ? (
                               <p
-                                class="pb-2 mb-3 border-bottom"
+                                className="pb-2 mb-3 border-bottom"
                                 style={{ color: "red" }}
                               >
                                 {message}.
                               </p>
                             ) : messageStatus === 200 ? (
                               <p
-                                class="pb-2 mb-3 border-bottom"
+                                className="pb-2 mb-3 border-bottom"
                                 style={{ color: "green" }}
                               >
                                 {message}.
                               </p>
                             ) : (
                               <p
-                                class="pb-2 mb-3 border-bottom"
+                                className="pb-2 mb-3 border-bottom"
                                 style={{ color: "black" }}
                               >
                                 {message}.
@@ -1317,7 +1326,7 @@ export class DDIReview extends Component {
                             )
                           ) : null}
                           <button
-                            class="accordion-button collapsed"
+                            className="accordion-button collapsed"
                             type="button"
                             data-bs-toggle="collapse"
                             data-bs-target="#flush-collapseSeven"
@@ -1329,29 +1338,29 @@ export class DDIReview extends Component {
                         </h2>
                         <div
                           id="flush-collapseSeven"
-                          class="collapse multi-collapse"
+                          className="collapse multi-collapse"
                           aria-labelledby="flush-headingSeven"
                           data-bs-target="#accordionFlushExample"
                         >
-                          <div class="accordion-body">
+                          <div className="accordion-body">
                             {query_list?.map((query, index) =>
                               query.status === 2 ? (
                                 <p
-                                  class="pb-2 mb-3 border-bottom"
+                                  className="pb-2 mb-3 border-bottom"
                                   style={{ color: "red" }}
                                 >
                                   {index + 1} - {query.query}.
                                 </p>
                               ) : query.status === 1 ? (
                                 <p
-                                  class="pb-2 mb-3 border-bottom"
+                                  className="pb-2 mb-3 border-bottom"
                                   style={{ color: "green" }}
                                 >
                                   {index + 1} - {query.query}.
                                 </p>
                               ) : (
                                 <p
-                                  class="pb-2 mb-3 border-bottom"
+                                  className="pb-2 mb-3 border-bottom"
                                   style={{ color: "black" }}
                                 >
                                   {index + 1} - {query.query}.
@@ -1359,7 +1368,7 @@ export class DDIReview extends Component {
                               )
                             )}
                           </div>
-                          <div class="accordion-body">
+                          <div className="accordion-body">
                             <input
                               className="text-white right-2.5 my-4 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
                               type="submit"
@@ -1387,15 +1396,15 @@ export class DDIReview extends Component {
                       </div>
                     </div>
                     <div>
-                      <div class="bd-example">
-                        <div class="tab-content" id="myTabContent">
+                      <div className="bd-example">
+                        <div className="tab-content" id="myTabContent">
                           <div
-                            class="tab-pane fade active show"
+                            className="tab-pane fade active show"
                             id="home"
                             role="tabpanel"
                             aria-labelledby="home-tab"
                           >
-                            <div class="container-fluid g-0">
+                            <div className="container-fluid g-0">
                               <div
                                 className="ag-theme-alpine ag-theme-acmecorp"
                                 style={{ height: 700 }}
@@ -1444,7 +1453,7 @@ export class DDIReview extends Component {
 
                   <aside
                     id="sidebar2"
-                    class="col-md-4 h-screen collapse show width col p-3 my-3 border rounded-3 bg-white"
+                    className="col-md-4 h-screen collapse show width col p-3 my-3 border rounded-3 bg-white"
                   >
                     <Tab.Group>
                       <div>
@@ -1499,33 +1508,33 @@ export class DDIReview extends Component {
                               "focus:outline-none"
                             )}
                           >
-                            <h3 class="pb-2 mb-3 border-bottom">
+                            <h3 className="pb-2 mb-3 border-bottom">
                               Подробное описание
                             </h3>
-                            <nav class="small" id="toc">
+                            <nav className="small" id="toc">
                               {DetailArticle ? (
-                                <div class="card mb-3">
-                                  <div class="card-body">
+                                <div className="card mb-3">
+                                  <div className="card-body">
                                     <a
                                       href={DetailArticle.url}
-                                      class="card-title link-primary text-decoration-none h5"
+                                      className="card-title link-primary text-decoration-none h5"
                                       target="_blank"
                                     >
                                       {" "}
                                       {DetailArticle.titl}{" "}
                                     </a>
-                                    <p class="card-text">
+                                    <p className="card-text">
                                       ----------------------------------{" "}
                                     </p>
-                                    <p class="card-text">
+                                    <p className="card-text">
                                       Авторы : {DetailArticle.auth}{" "}
                                     </p>
-                                    <p class="card-text">
+                                    <p className="card-text">
                                       ----------------------------------{" "}
                                     </p>
-                                    <p class="card-text">Аннотация : </p>
+                                    <p className="card-text">Аннотация : </p>
                                     <p
-                                      class="card-text"
+                                      className="card-text"
                                       dangerouslySetInnerHTML={{
                                         __html: markup_text(
                                           DetailArticle.tiab,
@@ -1533,31 +1542,31 @@ export class DDIReview extends Component {
                                         ),
                                       }}
                                     />
-                                    <p class="card-text">
+                                    <p className="card-text">
                                       ----------------------------------{" "}
                                     </p>
-                                    <p class="card-text">
-                                      <small class="text-success">
+                                    <p className="card-text">
+                                      <small className="text-success">
                                         Дата публикации : {DetailArticle.pdat}{" "}
                                       </small>
                                     </p>
-                                    <p class="card-text">
-                                      <small class="text-success">
+                                    <p className="card-text">
+                                      <small className="text-success">
                                         Издание : {DetailArticle.jour}
                                       </small>
                                     </p>
-                                    <p class="card-text">
-                                      <small class="text-success">
+                                    <p className="card-text">
+                                      <small className="text-success">
                                         Вид публикации : {DetailArticle.pt}
                                       </small>
                                     </p>
-                                    <p class="card-text">
-                                      <small class="text-success">
+                                    <p className="card-text">
+                                      <small className="text-success">
                                         Страна : {DetailArticle.pl}{" "}
                                       </small>
                                     </p>
-                                    <p class="card-text">
-                                      <small class="text-success">
+                                    <p className="card-text">
+                                      <small className="text-success">
                                         {DetailArticle.mesh}{" "}
                                       </small>
                                     </p>
@@ -1596,16 +1605,21 @@ export class DDIReview extends Component {
                               "focus:outline-none"
                             )}
                           >
-                            <h3 class="pb-2 mb-3 border-bottom">YandexGPT</h3>
-                            <nav class="small" id="toc">
+                            <h3 className="pb-2 mb-3 border-bottom">
+                              YandexGPT
+                            </h3>
+                            <nav className="small" id="toc">
                               <div>
-                                <div class="bd-example">
-                                  <div class="tab-content" id="myTabContent">
-                                    <div class="container-fluid g-0">
-                                      <div class="relative mt-1 w-full">
-                                        <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                                <div className="bd-example">
+                                  <div
+                                    className="tab-content"
+                                    id="myTabContent"
+                                  >
+                                    <div className="container-fluid g-0">
+                                      <div className="relative mt-1 w-full">
+                                        <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                                           <svg
-                                            class="w-4 h-4 text-gray-500 dark:text-gray-400"
+                                            className="w-4 h-4 text-gray-500 dark:text-gray-400"
                                             aria-hidden="true"
                                             xmlns="http://www.w3.org/2000/svg"
                                             fill="none"
@@ -1621,7 +1635,7 @@ export class DDIReview extends Component {
                                           </svg>
                                         </div>
                                         <input
-                                          class="py-3 bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5"
+                                          className="py-3 bg-gray-50 border border-gray-300 text-gray-900 sm:text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full pl-10 p-2.5"
                                           id="search"
                                           type="text"
                                           name="search_field"
@@ -1630,13 +1644,13 @@ export class DDIReview extends Component {
                                           onChange={this.changeQueryTextChat}
                                           aria-label="Search"
                                         />
-                                        {/*<button type="submit" disabled={loading} value="Перевести" onClick={() => this.translateQuery()} class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-2">Перевести</button>*/}
+                                        {/*<button type="submit" disabled={loading} value="Перевести" onClick={() => this.translateQuery()} className="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-3 py-2">Перевести</button>*/}
                                         <button
                                           type="submit"
                                           disabled={loading}
                                           value="Отправить"
                                           onClick={() => this.getRequest()}
-                                          class="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
+                                          className="text-white absolute right-2.5 bottom-2.5 bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-4 py-2"
                                         >
                                           Отправить
                                         </button>

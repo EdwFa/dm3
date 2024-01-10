@@ -423,25 +423,25 @@ export class AdminPanel extends Component {
       return (
         <>
           <header>
-            <nav class="bg-white border-gray-200 px-4 lg:px-6 py-2.5">
-              <div class="flex flex-wrap justify-between items-center">
-                <div class="flex justify-start items-center">
-                  <a href="" class="flex mr-4">
+            <nav className="bg-white border-gray-200 px-4 lg:px-6 py-2.5">
+              <div className="flex flex-wrap justify-between items-center">
+                <div className="flex justify-start items-center">
+                  <a href="" className="flex mr-4">
                     <img
                       src="https://flowbite.s3.amazonaws.com/logo.svg"
-                      class="mr-3 h-8"
+                      className="mr-3 h-8"
                       alt="FlowBite Logo"
                     />
-                    <span class="self-center text-2xl font-semibold whitespace-nowrap">
+                    <span className="self-center text-2xl font-semibold whitespace-nowrap">
                       EBM Sechenov DataMed.AI
                     </span>
                   </a>
-                  <ul class="flex font-medium flex-row space-x-8">
+                  <ul className="flex font-medium flex-row space-x-8">
                     <Link to="/tematic_review">
                       <li>
                         <a
                           href="#"
-                          class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0"
+                          className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0"
                         >
                           Тематический анализ
                         </a>
@@ -451,7 +451,7 @@ export class AdminPanel extends Component {
                       <li>
                         <a
                           href="#"
-                          class="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0"
+                          className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0"
                         >
                           Факты для EBM
                         </a>
@@ -461,7 +461,7 @@ export class AdminPanel extends Component {
                       <li>
                         <a
                           href="#"
-                          class="block py-2 pl-3 pr-4 text-gray-900 bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0"
+                          className="block py-2 pl-3 pr-4 text-gray-900 bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0"
                           aria-current="page"
                         >
                           Админ панель
@@ -470,11 +470,11 @@ export class AdminPanel extends Component {
                     </Link>
                   </ul>
                 </div>
-                <div class="flex items-center lg:order-3">
-                  <div class="flex-shrink-0 dropdown">
+                <div className="flex items-center lg:order-3">
+                  <div className="flex-shrink-0 dropdown">
                     <a
                       href="#"
-                      class="d-block link-body-emphasis text-decoration-none dropdown-toggle"
+                      className="d-block link-body-emphasis text-decoration-none dropdown-toggle"
                       data-bs-toggle="dropdown"
                       aria-expanded="false"
                     >
@@ -483,13 +483,13 @@ export class AdminPanel extends Component {
                         alt="mdo"
                         width="32"
                         height="32"
-                        class="rounded-circle"
+                        className="rounded-circle"
                       />
                     </a>
-                    <ul class="dropdown-menu text-small shadow">
+                    <ul className="dropdown-menu text-small shadow">
                       {permissions?.map((per) => (
                         <li>
-                          <a class="dropdown-item" href="#">
+                          <a className="dropdown-item" href="#">
                             {per.topic}{" "}
                             {per.all_records
                               ? `${per.all_records}`
@@ -500,14 +500,14 @@ export class AdminPanel extends Component {
                     </ul>
                   </div>
                 </div>
-                <div class="flex items-center lg:order-2">
+                <div className="flex items-center lg:order-2">
                   <button
                     type="button"
-                    class="hidden sm:inline-flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-xs px-3 py-1.5 mr-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"
+                    className="hidden sm:inline-flex items-center justify-center text-white bg-primary-700 hover:bg-primary-800 focus:ring-4 focus:ring-primary-300 font-medium rounded-lg text-xs px-3 py-1.5 mr-2 dark:bg-primary-600 dark:hover:bg-primary-700 focus:outline-none dark:focus:ring-primary-800"
                   >
                     <svg
                       aria-hidden="true"
-                      class="mr-1 -ml-1 w-5 h-5"
+                      className="mr-1 -ml-1 w-5 h-5"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                       xmlns="http://www.w3.org/2000/svg"
@@ -523,20 +523,20 @@ export class AdminPanel extends Component {
                 </div>
               </div>
             </nav>
-            <nav class="bg-white border-gray-200 px-6">
-              <div class="w-full">
-                <div class="flex justify-between items-center">
+            <nav className="bg-white border-gray-200 px-6">
+              <div className="w-full">
+                <div className="flex justify-between items-center">
                   <button
                     id="toggleSidebar"
                     aria-expanded="true"
                     aria-controls="sidebar"
-                    class="hidden p-2 mr-3 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
+                    className="hidden p-2 mr-3 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
                     data-bs-toggle="collapse"
                     data-bs-target="#sidebar"
                     aria-label="Toggle navigation"
                   >
                     <svg
-                      class="w-6 h-6"
+                      className="w-6 h-6"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                       xmlns="http://www.w3.org/2000/svg"
@@ -552,13 +552,13 @@ export class AdminPanel extends Component {
                     id="toggleSidebar"
                     aria-expanded="true"
                     aria-controls="sidebar2"
-                    class="order-last hidden p-2 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
+                    className="order-last hidden p-2 text-gray-600 rounded cursor-pointer lg:inline hover:text-gray-900 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-white dark:hover:bg-gray-700"
                     data-bs-toggle="collapse"
                     data-bs-target="#sidebar2"
                     aria-label="Toggle navigation"
                   >
                     <svg
-                      class="w-6 h-6 rotate-180"
+                      className="w-6 h-6 rotate-180"
                       fill="currentColor"
                       viewBox="0 0 20 20"
                       xmlns="http://www.w3.org/2000/svg"
@@ -587,13 +587,13 @@ export class AdminPanel extends Component {
                       id="accordionFlushExample"
                     >
                       <div
-                        class="m-2  grow items-center justify-between hidden w-full md:flex md:w-auto md:order-1"
+                        className="m-2  grow items-center justify-between hidden w-full md:flex md:w-auto md:order-1"
                         id="navbar-sticky"
                       >
-                        <ul class="nav nav-pills" id="myTab" role="tablist">
-                          <li class="nav-item mr-2" role="presentation">
+                        <ul className="nav nav-pills" id="myTab" role="tablist">
+                          <li className="nav-item mr-2" role="presentation">
                             <button
-                              class="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100 active"
+                              className="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100 active"
                               id="home-tab"
                               data-bs-toggle="tab"
                               data-bs-target="#home"
@@ -612,9 +612,9 @@ export class AdminPanel extends Component {
                               Пользователи
                             </button>
                           </li>
-                          <li class="nav-item mr-2" role="presentation">
+                          <li className="nav-item mr-2" role="presentation">
                             <button
-                              class="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100"
+                              className="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100"
                               id="profile-tab"
                               data-bs-toggle="tab"
                               data-bs-target="#profile"
@@ -633,9 +633,9 @@ export class AdminPanel extends Component {
                               Запросы на поиск
                             </button>
                           </li>
-                          <li class="nav-item mr-2" role="presentation">
+                          <li className="nav-item mr-2" role="presentation">
                             <button
-                              class="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100"
+                              className="nav-link inline-block px-4 py-2 rounded-lg hover:text-gray-900 hover:bg-gray-100"
                               id="contact-tab"
                               data-bs-toggle="tab"
                               data-bs-target="#contact"
@@ -658,12 +658,12 @@ export class AdminPanel extends Component {
                       </div>
                     </div>
                   </aside>
-                  <section class="col p-3 m-3 border rounded-3 bg-white overflow-auto">
-                    <div class="accordion accordion-flush" id="accordion">
-                      <div class="accordion-item">
+                  <section className="col p-3 m-3 border rounded-3 bg-white overflow-auto">
+                    <div className="accordion accordion-flush" id="accordion">
+                      <div className="accordion-item">
                         <div
                           id="flush-collapseSeven"
-                          class="collapse multi-collapse"
+                          className="collapse multi-collapse"
                           aria-labelledby="flush-headingSeven"
                           data-bs-target="#accordionFlushExample"
                         ></div>
@@ -671,15 +671,15 @@ export class AdminPanel extends Component {
                       <div></div>
                     </div>
                     <div>
-                      <div class="bd-example">
-                        <div class="tab-content" id="myTabContent">
+                      <div className="bd-example">
+                        <div className="tab-content" id="myTabContent">
                           <div
-                            class="tab-pane fade active show"
+                            className="tab-pane fade active show"
                             id="home"
                             role="tabpanel"
                             aria-labelledby="home-tab"
                           >
-                            <div class="container-fluid g-0">
+                            <div className="container-fluid g-0">
                               <div
                                 className="ag-theme-alpine ag-theme-acmecorp"
                                 style={{ height: 700 }}
@@ -720,7 +720,7 @@ export class AdminPanel extends Component {
                                 ></AgGridReact>
                               </div>
                             </div>
-                            <div class="flex justify-center my-6">
+                            <div className="flex justify-center my-6">
                               <button
                                 type="button"
                                 className="flex text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 ml-2 dark:bg-blue-600 dark:hover:bg-blue-700 focus:outline-none dark:focus:ring-blue-800 float-end"
@@ -733,12 +733,12 @@ export class AdminPanel extends Component {
                             </div>
                           </div>
                           <div
-                            class="tab-pane fade"
+                            className="tab-pane fade"
                             id="profile"
                             role="tabpanel"
                             aria-labelledby="profile-tab"
                           >
-                            <div class="container-fluid g-0">
+                            <div className="container-fluid g-0">
                               <div
                                 className="ag-theme-alpine ag-theme-acmecorp"
                                 style={{ height: 700 }}
@@ -783,12 +783,12 @@ export class AdminPanel extends Component {
                             </div>
                           </div>
                           <div
-                            class="tab-pane fade"
+                            className="tab-pane fade"
                             id="contact"
                             role="tabpanel"
                             aria-labelledby="contact-tab"
                           >
-                            <div class="container-fluid g-0">
+                            <div className="container-fluid g-0">
                               <div
                                 className="ag-theme-alpine ag-theme-acmecorp"
                                 style={{ height: 700 }}
@@ -840,31 +840,31 @@ export class AdminPanel extends Component {
 
                   <aside
                     id="sidebar2"
-                    class="col-md-4 h-screen collapse show width col p-3 my-3 border rounded-3 bg-white"
+                    className="col-md-4 h-screen collapse show width col p-3 my-3 border rounded-3 bg-white"
                   >
                     {useUsers ? (
                       <>
-                        <h3 class="pb-2 mb-3 border-bottom">
+                        <h3 className="pb-2 mb-3 border-bottom">
                           Подробное описание Пользователя
                         </h3>
-                        <nav class="small" id="toc">
+                        <nav className="small" id="toc">
                           {DetailUser ? (
-                            <div class="card mb-3">
-                              <div class="card-body">
-                                <p class="card-text">
+                            <div className="card mb-3">
+                              <div className="card-body">
+                                <p className="card-text">
                                   ----------------------------------{" "}
                                 </p>
-                                <p class="card-text">
+                                <p className="card-text">
                                   Email : {DetailUser.email}
                                 </p>
-                                <p class="card-text">
+                                <p className="card-text">
                                   ----------------------------------{" "}
                                 </p>
-                                <p class="card-text">
+                                <p className="card-text">
                                   Администратор :{" "}
                                   {DetailUser.is_admin ? (
                                     <input
-                                      class="form-check-input"
+                                      className="form-check-input"
                                       type="checkbox"
                                       value=""
                                       id="flexCheckDefault"
@@ -872,29 +872,29 @@ export class AdminPanel extends Component {
                                     />
                                   ) : null}
                                 </p>
-                                <p class="card-text">
+                                <p className="card-text">
                                   Доступ : {DetailUser.allow_status}
                                 </p>
-                                <p class="card-text">
+                                <p className="card-text">
                                   ----------------------------------{" "}
                                 </p>
                                 {DetailUser.permissions?.map((per) => (
                                   <>
-                                    <p class="card-text">
-                                      <small class="text-success">
+                                    <p className="card-text">
+                                      <small className="text-success">
                                         {per.topic} :{" "}
                                         {per.all_records
                                           ? `${per.all_records}`
                                           : "безлимитно"}{" "}
                                       </small>
                                     </p>
-                                    <p class="card-text">
-                                      <small class="text-success">
+                                    <p className="card-text">
+                                      <small className="text-success">
                                         Начало использования: {per.start_time}
                                       </small>
                                     </p>
-                                    <p class="card-text">
-                                      <small class="text-success">
+                                    <p className="card-text">
+                                      <small className="text-success">
                                         ----------------------------------{" "}
                                       </small>
                                     </p>
@@ -915,58 +915,58 @@ export class AdminPanel extends Component {
                       </>
                     ) : useSearch ? (
                       <>
-                        <h3 class="pb-2 mb-3 border-bottom">
+                        <h3 className="pb-2 mb-3 border-bottom">
                           Подробное описание Поискового запроса
                         </h3>
-                        <nav class="small" id="toc">
+                        <nav className="small" id="toc">
                           {DetailSearch ? (
-                            <div class="card mb-3">
-                              <div class="card-body">
-                                <p class="card-text">
+                            <div className="card mb-3">
+                              <div className="card-body">
+                                <p className="card-text">
                                   Query : {DetailSearch.query} (Find{" "}
                                   {DetailSearch.count})
                                 </p>
-                                <p class="card-text">
+                                <p className="card-text">
                                   ----------------------------------{" "}
                                 </p>
-                                <p class="card-text">Full query : </p>
-                                <p class="card-text">
+                                <p className="card-text">Full query : </p>
+                                <p className="card-text">
                                   {DetailSearch.full_query}
                                 </p>
-                                <p class="card-text">
+                                <p className="card-text">
                                   ----------------------------------{" "}
                                 </p>
-                                <p class="card-text">
+                                <p className="card-text">
                                   Translation stack :{" "}
                                   {DetailSearch.translation_stack}
                                 </p>
-                                <p class="card-text">
+                                <p className="card-text">
                                   ----------------------------------{" "}
                                 </p>
-                                <p class="card-text">
-                                  <small class="text-success">
+                                <p className="card-text">
+                                  <small className="text-success">
                                     Дата начала запроса :{" "}
                                     {DetailSearch.start_date}{" "}
                                   </small>
                                 </p>
-                                <p class="card-text">
-                                  <small class="text-success">
+                                <p className="card-text">
+                                  <small className="text-success">
                                     Дата конца запроса : {DetailSearch.end_date}
                                   </small>
                                 </p>
-                                <p class="card-text">
-                                  <small class="text-success">
+                                <p className="card-text">
+                                  <small className="text-success">
                                     Время выполнения : {DetailSearch.work_time}{" "}
                                     сек.
                                   </small>
                                 </p>
-                                <p class="card-text">
-                                  <small class="text-success">
+                                <p className="card-text">
+                                  <small className="text-success">
                                     Пользователь : {DetailSearch.user}
                                   </small>
                                 </p>
-                                <p class="card-text">
-                                  <small class="text-success">
+                                <p className="card-text">
+                                  <small className="text-success">
                                     Статус запроса : {DetailSearch.status}{" "}
                                   </small>
                                 </p>
@@ -977,44 +977,44 @@ export class AdminPanel extends Component {
                       </>
                     ) : useAnalise ? (
                       <>
-                        <h3 class="pb-2 mb-3 border-bottom">
+                        <h3 className="pb-2 mb-3 border-bottom">
                           Подробное описание запроса на анализ
                         </h3>
-                        <nav class="small" id="toc">
+                        <nav className="small" id="toc">
                           {DetailAnalise ? (
-                            <div class="card mb-3">
-                              <div class="card-body">
-                                <p class="card-text">
+                            <div className="card mb-3">
+                              <div className="card-body">
+                                <p className="card-text">
                                   Type analise : {DetailAnalise.type_analise}
                                 </p>
-                                <p class="card-text">
+                                <p className="card-text">
                                   ----------------------------------{" "}
                                 </p>
-                                <p class="card-text">
-                                  <small class="text-success">
+                                <p className="card-text">
+                                  <small className="text-success">
                                     Дата начала запроса :{" "}
                                     {DetailAnalise.start_date}{" "}
                                   </small>
                                 </p>
-                                <p class="card-text">
-                                  <small class="text-success">
+                                <p className="card-text">
+                                  <small className="text-success">
                                     Дата конца запроса :{" "}
                                     {DetailAnalise.end_date}
                                   </small>
                                 </p>
-                                <p class="card-text">
-                                  <small class="text-success">
+                                <p className="card-text">
+                                  <small className="text-success">
                                     Время выполнения : {DetailAnalise.work_time}{" "}
                                     сек.
                                   </small>
                                 </p>
-                                <p class="card-text">
-                                  <small class="text-success">
+                                <p className="card-text">
+                                  <small className="text-success">
                                     Пользователь : {DetailAnalise.user}
                                   </small>
                                 </p>
-                                <p class="card-text">
-                                  <small class="text-success">
+                                <p className="card-text">
+                                  <small className="text-success">
                                     Статус запроса : {DetailAnalise.status}{" "}
                                   </small>
                                 </p>
@@ -1043,12 +1043,12 @@ export class AdminPanel extends Component {
                   </h2>
                   <button
                     type="button"
-                    class="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-800 dark:hover:text-white"
+                    className="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-800 dark:hover:text-white"
                     data-modal-hide="authentication-modal"
                   >
                     <svg
                       aria-hidden="true"
-                      class="w-5 h-5"
+                      className="w-5 h-5"
                       data-bs-dismiss="modal"
                       fill="currentColor"
                       viewBox="0 0 20 20"
@@ -1060,15 +1060,15 @@ export class AdminPanel extends Component {
                         clip-rule="evenodd"
                       ></path>
                     </svg>
-                    <span class="sr-only">Закрыть диалог</span>
+                    <span className="sr-only">Закрыть диалог</span>
                   </button>
                 </div>
 
                 <div className="modal-body">
-                  <div class="relative w-full mb-6 group">
+                  <div className="relative w-full mb-6 group">
                     <label
                       for="text"
-                      class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
                       Email
                     </label>
@@ -1081,7 +1081,7 @@ export class AdminPanel extends Component {
                     />
                     <label
                       for="text"
-                      class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
                       Password
                     </label>
@@ -1096,7 +1096,7 @@ export class AdminPanel extends Component {
                     />
                     <label
                       for="text"
-                      class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
                       Dublicate Password
                     </label>
@@ -1113,14 +1113,14 @@ export class AdminPanel extends Component {
                     {message ? (
                       messageStatus > 299 ? (
                         <p
-                          class="pb-2 mb-3 border-bottom"
+                          className="pb-2 mb-3 border-bottom"
                           style={{ color: "red" }}
                         >
                           {message}.
                         </p>
                       ) : messageStatus === 201 ? (
                         <p
-                          class="pb-2 mb-3 border-bottom"
+                          className="pb-2 mb-3 border-bottom"
                           style={{ color: "green" }}
                         >
                           {message}.
@@ -1153,12 +1153,12 @@ export class AdminPanel extends Component {
                   </h2>
                   <button
                     type="button"
-                    class="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-800 dark:hover:text-white"
+                    className="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-800 dark:hover:text-white"
                     data-modal-hide="authentication-modal"
                   >
                     <svg
                       aria-hidden="true"
-                      class="w-5 h-5"
+                      className="w-5 h-5"
                       data-bs-dismiss="modal"
                       fill="currentColor"
                       viewBox="0 0 20 20"
@@ -1170,15 +1170,15 @@ export class AdminPanel extends Component {
                         clip-rule="evenodd"
                       ></path>
                     </svg>
-                    <span class="sr-only">Закрыть диалог</span>
+                    <span className="sr-only">Закрыть диалог</span>
                   </button>
                 </div>
 
                 <div className="modal-body">
-                  <div class="relative w-full mb-6 group">
+                  <div className="relative w-full mb-6 group">
                     <label
                       for="text"
-                      class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
                       Доступно записей для поиска в PubMed
                     </label>
@@ -1195,7 +1195,7 @@ export class AdminPanel extends Component {
                     />
                     <label
                       for="text"
-                      class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
                       Доступно записей для тематического анализа
                     </label>
@@ -1212,7 +1212,7 @@ export class AdminPanel extends Component {
                     />
                     <label
                       for="text"
-                      class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
                       Доступно записей для поиска фактов EBM
                     </label>
@@ -1229,7 +1229,7 @@ export class AdminPanel extends Component {
                     />
                     <label
                       for="text"
-                      class="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
                     >
                       Dublicate Password
                     </label>
@@ -1249,14 +1249,14 @@ export class AdminPanel extends Component {
                     {message ? (
                       messageStatus > 299 ? (
                         <p
-                          class="pb-2 mb-3 border-bottom"
+                          className="pb-2 mb-3 border-bottom"
                           style={{ color: "red" }}
                         >
                           {message}.
                         </p>
                       ) : messageStatus === 201 ? (
                         <p
-                          class="pb-2 mb-3 border-bottom"
+                          className="pb-2 mb-3 border-bottom"
                           style={{ color: "green" }}
                         >
                           {message}.
